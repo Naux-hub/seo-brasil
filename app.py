@@ -1,8 +1,10 @@
 import streamlit as st
 import requests
+from supabase import create_client
 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
+supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 def hamta_sokdata(sokord):
     url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
@@ -10,28 +12,56 @@ def hamta_sokdata(sokord):
     svar = requests.post(url, auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD), json=data)
     return svar.json()
 
-st.title("🔍 SEO Brasil")
-st.write("Ferramenta de SEO para o mercado brasileiro")
+st.title("SEO Brasil")
+
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+if st.session_state.user is None:
+    st.subheader("Entrar / Criar conta")
+    email = st.text_input("E-mail")
+    senha = st.text_input("Senha", type="password")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Entrar"):
+            try:
+                res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
+                st.session_state.user = res.user
+                st.rerun()
+            except:
+                st.error("E-mail ou senha incorretos.")
+    with col2:
+        if st.button("Criar conta"):
+            try:
+                res = supabase.auth.sign_up({"email": email, "password": senha})
+                st.success("Conta criada! Verifique seu e-mail para confirmar.")
+            except:
+                st.error("Erro ao criar conta.")
+else:
+    st.write(f"Bem-vindo, {st.session_state.user.email}")
+    if st.button("Sair"):
+        st.session_state.user = None
+        st.rerun()
+
+    st.divider()
+    st.subheader("Pesquisa de palavras-chave")
+    sokord = st.text_input("Digite uma palavra-chave:", placeholder="ex: agencia de marketing Sao Paulo")
+
+    if st.button("Buscar") and sokord:
+        with st.spinner("Buscando dados no Google Brasil..."):
+            resultat = hamta_sokdata(sokord)
+            try:
+                data = resultat['tasks'][0]['result'][0]
+                volym = data.get('search_volume', 0)
+                konkurrens = data.get('competition', 'N/A')
+                cpc = data.get('cpc', 0)
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Volume / mes", f"{volym:,}".replace(",", "."))
+                col2.metric("Competicao", str(konkurrens).capitalize())
+                col3.metric("CPC medio", f"R$ {cpc:.2f}" if cpc else "N/A")
+                st.success(f"Dados do Google Brasil para: {sokord}")
+            except:
+                st.error("Nenhum dado encontrado. Tente outra palavra-chave.")
+
 st.divider()
-st.subheader("Pesquisa de palavras-chave")
-
-sokord = st.text_input("Digite uma palavra-chave:", placeholder="ex: agência de marketing São Paulo")
-
-if st.button("Buscar") and sokord:
-    with st.spinner("Buscando dados no Google Brasil..."):
-        resultat = hamta_sokdata(sokord)
-        try:
-            data = resultat['tasks'][0]['result'][0]
-            volym = data.get('search_volume', 0)
-            konkurrens = data.get('competition', 'N/A')
-            cpc = data.get('cpc', 0)
-            col1, col2, col3 = st.columns(3)
-            col1.metric("📊 Volume / mês", f"{volym:,}".replace(",", "."))
-            col2.metric("⚔️ Competição", str(konkurrens).capitalize())
-            col3.metric("💰 CPC médio", f"R$ {cpc:.2f}" if cpc else "N/A")
-            st.success(f"Dados do Google Brasil para: **{sokord}**")
-        except Exception as e:
-            st.error("Nenhum dado encontrado. Tente outra palavra-chave.")
-
-st.divider()
-st.caption("SEO Brasil – Feito para o mercado brasileiro 🇧🇷")
+st.caption("SEO Brasil - Feito para o mercado brasileiro")
