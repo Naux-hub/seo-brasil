@@ -14,8 +14,8 @@ def hamta_sokdata(sokord):
     return svar.json()
 
 def skapa_checkout(email):
-    stripe.api_key = "sk_test_51ToJTu5UYkB5NuCvitugAPy4rH9bMn6bdz9kkSiIaev9iny2JqXyQJZOSlwdqfBCgnSFyEV9mliIJFPNqwJzRdqm00UvCdUJLh"
-    price_id = "price_1ToJf65UYkB5NuCvJAyu2ccF"
+    stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
+    price_id = st.secrets["STRIPE_PRICE_ID"]
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{"price": price_id, "quantity": 1}],
