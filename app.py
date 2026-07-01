@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import stripe
 from supabase import create_client
 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
@@ -11,6 +12,19 @@ def hamta_sokdata(sokord):
     data = [{"keywords": [sokord], "location_code": 2076, "language_code": "pt"}]
     svar = requests.post(url, auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD), json=data)
     return svar.json()
+
+def skapa_checkout(email):
+    stripe.api_key = "sk_test_51ToJTu5UYkB5NuCvitugAPy4rH9bMn6bdz9kkSiIaev9iny2JqXyQJZOSlwdqfBCgnSFyEV9mliIJFPNqwJzRdqm00UvCdUJLh"
+    price_id = "price_1ToJf65UYkB5NuCvJAyu2ccF"
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{"price": price_id, "quantity": 1}],
+        mode="subscription",
+        customer_email=email,
+        success_url="https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app?paid=true",
+        cancel_url="https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app",
+    )
+    return session.url
 
 st.title("SEO Brasil")
 
@@ -38,10 +52,20 @@ if st.session_state.user is None:
             except:
                 st.error("Erro ao criar conta.")
 else:
+    params = st.query_params
+    if params.get("paid") == "true":
+        st.success("Pagamento confirmado! Bem-vindo ao SEO Brasil Pro!")
+
     st.write(f"Bem-vindo, {st.session_state.user.email}")
     if st.button("Sair"):
         st.session_state.user = None
         st.rerun()
+
+    st.divider()
+
+    if st.button("Assinar SEO Brasil Pro - R$197/mes"):
+        url = skapa_checkout(st.session_state.user.email)
+        st.markdown(f"[Clique aqui para pagar]({url})")
 
     st.divider()
     st.subheader("Pesquisa de palavras-chave")
