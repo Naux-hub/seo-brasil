@@ -26,6 +26,14 @@ def skapa_checkout(email):
     )
     return session.url
 
+def ar_prenumerant(email):
+    res = supabase.table("subscribers").select("email").eq("email", email).execute()
+    return len(res.data) > 0
+
+def spara_prenumerant(email):
+    if not ar_prenumerant(email):
+        supabase.table("subscribers").insert({"email": email}).execute()
+
 st.title("SEO Brasil")
 
 if "user" not in st.session_state:
@@ -53,11 +61,14 @@ if st.session_state.user is None:
             res = supabase.auth.sign_up({"email": email, "password": senha})
             st.success("Conta criada! Verifique seu e-mail para confirmar.")
         except Exception as e:
-            st.error(f"Fel: {str(e)}")
+            st.error("Erro ao criar conta.")
 else:
     params = st.query_params
     if params.get("paid") == "true":
+        spara_prenumerant(st.session_state.user.email)
         st.success("Pagamento confirmado! Bem-vindo ao SEO Brasil Pro!")
+
+    prenumerant = ar_prenumerant(st.session_state.user.email)
 
     st.write(f"Bem-vindo, {st.session_state.user.email}")
     if st.button("Sair"):
@@ -66,29 +77,29 @@ else:
 
     st.divider()
 
-    if st.button("Assinar SEO Brasil Pro - R$197/mes"):
-        url = skapa_checkout(st.session_state.user.email)
-        st.markdown(f"[Clique aqui para pagar]({url})")
-
-    st.divider()
-    st.subheader("Pesquisa de palavras-chave")
-    sokord = st.text_input("Digite uma palavra-chave:", placeholder="ex: agencia de marketing Sao Paulo")
-
-    if st.button("Buscar") and sokord:
-        with st.spinner("Buscando dados no Google Brasil..."):
-            resultat = hamta_sokdata(sokord)
-            try:
-                data = resultat['tasks'][0]['result'][0]
-                volym = data.get('search_volume', 0)
-                konkurrens = data.get('competition', 'N/A')
-                cpc = data.get('cpc', 0)
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Volume / mes", f"{volym:,}".replace(",", "."))
-                col2.metric("Competicao", str(konkurrens).capitalize())
-                col3.metric("CPC medio", f"R$ {cpc:.2f}" if cpc else "N/A")
-                st.success(f"Dados do Google Brasil para: {sokord}")
-            except:
-                st.error("Nenhum dado encontrado. Tente outra palavra-chave.")
+    if prenumerant:
+        st.subheader("Pesquisa de palavras-chave")
+        sokord = st.text_input("Digite uma palavra-chave:", placeholder="ex: agencia de marketing Sao Paulo")
+        if st.button("Buscar") and sokord:
+            with st.spinner("Buscando dados no Google Brasil..."):
+                resultat = hamta_sokdata(sokord)
+                try:
+                    data = resultat['tasks'][0]['result'][0]
+                    volym = data.get('search_volume', 0)
+                    konkurrens = data.get('competition', 'N/A')
+                    cpc = data.get('cpc', 0)
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("Volume / mes", f"{volym:,}".replace(",", "."))
+                    col2.metric("Competicao", str(konkurrens).capitalize())
+                    col3.metric("CPC medio", f"R$ {cpc:.2f}" if cpc else "N/A")
+                    st.success(f"Dados do Google Brasil para: {sokord}")
+                except:
+                    st.error("Nenhum dado encontrado. Tente outra palavra-chave.")
+    else:
+        st.info("Assine para acessar a pesquisa de palavras-chave.")
+        if st.button("Assinar SEO Brasil Pro - R$197/mes"):
+            url = skapa_checkout(st.session_state.user.email)
+            st.markdown(f"[Clique aqui para pagar]({url})")
 
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro")
