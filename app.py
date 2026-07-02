@@ -33,24 +33,27 @@ if "user" not in st.session_state:
 
 if st.session_state.user is None:
     st.subheader("Entrar / Criar conta")
-    email = st.text_input("E-mail")
-    senha = st.text_input("Senha", type="password")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Entrar"):
-            try:
-                res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
-                st.session_state.user = res.user
-                st.rerun()
-            except:
-                st.error("E-mail ou senha incorretos.")
-    with col2:
-        if st.button("Criar conta"):
-            try:
-                res = supabase.auth.sign_up({"email": email, "password": senha})
-                st.success("Conta criada! Verifique seu e-mail para confirmar.")
-            except:
-                st.error("Erro ao criar conta.")
+    with st.form("login_form"):
+        email = st.text_input("E-mail")
+        senha = st.text_input("Senha", type="password")
+        col1, col2 = st.columns(2)
+        with col1:
+            entrar = st.form_submit_button("Entrar")
+        with col2:
+            criar = st.form_submit_button("Criar conta")
+    if entrar:
+        try:
+            res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
+            st.session_state.user = res.user
+            st.rerun()
+        except Exception as e:
+            st.error("E-mail ou senha incorretos.")
+    if criar:
+        try:
+            res = supabase.auth.sign_up({"email": email, "password": senha})
+            st.success("Conta criada! Verifique seu e-mail para confirmar.")
+        except Exception as e:
+            st.error(f"Fel: {str(e)}")
 else:
     params = st.query_params
     if params.get("paid") == "true":
