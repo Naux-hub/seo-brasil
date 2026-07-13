@@ -119,7 +119,7 @@ else:
                         st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
     else:
         st.info("✨ Acesso completo por R$197/mês. Garantia de 7 dias.")
-        st.link_button("Assinar agora → R$197/mês", KIWIFY_URL)
+        st.markdown(f'<a href="{KIWIFY_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
 
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: seonativo@gmail.com")
