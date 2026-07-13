@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import stripe
 import pandas as pd
 from supabase import create_client
  
@@ -8,7 +7,7 @@ DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
  
-APP_URL = "https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app"
+KIWIFY_URL = "https://kiwify.app/AN7nQJo"
  
 def hamta_sokdata(sokordslista):
     url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
@@ -16,35 +15,9 @@ def hamta_sokdata(sokordslista):
     svar = requests.post(url, auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD), json=data)
     return svar.json()
  
-def skapa_checkout(email):
-    stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
-    price_id = st.secrets["STRIPE_PRICE_ID"]
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[{"price": price_id, "quantity": 1}],
-        mode="subscription",
-        customer_email=email,
-        subscription_data={"trial_period_days": 14},
-        success_url=APP_URL + "?paid=true&session_id={CHECKOUT_SESSION_ID}",
-        cancel_url=APP_URL,
-    )
-    return session.url
- 
-def verificar_pagamento(session_id):
-    try:
-        stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
-        checkout = stripe.checkout.Session.retrieve(session_id)
-        return checkout.payment_status in ("paid", "no_payment_required")
-    except Exception:
-        return False
- 
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
- 
-def spara_prenumerant(email):
-    if not ar_prenumerant(email):
-        supabase.table("subscribers").insert({"email": email}).execute()
  
 st.title("SEO Brasil")
  
@@ -85,7 +58,7 @@ if st.session_state.user is None:
                 try:
                     supabase.auth.reset_password_for_email(
                         email_reset,
-                        options={"redirect_to": APP_URL}
+                        options={"redirect_to": "https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app"}
                     )
                     st.success("Link enviado! Verifique sua caixa de entrada.")
                 except Exception:
@@ -94,16 +67,6 @@ if st.session_state.user is None:
                 st.warning("Digite seu e-mail primeiro.")
  
 else:
-    params = st.query_params
-    if params.get("paid") == "true" and "pagamento_verificado" not in st.session_state:
-        session_id = params.get("session_id", "")
-        if session_id and verificar_pagamento(session_id):
-            spara_prenumerant(st.session_state.user.email)
-            st.session_state.pagamento_verificado = True
-            st.success("Pagamento confirmado! Bem-vindo ao SEO Brasil Pro!")
-        elif session_id:
-            st.error("Não foi possível verificar o pagamento. Entre em contato: seonativo@gmail.com")
- 
     prenumerant = ar_prenumerant(st.session_state.user.email)
  
     st.write(f"Bem-vindo, {st.session_state.user.email}")
@@ -157,8 +120,7 @@ else:
     else:
         st.info("✨ Experimente grátis por 14 dias — sem cobranças agora.")
         if st.button("Começar teste grátis de 14 dias → R$197/mês após"):
-            url = skapa_checkout(st.session_state.user.email)
-            st.markdown(f"[Clique aqui para continuar]({url})")
+            st.markdown(f"[Clique aqui para continuar]({KIWIFY_URL})")
  
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: seonativo@gmail.com")
