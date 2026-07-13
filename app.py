@@ -3,17 +3,19 @@ import requests
 import stripe
 import pandas as pd
 from supabase import create_client
-
+ 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-
+ 
+APP_URL = "https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app"
+ 
 def hamta_sokdata(sokordslista):
     url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
     data = [{"keywords": sokordslista, "location_code": 2076, "language_code": "pt"}]
     svar = requests.post(url, auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD), json=data)
     return svar.json()
-
+ 
 def skapa_checkout(email):
     stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
     price_id = st.secrets["STRIPE_PRICE_ID"]
@@ -23,11 +25,11 @@ def skapa_checkout(email):
         mode="subscription",
         customer_email=email,
         subscription_data={"trial_period_days": 14},
-        success_url="https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app?paid=true&session_id={CHECKOUT_SESSION_ID}",
-        cancel_url="https://seo-brasil-rguspxutov8fv2ejcic52b.streamlit.app",
+        success_url=APP_URL + "?paid=true&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url=APP_URL,
     )
     return session.url
-
+ 
 def verificar_pagamento(session_id):
     try:
         stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
@@ -35,20 +37,20 @@ def verificar_pagamento(session_id):
         return checkout.payment_status in ("paid", "no_payment_required")
     except Exception:
         return False
-
+ 
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
-
+ 
 def spara_prenumerant(email):
     if not ar_prenumerant(email):
         supabase.table("subscribers").insert({"email": email}).execute()
-
+ 
 st.title("SEO Brasil")
-
+ 
 if "user" not in st.session_state:
     st.session_state.user = None
-
+ 
 if st.session_state.user is None:
     st.subheader("Entrar / Criar conta")
     with st.form("login_form"):
@@ -59,19 +61,38 @@ if st.session_state.user is None:
             entrar = st.form_submit_button("Entrar")
         with col2:
             criar = st.form_submit_button("Criar conta")
+ 
     if entrar:
         try:
             res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
             st.session_state.user = res.user
             st.rerun()
-        except Exception as e:
+        except Exception:
             st.error("E-mail ou senha incorretos.")
+ 
     if criar:
         try:
             res = supabase.auth.sign_up({"email": email, "password": senha})
             st.success("Conta criada! Verifique seu e-mail para confirmar.")
-        except Exception as e:
+        except Exception:
             st.error("Erro ao criar conta.")
+ 
+    st.divider()
+    with st.expander("Esqueceu a senha?"):
+        email_reset = st.text_input("Digite seu e-mail para redefinir a senha", key="reset_email")
+        if st.button("Enviar link de redefinição"):
+            if email_reset:
+                try:
+                    supabase.auth.reset_password_for_email(
+                        email_reset,
+                        options={"redirect_to": APP_URL}
+                    )
+                    st.success("Link enviado! Verifique sua caixa de entrada.")
+                except Exception:
+                    st.error("Erro ao enviar. Verifique o e-mail digitado.")
+            else:
+                st.warning("Digite seu e-mail primeiro.")
+ 
 else:
     params = st.query_params
     if params.get("paid") == "true" and "pagamento_verificado" not in st.session_state:
@@ -82,16 +103,16 @@ else:
             st.success("Pagamento confirmado! Bem-vindo ao SEO Brasil Pro!")
         elif session_id:
             st.error("Não foi possível verificar o pagamento. Entre em contato: seonativo@gmail.com")
-
+ 
     prenumerant = ar_prenumerant(st.session_state.user.email)
-
+ 
     st.write(f"Bem-vindo, {st.session_state.user.email}")
     if st.button("Sair"):
         st.session_state.user = None
         st.rerun()
-
+ 
     st.divider()
-
+ 
     if prenumerant:
         st.subheader("Pesquisa de palavras-chave")
         sokord_text = st.text_area(
@@ -99,7 +120,7 @@ else:
             placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
             height=180
         )
-
+ 
         if st.button("Buscar"):
             sokordslista = [s.strip() for s in sokord_text.split("\n") if s.strip()][:10]
             if not sokordslista:
@@ -123,7 +144,7 @@ else:
                                 })
                             df = pd.DataFrame(rows)
                             st.dataframe(df, use_container_width=True)
-
+ 
                             csv = df.to_csv(index=False).encode("utf-8-sig")
                             st.download_button(
                                 label="📥 Exportar para CSV",
@@ -131,13 +152,13 @@ else:
                                 file_name="seo_brasil.csv",
                                 mime="text/csv",
                             )
-                    except Exception as e:
+                    except Exception:
                         st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
     else:
         st.info("✨ Experimente grátis por 14 dias — sem cobranças agora.")
         if st.button("Começar teste grátis de 14 dias → R$197/mês após"):
             url = skapa_checkout(st.session_state.user.email)
             st.markdown(f"[Clique aqui para continuar]({url})")
-
+ 
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: seonativo@gmail.com")
