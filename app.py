@@ -29,7 +29,6 @@ def skapa_checkout(email):
     return session.url
 
 def verificar_pagamento(session_id):
-    """Verifica com a Stripe se o checkout foi realmente concluido."""
     try:
         stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
         checkout = stripe.checkout.Session.retrieve(session_id)
@@ -75,7 +74,6 @@ if st.session_state.user is None:
             st.error("Erro ao criar conta.")
 else:
     params = st.query_params
-    # Verificacao segura: confirma o pagamento diretamente com a Stripe
     if params.get("paid") == "true" and "pagamento_verificado" not in st.session_state:
         session_id = params.get("session_id", "")
         if session_id and verificar_pagamento(session_id):
@@ -83,7 +81,7 @@ else:
             st.session_state.pagamento_verificado = True
             st.success("Pagamento confirmado! Bem-vindo ao SEO Brasil Pro!")
         elif session_id:
-            st.error("Nao foi possivel verificar o pagamento. Entre em contato: seonativo@gmail.com")
+            st.error("Não foi possível verificar o pagamento. Entre em contato: seonativo@gmail.com")
 
     prenumerant = ar_prenumerant(st.session_state.user.email)
 
@@ -97,7 +95,7 @@ else:
     if prenumerant:
         st.subheader("Pesquisa de palavras-chave")
         sokord_text = st.text_area(
-            "Digite as palavras-chave (uma por linha, max 10):",
+            "Digite as palavras-chave (uma por linha, máx 10):",
             placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
             height=180
         )
@@ -119,26 +117,25 @@ else:
                                 cpc = item.get("cpc") or 0
                                 rows.append({
                                     "Palavra-chave": item.get("keyword", ""),
-                                    "Volume/mes": item.get("search_volume") or 0,
-                                    "Competicao": str(item.get("competition", "N/A")).capitalize(),
-                                    "CPC medio (R$)": f"{cpc:.2f}" if cpc else "N/A",
+                                    "Volume/mês": item.get("search_volume") or 0,
+                                    "Competição": str(item.get("competition", "N/A")).capitalize(),
+                                    "CPC médio (R$)": f"{cpc:.2f}" if cpc else "N/A",
                                 })
                             df = pd.DataFrame(rows)
                             st.dataframe(df, use_container_width=True)
 
-                            # utf-8-sig = BOM para Excel abrir corretamente no Windows
                             csv = df.to_csv(index=False).encode("utf-8-sig")
                             st.download_button(
-                                label="Exportar para CSV",
+                                label="📥 Exportar para CSV",
                                 data=csv,
                                 file_name="seo_brasil.csv",
                                 mime="text/csv",
                             )
                     except Exception as e:
-                        st.error("Erro ao buscar dados. Verifique sua conexao e tente novamente.")
+                        st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
     else:
-        st.info("Experimente gratis por 14 dias - sem cobracas agora.")
-        if st.button("Comecar teste gratis de 14 dias -> R$197/mes apos"):
+        st.info("✨ Experimente grátis por 14 dias — sem cobranças agora.")
+        if st.button("Começar teste grátis de 14 dias → R$197/mês após"):
             url = skapa_checkout(st.session_state.user.email)
             st.markdown(f"[Clique aqui para continuar]({url})")
 
