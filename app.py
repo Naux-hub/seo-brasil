@@ -2,28 +2,28 @@ import streamlit as st
 import requests
 import pandas as pd
 from supabase import create_client
-
+ 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-
-KIWIFY_URL = "https://kiwify.app/AN7nQJo"
-
+ 
+HOTMART_URL = "https://pay.hotmart.com/L106736067M"
+ 
 def hamta_sokdata(sokordslista):
     url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
     data = [{"keywords": sokordslista, "location_code": 2076, "language_code": "pt"}]
     svar = requests.post(url, auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD), json=data)
     return svar.json()
-
+ 
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
-
+ 
 st.title("SEO Brasil")
-
+ 
 if "user" not in st.session_state:
     st.session_state.user = None
-
+ 
 if st.session_state.user is None:
     st.subheader("Entrar / Criar conta")
     with st.form("login_form"):
@@ -34,7 +34,7 @@ if st.session_state.user is None:
             entrar = st.form_submit_button("Entrar")
         with col2:
             criar = st.form_submit_button("Criar conta")
-
+ 
     if entrar:
         try:
             res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
@@ -42,14 +42,14 @@ if st.session_state.user is None:
             st.rerun()
         except Exception:
             st.error("E-mail ou senha incorretos.")
-
+ 
     if criar:
         try:
             res = supabase.auth.sign_up({"email": email, "password": senha})
             st.success("Conta criada! Verifique seu e-mail para confirmar.")
         except Exception:
             st.error("Erro ao criar conta.")
-
+ 
     st.divider()
     with st.expander("Esqueceu a senha?"):
         email_reset = st.text_input("Digite seu e-mail para redefinir a senha", key="reset_email")
@@ -65,17 +65,17 @@ if st.session_state.user is None:
                     st.error("Erro ao enviar. Verifique o e-mail digitado.")
             else:
                 st.warning("Digite seu e-mail primeiro.")
-
+ 
 else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
-
+ 
     st.write(f"Bem-vindo, {st.session_state.user.email}")
     if st.button("Sair"):
         st.session_state.user = None
         st.rerun()
-
+ 
     st.divider()
-
+ 
     if prenumerant:
         st.subheader("Pesquisa de palavras-chave")
         sokord_text = st.text_area(
@@ -83,7 +83,7 @@ else:
             placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
             height=180
         )
-
+ 
         if st.button("Buscar"):
             sokordslista = [s.strip() for s in sokord_text.split("\n") if s.strip()][:10]
             if not sokordslista:
@@ -107,7 +107,7 @@ else:
                                 })
                             df = pd.DataFrame(rows)
                             st.dataframe(df, use_container_width=True)
-
+ 
                             csv = df.to_csv(index=False).encode("utf-8-sig")
                             st.download_button(
                                 label="📥 Exportar para CSV",
@@ -118,8 +118,8 @@ else:
                     except Exception:
                         st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
     else:
-        st.info("✨ Acesso completo por R$197/mês. Garantia de 7 dias.")
-        st.markdown(f'<a href="{KIWIFY_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
-
+        st.info("✨ Acesso completo por R$197/mês. Garantia de 15 dias.")
+        st.markdown(f'<a href="{HOTMART_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
+ 
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: seonativo@gmail.com")
