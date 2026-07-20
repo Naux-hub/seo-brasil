@@ -83,6 +83,13 @@ def ar_prenumerant(email):
  
 st.title("SEO Brasil")
  
+st.markdown("""
+    <style>
+    #GithubIcon {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+ 
 if "user" not in st.session_state:
     st.session_state.user = None
  
