@@ -2,18 +2,80 @@ import streamlit as st
 import requests
 import pandas as pd
 from supabase import create_client
+from datetime import datetime, timedelta, timezone
  
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
  
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
+LOCATION_CODE = 2076
+LANGUAGE_CODE = "pt"
+CACHE_DAGAR = 30
  
-def hamta_sokdata(sokordslista):
+def hamta_fran_cache(keyword):
+    trettio_dagar_sedan = (datetime.now(timezone.utc) - timedelta(days=CACHE_DAGAR)).isoformat()
+    res = supabase.table("keyword_cache").select("*")\
+        .eq("keyword", keyword)\
+        .eq("location_code", LOCATION_CODE)\
+        .eq("language_code", LANGUAGE_CODE)\
+        .gte("cached_at", trettio_dagar_sedan)\
+        .execute()
+    return res.data[0] if res.data else None
+ 
+def spara_i_cache(keyword, search_volume, competition, cpc):
+    try:
+        supabase.table("keyword_cache").upsert({
+            "keyword": keyword,
+            "location_code": LOCATION_CODE,
+            "language_code": LANGUAGE_CODE,
+            "search_volume": search_volume,
+            "competition": competition,
+            "cpc": float(cpc) if cpc else None,
+            "cached_at": datetime.now(timezone.utc).isoformat()
+        }, on_conflict="keyword,location_code,language_code").execute()
+    except Exception:
+        pass
+ 
+def hamta_fran_api(sokordslista):
     url = "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
-    data = [{"keywords": sokordslista, "location_code": 2076, "language_code": "pt"}]
+    data = [{"keywords": sokordslista, "location_code": LOCATION_CODE, "language_code": LANGUAGE_CODE}]
     svar = requests.post(url, auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD), json=data)
     return svar.json()
+ 
+def hamta_sokdata(sokordslista):
+    resultat = []
+    att_hamta = []
+ 
+    for keyword in sokordslista:
+        cached = hamta_fran_cache(keyword)
+        if cached:
+            resultat.append({
+                "keyword": cached["keyword"],
+                "search_volume": cached["search_volume"],
+                "competition": cached["competition"],
+                "cpc": cached["cpc"],
+            })
+        else:
+            att_hamta.append(keyword)
+ 
+    if att_hamta:
+        api_svar = hamta_fran_api(att_hamta)
+        items = api_svar.get("tasks", [{}])[0].get("result", [])
+        for item in items:
+            keyword = item.get("keyword", "")
+            search_volume = item.get("search_volume") or 0
+            competition = str(item.get("competition", "N/A"))
+            cpc = item.get("cpc") or 0
+            spara_i_cache(keyword, search_volume, competition, cpc)
+            resultat.append({
+                "keyword": keyword,
+                "search_volume": search_volume,
+                "competition": competition,
+                "cpc": cpc,
+            })
+ 
+    return resultat
  
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
@@ -91,8 +153,7 @@ else:
             else:
                 with st.spinner(f"Buscando dados para {len(sokordslista)} palavra(s)-chave..."):
                     try:
-                        resultat = hamta_sokdata(sokordslista)
-                        items = resultat.get("tasks", [{}])[0].get("result", [])
+                        items = hamta_sokdata(sokordslista)
                         if not items:
                             st.warning("Nenhum dado encontrado para as palavras-chave informadas.")
                         else:
@@ -103,7 +164,7 @@ else:
                                     "Palavra-chave": item.get("keyword", ""),
                                     "Volume/mês": item.get("search_volume") or 0,
                                     "Competição": str(item.get("competition", "N/A")).capitalize(),
-                                    "CPC médio (R$)": f"{cpc:.2f}" if cpc else "N/A",
+                                    "CPC médio (R$)": f"{float(cpc):.2f}" if cpc else "N/A",
                                 })
                             df = pd.DataFrame(rows)
                             st.dataframe(df, use_container_width=True)
