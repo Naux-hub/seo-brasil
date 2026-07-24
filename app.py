@@ -141,7 +141,7 @@ if st.session_state.user is None:
     st.markdown("""
     <div class="features">
         <div class="feature-card">
-            <div class="icon">🇧🇷</div>
+            <div class="icon">🌎</div>
             <h3>Dados reais do Brasil</h3>
             <p>Volume de busca, CPC e competição focados no mercado brasileiro.</p>
         </div>
