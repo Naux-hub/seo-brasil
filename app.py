@@ -2,12 +2,21 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 from keyword_cache import get_keyword_data
+from datetime import datetime, timedelta, timezone
+import extra_streamlit_components as stx
 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
+COOKIE_EXPIRY_DAYS = 30
+
+@st.cache_resource
+def get_cookie_manager():
+    return stx.CookieManager()
+
+cookie_manager = get_cookie_manager()
 
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
@@ -118,6 +127,18 @@ st.markdown("""
 if "user" not in st.session_state:
     st.session_state.user = None
 
+# Försök återställa session från cookie vid sidladdning
+if st.session_state.user is None:
+    try:
+        access_token = cookie_manager.get("sb_access_token")
+        refresh_token = cookie_manager.get("sb_refresh_token")
+        if access_token and refresh_token:
+            res = supabase.auth.set_session(access_token, refresh_token)
+            if res and res.user:
+                st.session_state.user = res.user
+    except Exception:
+        pass
+
 # =====================================================
 # NÃO LOGADO — Landningssida
 # =====================================================
@@ -224,6 +245,9 @@ if st.session_state.user is None:
         try:
             res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
             st.session_state.user = res.user
+            expiry = datetime.now(timezone.utc) + timedelta(days=COOKIE_EXPIRY_DAYS)
+            cookie_manager.set("sb_access_token", res.session.access_token, expires_at=expiry)
+            cookie_manager.set("sb_refresh_token", res.session.refresh_token, expires_at=expiry)
             st.rerun()
         except Exception:
             st.error("E-mail ou senha incorretos.")
@@ -259,6 +283,11 @@ else:
     st.title("SEO Brasil")
     st.write(f"Bem-vindo, {st.session_state.user.email}")
     if st.button("Sair"):
+        try:
+            cookie_manager.delete("sb_access_token")
+            cookie_manager.delete("sb_refresh_token")
+        except Exception:
+            pass
         st.session_state.user = None
         st.rerun()
 
