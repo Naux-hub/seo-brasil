@@ -12,11 +12,7 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
 COOKIE_EXPIRY_DAYS = 30
 
-@st.cache_resource
-def get_cookie_manager():
-    return stx.CookieManager()
-
-cookie_manager = get_cookie_manager()
+cookie_manager = stx.CookieManager()
 
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
