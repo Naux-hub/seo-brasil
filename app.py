@@ -286,14 +286,15 @@ else:
                             rows = []
                             for item in items:
                                 cpc = item.get("cpc") or 0
+                                volume = item.get("search_volume") or 0
                                 rows.append({
                                     "Palavra-chave": item.get("keyword", ""),
-                                    "Volume/mês": item.get("search_volume") or 0,
+                                    "Volume/mês": f"{int(volume):,}".replace(",", "."),
                                     "Competição": str(item.get("competition", "N/A")).capitalize(),
                                     "CPC médio (R$)": f"{float(cpc):.2f}" if cpc else "N/A",
                                 })
                             df = pd.DataFrame(rows)
-                            st.dataframe(df, use_container_width=True)
+                            st.dataframe(df, use_container_width=True, hide_index=True)
 
                             csv = df.to_csv(index=False).encode("utf-8-sig")
                             st.download_button(
