@@ -1,0 +1,228 @@
+"""
+weekly_report.py — Skickar veckovisa rankingrapporter till alla aktiva prenumeranter.
+Körs varje måndag via GitHub Actions, efter rank_tracker.py.
+"""
+ 
+import os
+import requests
+from datetime import datetime, timezone
+from supabase import create_client
+ 
+# --- Anslutningar ---
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+RESEND_API_KEY = os.environ["RESEND_API_KEY"]
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+ 
+FROM_EMAIL = "SEO Brasil <relatorios@seobrasil.app>"
+APP_URL = "https://seobrasil.app"
+ 
+ 
+def get_active_subscribers():
+    res = supabase.table("subscribers").select("email").execute()
+    return [r["email"] for r in res.data]
+ 
+ 
+def get_user_id_by_email(email):
+    res = supabase.auth.admin.list_users()
+    for user in res:
+        if user.email == email:
+            return str(user.id)
+    return None
+ 
+ 
+def get_tracked_keywords(user_id):
+    res = supabase.table("tracked_keywords") \
+        .select("keyword") \
+        .eq("user_id", user_id) \
+        .eq("is_active", True) \
+        .execute()
+    return [r["keyword"] for r in res.data]
+ 
+ 
+def get_latest_two_ranks(user_id, keyword):
+    """Hämtar de två senaste rankingarna för ett sökord."""
+    res = supabase.table("rank_history") \
+        .select("position, checked_at") \
+        .eq("user_id", user_id) \
+        .eq("keyword", keyword) \
+        .order("checked_at", desc=True) \
+        .limit(2) \
+        .execute()
+    return res.data
+ 
+ 
+def trend_html(current, previous):
+    """Returnerar HTML-sträng med position och trend-pil."""
+    if current is None:
+        pos_str = "— (fora do top 100)"
+        color = "#888"
+        arrow = ""
+    else:
+        pos_str = f"#{current}"
+        if previous is None:
+            arrow = " <span style='color:#4CAF50'>🆕 Novo</span>"
+            color = "#4CAF50"
+        else:
+            diff = previous - current
+            if diff > 0:
+                arrow = f" <span style='color:#4CAF50'>▲ +{diff}</span>"
+                color = "#4CAF50"
+            elif diff < 0:
+                arrow = f" <span style='color:#e53935'>▼ {diff}</span>"
+                color = "#e53935"
+            else:
+                arrow = " <span style='color:#888'>→ Estável</span>"
+                color = "#888"
+ 
+    return f"<span style='font-weight:bold;color:{color}'>{pos_str}</span>{arrow}"
+ 
+ 
+def build_email_html(email, keyword_data):
+    """Constrói o HTML do e-mail semanal."""
+    today = datetime.now().strftime("%d/%m/%Y")
+ 
+    rows_html = ""
+    for kw, current, previous in keyword_data:
+        trend = trend_html(current, previous)
+        rows_html += f"""
+        <tr>
+            <td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;color:#e0e0e0">{kw}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;text-align:center">{trend}</td>
+        </tr>"""
+ 
+    improvements = sum(1 for _, c, p in keyword_data if c and p and c < p)
+    declines = sum(1 for _, c, p in keyword_data if c and p and c > p)
+    stable = sum(1 for _, c, p in keyword_data if c and p and c == p)
+    new_entries = sum(1 for _, c, p in keyword_data if c and p is None)
+ 
+    summary = f"{improvements} subindo • {declines} descendo • {stable} estável • {new_entries} novo(s)"
+ 
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0e0e0e;font-family:Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0e0e0e;padding:40px 20px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;overflow:hidden">
+ 
+        <!-- Header -->
+        <tr>
+          <td style="background:#1a6de0;padding:28px 32px">
+            <h1 style="margin:0;color:white;font-size:22px">📈 Seu Relatório Semanal de SEO</h1>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px">{today} — SEO Brasil</p>
+          </td>
+        </tr>
+ 
+        <!-- Resumo -->
+        <tr>
+          <td style="padding:24px 32px 8px">
+            <p style="margin:0;color:#aaa;font-size:13px;text-align:center">{summary}</p>
+          </td>
+        </tr>
+ 
+        <!-- Tabela de palavras-chave -->
+        <tr>
+          <td style="padding:8px 32px 24px">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <th style="padding:8px;text-align:left;color:#888;font-size:12px;text-transform:uppercase;border-bottom:1px solid #333">Palavra-chave</th>
+                <th style="padding:8px;text-align:center;color:#888;font-size:12px;text-transform:uppercase;border-bottom:1px solid #333">Posição no Google</th>
+              </tr>
+              {rows_html}
+            </table>
+          </td>
+        </tr>
+ 
+        <!-- CTA -->
+        <tr>
+          <td style="padding:0 32px 32px;text-align:center">
+            <a href="{APP_URL}" style="display:inline-block;background:#1a6de0;color:white;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:15px">
+              Ver meu monitoramento →
+            </a>
+            <p style="margin:16px 0 0;color:#555;font-size:12px">Dados atualizados toda segunda-feira • <a href="{APP_URL}" style="color:#555">seobrasil.app</a></p>
+          </td>
+        </tr>
+ 
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+    return html
+ 
+ 
+def send_email(to_email, subject, html):
+    """Skickar e-post via Resend API."""
+    response = requests.post(
+        "https://api.resend.com/emails",
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": FROM_EMAIL,
+            "to": [to_email],
+            "subject": subject,
+            "html": html,
+        },
+        timeout=15,
+    )
+    return response.status_code == 200
+ 
+ 
+def log_report(user_id, keyword_count, status):
+    supabase.table("weekly_reports").insert({
+        "user_id": user_id,
+        "keywords_tracked": keyword_count,
+        "email_status": status,
+    }).execute()
+ 
+ 
+def run():
+    print(f"=== Weekly Report kör {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
+ 
+    subscribers = get_active_subscribers()
+    print(f"Hittade {len(subscribers)} aktiva prenumeranter")
+ 
+    for email in subscribers:
+        print(f"\n→ {email}")
+ 
+        user_id = get_user_id_by_email(email)
+        if not user_id:
+            print(f"  Kunde inte hitta user_id, hoppar över")
+            continue
+ 
+        keywords = get_tracked_keywords(user_id)
+        if not keywords:
+            print(f"  Inga spårade sökord, hoppar över")
+            continue
+ 
+        # Bygg rankingdata: (keyword, current_position, previous_position)
+        keyword_data = []
+        for kw in keywords:
+            history = get_latest_two_ranks(user_id, kw)
+            current = history[0]["position"] if len(history) > 0 else None
+            previous = history[1]["position"] if len(history) > 1 else None
+            keyword_data.append((kw, current, previous))
+ 
+        # Skicka bara om det finns data
+        if not any(c is not None for _, c, _ in keyword_data):
+            print(f"  Ingen rankingdata ännu, hoppar över")
+            continue
+ 
+        html = build_email_html(email, keyword_data)
+        today = datetime.now().strftime("%d/%m/%Y")
+        subject = f"📈 Seu relatório SEO da semana — {today}"
+ 
+        ok = send_email(email, subject, html)
+        status = "sent" if ok else "failed"
+        log_report(user_id, len(keywords), status)
+        print(f"  E-post: {status}")
+ 
+    print("\n=== Weekly Report klar ===")
+ 
+ 
+if __name__ == "__main__":
+    run()
