@@ -347,7 +347,7 @@ else:
         if "search_results" not in st.session_state:
             st.session_state.search_results = None
  
-        tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Min Övervakning"])
+        tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
  
         # ── TAB 1: SÖKNING ──────────────────────────────
         with tab1:
