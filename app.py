@@ -177,16 +177,29 @@ st.markdown("""
  
 if "user" not in st.session_state:
     st.session_state.user = None
+if "access_token" not in st.session_state:
+    st.session_state.access_token = None
+if "refresh_token" not in st.session_state:
+    st.session_state.refresh_token = None
  
-# Försök återställa session från cookie vid sidladdning
-if st.session_state.user is None:
+# Sätt JWT på supabase-klienten vid varje rerun (Streamlit skapar ny klient annars)
+if st.session_state.access_token:
     try:
-        access_token = cookie_manager.get("sb_access_token")
-        refresh_token = cookie_manager.get("sb_refresh_token")
-        if access_token and refresh_token:
-            res = supabase.auth.set_session(access_token, refresh_token)
+        supabase.postgrest.auth(st.session_state.access_token)
+    except Exception:
+        pass
+elif st.session_state.user is None:
+    # Försök återställa session från cookie
+    try:
+        at = cookie_manager.get("sb_access_token")
+        rt = cookie_manager.get("sb_refresh_token")
+        if at and rt:
+            res = supabase.auth.set_session(at, rt)
             if res and res.user:
                 st.session_state.user = res.user
+                st.session_state.access_token = res.session.access_token
+                st.session_state.refresh_token = res.session.refresh_token
+                supabase.postgrest.auth(st.session_state.access_token)
     except Exception:
         pass
  
@@ -296,6 +309,9 @@ if st.session_state.user is None:
         try:
             res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
             st.session_state.user = res.user
+            st.session_state.access_token = res.session.access_token
+            st.session_state.refresh_token = res.session.refresh_token
+            supabase.postgrest.auth(res.session.access_token)
             expiry = datetime.now(timezone.utc) + timedelta(days=COOKIE_EXPIRY_DAYS)
             cookie_manager.set("sb_access_token", res.session.access_token, expires_at=expiry)
             cookie_manager.set("sb_refresh_token", res.session.refresh_token, expires_at=expiry)
