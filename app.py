@@ -27,14 +27,18 @@ def add_tracking(keyword, user_id):
     if len(count_res.data) >= 20:
         return False, "Limite de 20 palavras atingido."
     try:
-        supabase.table("tracked_keywords").upsert({
-            "user_id": str(user_id),
-            "keyword": keyword,
-            "is_active": True
-        }, on_conflict="user_id,keyword").execute()
+        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+        if existing.data:
+            supabase.table("tracked_keywords").update({"is_active": True}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+        else:
+            supabase.table("tracked_keywords").insert({
+                "user_id": str(user_id),
+                "keyword": keyword,
+                "is_active": True
+            }).execute()
         return True, "ok"
-    except Exception:
-        return False, "Erro ao adicionar."
+    except Exception as e:
+        return False, f"Erro: {str(e)}"
  
 def remove_tracking(keyword, user_id):
     supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
