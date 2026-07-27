@@ -18,6 +18,57 @@ def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
  
+def get_tracked_set(user_id):
+    res = supabase.table("tracked_keywords").select("keyword").eq("user_id", str(user_id)).eq("is_active", True).execute()
+    return {r["keyword"] for r in res.data}
+ 
+def add_tracking(keyword, user_id):
+    count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
+    if len(count_res.data) >= 20:
+        return False, "Limite de 20 palavras atingido."
+    try:
+        supabase.table("tracked_keywords").upsert({
+            "user_id": str(user_id),
+            "keyword": keyword,
+            "is_active": True
+        }, on_conflict="user_id,keyword").execute()
+        return True, "ok"
+    except Exception:
+        return False, "Erro ao adicionar."
+ 
+def remove_tracking(keyword, user_id):
+    supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+ 
+def get_tracked_keywords_list(user_id):
+    res = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True).order("created_at", desc=True).execute()
+    return res.data
+ 
+def get_rank_history_for_keyword(user_id, keyword):
+    res = supabase.table("rank_history").select("position, checked_at").eq("user_id", str(user_id)).eq("keyword", keyword).order("checked_at", desc=True).limit(2).execute()
+    return res.data
+ 
+def trend_label(history):
+    if not history:
+        return "⏳ Aguardando dados"
+    current = history[0].get("position")
+    if len(history) < 2:
+        current_str = f"#{current}" if current else "—"
+        return f"{current_str} 🆕 Novo"
+    prev = history[1].get("position")
+    if current is None and prev is None:
+        return "— Sem ranking"
+    if current is None:
+        return "📉 Saiu do top 100"
+    if prev is None:
+        return f"#{current} 📈 Entrou!"
+    diff = prev - current  # positivo = subiu
+    if diff > 0:
+        return f"#{current} 📈 +{diff} posições"
+    elif diff < 0:
+        return f"#{current} 📉 {abs(diff)} posições"
+    else:
+        return f"#{current} → Estável"
+ 
 # --- Global CSS ---
 st.markdown("""
     <style>
@@ -275,6 +326,7 @@ if st.session_state.user is None:
 # =====================================================
 else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
+    user_id = st.session_state.user.id
  
     st.title("SEO Brasil")
     st.write(f"Bem-vindo, {st.session_state.user.email}")
@@ -290,46 +342,121 @@ else:
     st.divider()
  
     if prenumerant:
-        st.subheader("Pesquisa de palavras-chave")
-        sokord_text = st.text_area(
-            "Digite as palavras-chave (uma por linha, máx 10):",
-            placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
-            height=180
-        )
  
-        if st.button("Buscar"):
-            sokordslista = [s.strip() for s in sokord_text.split("\n") if s.strip()][:10]
-            if not sokordslista:
-                st.warning("Digite ao menos uma palavra-chave.")
-            else:
-                with st.spinner(f"Buscando dados para {len(sokordslista)} palavra(s)-chave..."):
-                    try:
-                        items = get_keyword_data(sokordslista, supabase, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD)
-                        if not items:
-                            st.warning("Nenhum dado encontrado para as palavras-chave informadas.")
+        # Initiera session state för sökresultat
+        if "search_results" not in st.session_state:
+            st.session_state.search_results = None
+ 
+        tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Min Övervakning"])
+ 
+        # ── TAB 1: SÖKNING ──────────────────────────────
+        with tab1:
+            sokord_text = st.text_area(
+                "Digite as palavras-chave (uma por linha, máx 10):",
+                placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
+                height=180
+            )
+ 
+            if st.button("Buscar"):
+                sokordslista = [s.strip() for s in sokord_text.split("\n") if s.strip()][:10]
+                if not sokordslista:
+                    st.warning("Digite ao menos uma palavra-chave.")
+                else:
+                    with st.spinner(f"Buscando dados para {len(sokordslista)} palavra(s)-chave..."):
+                        try:
+                            items = get_keyword_data(sokordslista, supabase, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD)
+                            st.session_state.search_results = items
+                        except Exception:
+                            st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
+                            st.session_state.search_results = None
+ 
+            # Visa resultat med "+ Spåra"-knappar
+            if st.session_state.search_results:
+                items = st.session_state.search_results
+                tracked_set = get_tracked_set(user_id)
+ 
+                # Rubrikrad
+                h1, h2, h3, h4, h5 = st.columns([3, 2, 1.8, 1.8, 1.4])
+                h1.markdown("**Palavra-chave**")
+                h2.markdown("**Volume/mês**")
+                h3.markdown("**Competição**")
+                h4.markdown("**CPC (R$)**")
+                h5.markdown("**Rastrear**")
+                st.divider()
+ 
+                csv_rows = []
+                for i, item in enumerate(items):
+                    kw = item.get("keyword", "")
+                    volume = item.get("search_volume") or 0
+                    cpc = item.get("cpc") or 0
+                    comp = str(item.get("competition", "N/A")).capitalize()
+                    volume_fmt = f"{int(volume):,}".replace(",", ".")
+                    cpc_fmt = f"{float(cpc):.2f}" if cpc else "N/A"
+ 
+                    csv_rows.append({
+                        "Palavra-chave": kw,
+                        "Volume/mês": volume_fmt,
+                        "Competição": comp,
+                        "CPC médio (R$)": cpc_fmt,
+                    })
+ 
+                    c1, c2, c3, c4, c5 = st.columns([3, 2, 1.8, 1.8, 1.4])
+                    c1.write(kw)
+                    c2.write(volume_fmt)
+                    c3.write(comp)
+                    c4.write(cpc_fmt)
+                    with c5:
+                        if kw in tracked_set:
+                            st.write("✅ Rastreando")
                         else:
-                            rows = []
-                            for item in items:
-                                cpc = item.get("cpc") or 0
-                                volume = item.get("search_volume") or 0
-                                rows.append({
-                                    "Palavra-chave": item.get("keyword", ""),
-                                    "Volume/mês": f"{int(volume):,}".replace(",", "."),
-                                    "Competição": str(item.get("competition", "N/A")).capitalize(),
-                                    "CPC médio (R$)": f"{float(cpc):.2f}" if cpc else "N/A",
-                                })
-                            df = pd.DataFrame(rows)
-                            st.dataframe(df, use_container_width=True, hide_index=True)
+                            if st.button("+ Rastrear", key=f"track_{i}"):
+                                ok, msg = add_tracking(kw, user_id)
+                                if ok:
+                                    st.success(f"✅ '{kw}' adicionado!")
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
  
-                            csv = df.to_csv(index=False).encode("utf-8-sig")
-                            st.download_button(
-                                label="📥 Exportar para CSV",
-                                data=csv,
-                                file_name="seo_brasil.csv",
-                                mime="text/csv",
-                            )
-                    except Exception:
-                        st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
+                st.divider()
+                df_csv = pd.DataFrame(csv_rows)
+                csv = df_csv.to_csv(index=False).encode("utf-8-sig")
+                st.download_button(
+                    label="📥 Exportar para CSV",
+                    data=csv,
+                    file_name="seo_brasil.csv",
+                    mime="text/csv",
+                )
+ 
+        # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
+        with tab2:
+            tracked_list = get_tracked_keywords_list(user_id)
+ 
+            if not tracked_list:
+                st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
+            else:
+                count = len(tracked_list)
+                st.caption(f"{count}/20 palavras rastreadas — dados atualizados toda segunda-feira")
+                st.divider()
+ 
+                h1, h2, h3 = st.columns([4, 3, 1.5])
+                h1.markdown("**Palavra-chave**")
+                h2.markdown("**Posição no Google**")
+                h3.markdown("**Remover**")
+                st.divider()
+ 
+                for item in tracked_list:
+                    kw = item["keyword"]
+                    history = get_rank_history_for_keyword(user_id, kw)
+                    trend = trend_label(history)
+ 
+                    c1, c2, c3 = st.columns([4, 3, 1.5])
+                    c1.write(kw)
+                    c2.write(trend)
+                    with c3:
+                        if st.button("✕", key=f"remove_{kw}"):
+                            remove_tracking(kw, user_id)
+                            st.rerun()
+ 
     else:
         st.info("✨ Acesso completo por R$197/mês. Garantia de 15 dias.")
         st.markdown(f'<a href="{HOTMART_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
