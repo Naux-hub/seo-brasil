@@ -4,6 +4,7 @@ from supabase import create_client
 from keyword_cache import get_keyword_data
 from datetime import datetime, timedelta, timezone
 import extra_streamlit_components as stx
+import streamlit.components.v1 as components
 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
@@ -244,6 +245,11 @@ if "access_token" not in st.session_state:
 if "refresh_token" not in st.session_state:
     st.session_state.refresh_token = None
 
+# Tvinga en extra rerun på första sidladdningen så CookieManager hinner ladda
+if "_initialized" not in st.session_state:
+    st.session_state._initialized = True
+    st.rerun()
+
 # Sätt JWT på supabase-klienten vid varje rerun (Streamlit skapar ny klient annars)
 if st.session_state.access_token:
     try:
@@ -251,10 +257,11 @@ if st.session_state.access_token:
     except Exception:
         pass
 elif st.session_state.user is None:
-    # Försök återställa session från cookie
+    # Försök återställa session från cookie (CookieManager är nu laddad)
     try:
-        at = cookie_manager.get("sb_access_token")
-        rt = cookie_manager.get("sb_refresh_token")
+        all_cookies = cookie_manager.get_all()
+        at = all_cookies.get("sb_access_token")
+        rt = all_cookies.get("sb_refresh_token")
         if at and rt:
             res = supabase.auth.set_session(at, rt)
             if res and res.user:
@@ -262,6 +269,7 @@ elif st.session_state.user is None:
                 st.session_state.access_token = res.session.access_token
                 st.session_state.refresh_token = res.session.refresh_token
                 supabase.postgrest.auth(st.session_state.access_token)
+                st.rerun()
     except Exception:
         pass
 
@@ -429,7 +437,7 @@ else:
     user_id = st.session_state.user.id
 
     # --- Scrolla till toppen vid inloggning ---
-    st.markdown("<script>setTimeout(function(){window.scrollTo(0,0);},100);</script>", unsafe_allow_html=True)
+    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
 
     # --- Kompakt header med logo + email + Sair i samma rad ---
     col_logo, col_user, col_sair = st.columns([3, 4, 1])
