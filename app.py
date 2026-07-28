@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 from keyword_cache import get_keyword_data
 from datetime import datetime, timedelta, timezone
-import extra_streamlit_components as stx
+from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
@@ -11,9 +11,9 @@ DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
-COOKIE_EXPIRY_DAYS = 30
+COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 dagar i sekunder
 
-cookie_manager = stx.CookieManager()
+cookie = CookieController()
 
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
@@ -245,23 +245,17 @@ if "access_token" not in st.session_state:
 if "refresh_token" not in st.session_state:
     st.session_state.refresh_token = None
 
-# Tvinga en extra rerun på första sidladdningen så CookieManager hinner ladda
-if "_initialized" not in st.session_state:
-    st.session_state._initialized = True
-    st.rerun()
-
-# Sätt JWT på supabase-klienten vid varje rerun (Streamlit skapar ny klient annars)
+# Sätt JWT på supabase-klienten vid varje rerun
 if st.session_state.access_token:
     try:
         supabase.postgrest.auth(st.session_state.access_token)
     except Exception:
         pass
 elif st.session_state.user is None:
-    # Försök återställa session från cookie (CookieManager är nu laddad)
+    # Försök återställa session från cookie
     try:
-        all_cookies = cookie_manager.get_all()
-        at = all_cookies.get("sb_access_token")
-        rt = all_cookies.get("sb_refresh_token")
+        at = cookie.get("sb_access_token")
+        rt = cookie.get("sb_refresh_token")
         if at and rt:
             res = supabase.auth.set_session(at, rt)
             if res and res.user:
@@ -396,11 +390,10 @@ if st.session_state.user is None:
                 supabase.table("subscribers").update({"last_login": datetime.now(timezone.utc).isoformat()}).eq("email", email).execute()
             except Exception:
                 pass
-            # Sätt cookies (kan misslyckas utan att inloggningen påverkas)
+            # Sätt cookies för persistent session
             try:
-                expiry = datetime.now(timezone.utc) + timedelta(days=COOKIE_EXPIRY_DAYS)
-                cookie_manager.set("sb_access_token", res.session.access_token, expires_at=expiry)
-                cookie_manager.set("sb_refresh_token", res.session.refresh_token, expires_at=expiry)
+                cookie.set("sb_access_token", res.session.access_token, max_age=COOKIE_MAX_AGE)
+                cookie.set("sb_refresh_token", res.session.refresh_token, max_age=COOKIE_MAX_AGE)
             except Exception:
                 pass
             st.rerun()
@@ -451,8 +444,8 @@ else:
 
     if sair_clicked:
         try:
-            cookie_manager.delete("sb_access_token")
-            cookie_manager.delete("sb_refresh_token")
+            cookie.remove("sb_access_token")
+            cookie.remove("sb_refresh_token")
         except Exception:
             pass
         st.session_state.user = None
