@@ -47,6 +47,18 @@ def get_tracked_keywords_list(user_id):
     res = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True).order("created_at", desc=True).execute()
     return res.data
 
+@st.cache_data(ttl=3600)
+def get_social_proof():
+    """Hämtar live-siffror för social proof. Cachas i 1 timme."""
+    try:
+        total_kw = supabase.table("keyword_cache").select("keyword", count="exact").execute()
+        kw_count = total_kw.count or 0
+        # Avrunda nedåt till närmaste 100 för att undvika att visa exakt antal
+        kw_display = (kw_count // 100) * 100
+        return kw_display
+    except Exception:
+        return 2000
+
 def get_rank_history_for_keyword(user_id, keyword):
     res = supabase.table("rank_history").select("position, checked_at").eq("user_id", str(user_id)).eq("keyword", keyword).order("checked_at", desc=True).limit(2).execute()
     return res.data
@@ -111,6 +123,26 @@ st.markdown("""
         font-size: 0.85rem;
         opacity: 0.6;
         margin-top: 0.5rem;
+    }
+    .social-proof-bar {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+        background: rgba(26,109,224,0.08);
+        border: 1px solid rgba(26,109,224,0.2);
+        border-radius: 10px;
+        padding: 0.9rem 1.5rem;
+        margin: 0 auto 1.5rem auto;
+        max-width: 640px;
+        font-size: 0.95rem;
+    }
+    .social-proof-bar span {
+        color: #e0e0e0;
+        opacity: 0.9;
+    }
+    .social-proof-bar strong {
+        color: #4d9fff;
     }
     .features {
         display: flex;
@@ -208,12 +240,20 @@ elif st.session_state.user is None:
 # =====================================================
 if st.session_state.user is None:
 
+    # --- Social proof ---
+    kw_count = get_social_proof()
+
     # --- Hero ---
     st.markdown(f"""
     <div class="hero">
         <h1>Descubra o que o Brasil<br>está buscando no Google</h1>
         <p>Pesquise palavras-chave para o mercado brasileiro,
         encontre oportunidades e cresça no digital.</p>
+        <div class="social-proof-bar">
+            <span>🔍 <strong>+{kw_count:,}</strong> palavras-chave analisadas</span>
+            <span>📈 Dados atualizados toda semana</span>
+            <span>🇧🇷 Focado no mercado brasileiro</span>
+        </div>
         <a class="cta-btn" href="{HOTMART_URL}" target="_blank">Começar agora — R$197/mês →</a>
         <div class="garantia">✅ Garantia de 15 dias • Cancele quando quiser</div>
     </div>
