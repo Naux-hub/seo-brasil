@@ -429,9 +429,6 @@ else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
 
-    # --- Scrolla till toppen vid inloggning ---
-    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
-
     # --- Kompakt header med logo + email + Sair i samma rad ---
     col_logo, col_user, col_sair = st.columns([3, 4, 1])
     with col_logo:
@@ -440,7 +437,6 @@ else:
         st.markdown(f"<div style='font-size:0.85rem;opacity:0.6;padding-top:10px;text-align:right'>{st.session_state.user.email}</div>", unsafe_allow_html=True)
     with col_sair:
         sair_clicked = st.button("Sair", key="sair_btn")
-    st.divider()
 
     if sair_clicked:
         try:
