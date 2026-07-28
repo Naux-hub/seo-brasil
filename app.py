@@ -324,6 +324,7 @@ if st.session_state.user is None:
             <li>✅ Pesquisa ilimitada de palavras-chave</li>
             <li>✅ Dados do mercado brasileiro</li>
             <li>✅ Exportação CSV</li>
+            <li>✅ Relatórios semanais no seu e-mail</li>
             <li>✅ Garantia de 15 dias</li>
             <li>✅ Cancele quando quiser</li>
         </ul>
