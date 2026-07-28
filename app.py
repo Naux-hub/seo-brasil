@@ -91,6 +91,36 @@ st.markdown("""
     #GithubIcon {visibility: hidden;}
     [data-testid="stToolbar"] {visibility: hidden;}
 
+    /* Minska Streamlits standardtomrum i toppen */
+    .block-container { padding-top: 1rem !important; }
+    [data-testid="stAppViewContainer"] > .main { padding-top: 0 !important; }
+
+    /* Blå accentfärg på flikar istället för Streamlit-rött */
+    [data-baseweb="tab-highlight"] { background-color: #1a6de0 !important; }
+    [data-baseweb="tab"][aria-selected="true"] { color: #1a6de0 !important; }
+
+    /* Inloggad header — e-post + Sair i samma rad */
+    .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.4rem 0 0.8rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 0.8rem;
+    }
+    .app-header .logo {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: white;
+    }
+    .app-header .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.9rem;
+        opacity: 0.7;
+    }
+
     .hero {
         text-align: center;
         padding: 3rem 1rem 2rem 1rem;
@@ -394,9 +424,17 @@ else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
 
-    st.title("SEO Brasil")
-    st.write(f"Bem-vindo, {st.session_state.user.email}")
-    if st.button("Sair"):
+    # --- Kompakt header med logo + email + Sair i samma rad ---
+    col_logo, col_user, col_sair = st.columns([3, 4, 1])
+    with col_logo:
+        st.markdown("<div style='font-size:1.3rem;font-weight:800;padding-top:6px'>SEO Brasil 🇧🇷</div>", unsafe_allow_html=True)
+    with col_user:
+        st.markdown(f"<div style='font-size:0.85rem;opacity:0.6;padding-top:10px;text-align:right'>{st.session_state.user.email}</div>", unsafe_allow_html=True)
+    with col_sair:
+        sair_clicked = st.button("Sair", key="sair_btn")
+    st.divider()
+
+    if sair_clicked:
         try:
             cookie_manager.delete("sb_access_token")
             cookie_manager.delete("sb_refresh_token")
