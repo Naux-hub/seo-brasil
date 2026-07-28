@@ -388,9 +388,13 @@ if st.session_state.user is None:
                 supabase.table("subscribers").update({"last_login": datetime.now(timezone.utc).isoformat()}).eq("email", email).execute()
             except Exception:
                 pass
-            expiry = datetime.now(timezone.utc) + timedelta(days=COOKIE_EXPIRY_DAYS)
-            cookie_manager.set("sb_access_token", res.session.access_token, expires_at=expiry)
-            cookie_manager.set("sb_refresh_token", res.session.refresh_token, expires_at=expiry)
+            # Sätt cookies (kan misslyckas utan att inloggningen påverkas)
+            try:
+                expiry = datetime.now(timezone.utc) + timedelta(days=COOKIE_EXPIRY_DAYS)
+                cookie_manager.set("sb_access_token", res.session.access_token, expires_at=expiry)
+                cookie_manager.set("sb_refresh_token", res.session.refresh_token, expires_at=expiry)
+            except Exception:
+                pass
             st.rerun()
         except Exception:
             st.error("E-mail ou senha incorretos.")
