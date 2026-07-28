@@ -1,0 +1,30 @@
+name: Daily Onboarding Emails
+
+on:
+  schedule:
+    - cron: "0 8 * * *"  # Varje dag kl 08:00 UTC (09:00 svensk tid)
+  workflow_dispatch:       # Tillåter manuell körning via GitHub UI
+
+jobs:
+  run-onboarding:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install supabase requests
+
+      - name: Run onboarding
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: python onboarding.py
