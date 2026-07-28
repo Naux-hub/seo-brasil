@@ -93,8 +93,14 @@ st.markdown("""
     [data-testid="stToolbar"] {visibility: hidden;}
 
     /* Minska Streamlits standardtomrum i toppen */
-    .block-container { padding-top: 1rem !important; }
-    [data-testid="stAppViewContainer"] > .main { padding-top: 0 !important; }
+    .block-container { padding-top: 1.5rem !important; }
+
+    /* Göm CookieController iframe */
+    iframe[title="streamlit_cookies_controller.cookie_controller"] {
+        display: none !important;
+        height: 0 !important;
+        width: 0 !important;
+    }
 
     /* Blå accentfärg på flikar istället för Streamlit-rött */
     [data-baseweb="tab-highlight"] { background-color: #1a6de0 !important; }
@@ -429,6 +435,15 @@ else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
 
+    # --- Scrolla till toppen ---
+    st.markdown("""<script>
+    setTimeout(function(){
+        var el = window.parent.document.querySelector('section.main');
+        if(el) el.scrollTop = 0;
+        window.parent.scrollTo(0,0);
+    }, 150);
+    </script>""", unsafe_allow_html=True)
+
     # --- Kompakt header med logo + email + Sair i samma rad ---
     col_logo, col_user, col_sair = st.columns([3, 4, 1])
     with col_logo:
@@ -437,6 +452,7 @@ else:
         st.markdown(f"<div style='font-size:0.85rem;opacity:0.6;padding-top:10px;text-align:right'>{st.session_state.user.email}</div>", unsafe_allow_html=True)
     with col_sair:
         sair_clicked = st.button("Sair", key="sair_btn")
+    st.divider()
 
     if sair_clicked:
         try:
