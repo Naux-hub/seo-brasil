@@ -4,24 +4,24 @@ from supabase import create_client
 from keyword_cache import get_keyword_data
 from datetime import datetime, timedelta, timezone
 import extra_streamlit_components as stx
- 
+
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
- 
+
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
 COOKIE_EXPIRY_DAYS = 30
- 
+
 cookie_manager = stx.CookieManager()
- 
+
 def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
- 
+
 def get_tracked_set(user_id):
     res = supabase.table("tracked_keywords").select("keyword").eq("user_id", str(user_id)).eq("is_active", True).execute()
     return {r["keyword"] for r in res.data}
- 
+
 def add_tracking(keyword, user_id):
     count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
     if len(count_res.data) >= 20:
@@ -39,18 +39,18 @@ def add_tracking(keyword, user_id):
         return True, "ok"
     except Exception as e:
         return False, f"Erro: {str(e)}"
- 
+
 def remove_tracking(keyword, user_id):
     supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
- 
+
 def get_tracked_keywords_list(user_id):
     res = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True).order("created_at", desc=True).execute()
     return res.data
- 
+
 def get_rank_history_for_keyword(user_id, keyword):
     res = supabase.table("rank_history").select("position, checked_at").eq("user_id", str(user_id)).eq("keyword", keyword).order("checked_at", desc=True).limit(2).execute()
     return res.data
- 
+
 def trend_label(history):
     if not history:
         return "⏳ Aguardando dados"
@@ -72,13 +72,13 @@ def trend_label(history):
         return f"#{current} 📉 {abs(diff)} posições"
     else:
         return f"#{current} → Estável"
- 
+
 # --- Global CSS ---
 st.markdown("""
     <style>
     #GithubIcon {visibility: hidden;}
     [data-testid="stToolbar"] {visibility: hidden;}
- 
+
     .hero {
         text-align: center;
         padding: 3rem 1rem 2rem 1rem;
@@ -174,14 +174,14 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
- 
+
 if "user" not in st.session_state:
     st.session_state.user = None
 if "access_token" not in st.session_state:
     st.session_state.access_token = None
 if "refresh_token" not in st.session_state:
     st.session_state.refresh_token = None
- 
+
 # Sätt JWT på supabase-klienten vid varje rerun (Streamlit skapar ny klient annars)
 if st.session_state.access_token:
     try:
@@ -202,12 +202,12 @@ elif st.session_state.user is None:
                 supabase.postgrest.auth(st.session_state.access_token)
     except Exception:
         pass
- 
+
 # =====================================================
 # NÃO LOGADO — Landningssida
 # =====================================================
 if st.session_state.user is None:
- 
+
     # --- Hero ---
     st.markdown(f"""
     <div class="hero">
@@ -218,9 +218,9 @@ if st.session_state.user is None:
         <div class="garantia">✅ Garantia de 15 dias • Cancele quando quiser</div>
     </div>
     """, unsafe_allow_html=True)
- 
+
     st.divider()
- 
+
     # --- Features ---
     st.markdown('<div class="section-title">Por que SEO Brasil?</div>', unsafe_allow_html=True)
     st.markdown("""
@@ -247,9 +247,9 @@ if st.session_state.user is None:
         </div>
     </div>
     """, unsafe_allow_html=True)
- 
+
     st.divider()
- 
+
     # --- Como funciona ---
     st.markdown('<div class="section-title">Como funciona</div>', unsafe_allow_html=True)
     st.markdown("""
@@ -271,9 +271,9 @@ if st.session_state.user is None:
         </div>
     </div>
     """, unsafe_allow_html=True)
- 
+
     st.divider()
- 
+
     # --- Preço ---
     st.markdown('<div class="section-title">Plano único</div>', unsafe_allow_html=True)
     st.markdown(f"""
@@ -290,12 +290,12 @@ if st.session_state.user is None:
         <a class="cta-btn" href="{HOTMART_URL}" target="_blank">Assinar agora →</a>
     </div>
     """, unsafe_allow_html=True)
- 
+
     st.divider()
- 
+
     # --- Login (längre ner) ---
     st.markdown('<div class="section-title">Já é assinante? Entre aqui</div>', unsafe_allow_html=True)
- 
+
     with st.form("login_form"):
         email = st.text_input("E-mail")
         senha = st.text_input("Senha", type="password")
@@ -304,7 +304,7 @@ if st.session_state.user is None:
             entrar = st.form_submit_button("Entrar")
         with col2:
             criar = st.form_submit_button("Criar conta")
- 
+
     if entrar:
         try:
             res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
@@ -312,20 +312,25 @@ if st.session_state.user is None:
             st.session_state.access_token = res.session.access_token
             st.session_state.refresh_token = res.session.refresh_token
             supabase.postgrest.auth(res.session.access_token)
+            # Uppdatera last_login för dormant user alerts
+            try:
+                supabase.table("subscribers").update({"last_login": datetime.now(timezone.utc).isoformat()}).eq("email", email).execute()
+            except Exception:
+                pass
             expiry = datetime.now(timezone.utc) + timedelta(days=COOKIE_EXPIRY_DAYS)
             cookie_manager.set("sb_access_token", res.session.access_token, expires_at=expiry)
             cookie_manager.set("sb_refresh_token", res.session.refresh_token, expires_at=expiry)
             st.rerun()
         except Exception:
             st.error("E-mail ou senha incorretos.")
- 
+
     if criar:
         try:
             res = supabase.auth.sign_up({"email": email, "password": senha})
             st.success("Conta criada! Verifique seu e-mail para confirmar.")
         except Exception:
             st.error("Erro ao criar conta.")
- 
+
     with st.expander("Esqueceu a senha?"):
         email_reset = st.text_input("Digite seu e-mail para redefinir a senha", key="reset_email")
         if st.button("Enviar link de redefinição"):
@@ -340,14 +345,14 @@ if st.session_state.user is None:
                     st.error("Erro ao enviar. Verifique o e-mail digitado.")
             else:
                 st.warning("Digite seu e-mail primeiro.")
- 
+
 # =====================================================
 # LOGADO
 # =====================================================
 else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
- 
+
     st.title("SEO Brasil")
     st.write(f"Bem-vindo, {st.session_state.user.email}")
     if st.button("Sair"):
@@ -358,17 +363,17 @@ else:
             pass
         st.session_state.user = None
         st.rerun()
- 
+
     st.divider()
- 
+
     if prenumerant:
- 
+
         # Initiera session state för sökresultat
         if "search_results" not in st.session_state:
             st.session_state.search_results = None
- 
+
         tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
- 
+
         # ── TAB 1: SÖKNING ──────────────────────────────
         with tab1:
             sokord_text = st.text_area(
@@ -376,7 +381,7 @@ else:
                 placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
                 height=180
             )
- 
+
             if st.button("Buscar"):
                 sokordslista = [s.strip() for s in sokord_text.split("\n") if s.strip()][:10]
                 if not sokordslista:
@@ -389,12 +394,12 @@ else:
                         except Exception:
                             st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
                             st.session_state.search_results = None
- 
+
             # Visa resultat med "+ Spåra"-knappar
             if st.session_state.search_results:
                 items = st.session_state.search_results
                 tracked_set = get_tracked_set(user_id)
- 
+
                 # Rubrikrad
                 h1, h2, h3, h4, h5 = st.columns([3, 2, 1.8, 1.8, 1.4])
                 h1.markdown("**Palavra-chave**")
@@ -403,7 +408,7 @@ else:
                 h4.markdown("**CPC (R$)**")
                 h5.markdown("**Rastrear**")
                 st.divider()
- 
+
                 csv_rows = []
                 for i, item in enumerate(items):
                     kw = item.get("keyword", "")
@@ -412,14 +417,14 @@ else:
                     comp = str(item.get("competition", "N/A")).capitalize()
                     volume_fmt = f"{int(volume):,}".replace(",", ".")
                     cpc_fmt = f"{float(cpc):.2f}" if cpc else "N/A"
- 
+
                     csv_rows.append({
                         "Palavra-chave": kw,
                         "Volume/mês": volume_fmt,
                         "Competição": comp,
                         "CPC médio (R$)": cpc_fmt,
                     })
- 
+
                     c1, c2, c3, c4, c5 = st.columns([3, 2, 1.8, 1.8, 1.4])
                     c1.write(kw)
                     c2.write(volume_fmt)
@@ -436,7 +441,7 @@ else:
                                     st.rerun()
                                 else:
                                     st.error(msg)
- 
+
                 st.divider()
                 df_csv = pd.DataFrame(csv_rows)
                 csv = df_csv.to_csv(index=False).encode("utf-8-sig")
@@ -446,29 +451,29 @@ else:
                     file_name="seo_brasil.csv",
                     mime="text/csv",
                 )
- 
+
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
             tracked_list = get_tracked_keywords_list(user_id)
- 
+
             if not tracked_list:
                 st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
                 count = len(tracked_list)
                 st.caption(f"{count}/20 palavras rastreadas — dados atualizados toda segunda-feira")
                 st.divider()
- 
+
                 h1, h2, h3 = st.columns([4, 3, 1.5])
                 h1.markdown("**Palavra-chave**")
                 h2.markdown("**Posição no Google**")
                 h3.markdown("**Remover**")
                 st.divider()
- 
+
                 for item in tracked_list:
                     kw = item["keyword"]
                     history = get_rank_history_for_keyword(user_id, kw)
                     trend = trend_label(history)
- 
+
                     c1, c2, c3 = st.columns([4, 3, 1.5])
                     c1.write(kw)
                     c2.write(trend)
@@ -476,10 +481,10 @@ else:
                         if st.button("✕", key=f"remove_{kw}"):
                             remove_tracking(kw, user_id)
                             st.rerun()
- 
+
     else:
         st.info("✨ Acesso completo por R$197/mês. Garantia de 15 dias.")
         st.markdown(f'<a href="{HOTMART_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
- 
+
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: seonativo@gmail.com")
