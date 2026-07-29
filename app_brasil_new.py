@@ -60,15 +60,15 @@ def get_social_proof():
     except Exception:
         return 2000
 
-def get_user_domain(user_id):
-    res = supabase.table("subscribers").select("domain").eq("user_id", str(user_id)).execute()
+def get_user_domain(email):
+    res = supabase.table("subscribers").select("domain").eq("email", email).execute()
     if res.data and res.data[0].get("domain"):
         return res.data[0]["domain"]
     return None
 
-def save_user_domain(user_id, domain):
+def save_user_domain(email, domain):
     domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
-    supabase.table("subscribers").update({"domain": domain}).eq("user_id", str(user_id)).execute()
+    supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
 
 def get_rank_data_for_keyword(user_id, keyword, domain):
     if not domain:
@@ -567,7 +567,8 @@ else:
 
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
-            domain = get_user_domain(user_id)
+            user_email = st.session_state.user.email
+            domain = get_user_domain(user_email)
 
             # --- Domän-input ---
             if not domain:
@@ -578,7 +579,7 @@ else:
                 with col_b:
                     if st.button("Salvar site", key="save_domain"):
                         if new_domain.strip():
-                            save_user_domain(user_id, new_domain)
+                            save_user_domain(user_email, new_domain)
                             st.success("✅ Site salvo!")
                             st.rerun()
             else:
@@ -587,7 +588,7 @@ else:
                     st.markdown(f"🌐 **Seu site:** `{domain}`")
                 with col_b:
                     if st.button("Alterar", key="change_domain"):
-                        supabase.table("subscribers").update({"domain": None}).eq("user_id", str(user_id)).execute()
+                        supabase.table("subscribers").update({"domain": None}).eq("email", user_email).execute()
                         st.rerun()
 
             st.divider()
