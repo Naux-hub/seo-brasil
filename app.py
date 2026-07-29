@@ -60,25 +60,39 @@ def get_social_proof():
     except Exception:
         return 2000
 
-def get_rank_history_for_keyword(user_id, keyword):
-    res = supabase.table("rank_history").select("position, checked_at").eq("user_id", str(user_id)).eq("keyword", keyword).order("checked_at", desc=True).limit(2).execute()
-    return res.data
+def get_user_domain(user_id):
+    res = supabase.table("subscribers").select("domain").eq("user_id", str(user_id)).execute()
+    if res.data and res.data[0].get("domain"):
+        return res.data[0]["domain"]
+    return None
 
-def trend_label(history):
-    if not history:
+def save_user_domain(user_id, domain):
+    domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
+    supabase.table("subscribers").update({"domain": domain}).eq("user_id", str(user_id)).execute()
+
+def get_rank_data_for_keyword(user_id, keyword, domain):
+    if not domain:
+        return None
+    res = supabase.table("keyword_rankings") \
+        .select("rank_position, prev_rank_position, checked_at") \
+        .eq("user_id", str(user_id)) \
+        .eq("keyword", keyword) \
+        .eq("domain", domain) \
+        .order("checked_at", desc=True) \
+        .limit(1) \
+        .execute()
+    return res.data[0] if res.data else None
+
+def trend_label(row):
+    if not row:
         return "⏳ Aguardando dados"
-    current = history[0].get("position")
-    if len(history) < 2:
-        current_str = f"#{current}" if current else "—"
-        return f"{current_str} 🆕 Novo"
-    prev = history[1].get("position")
-    if current is None and prev is None:
-        return "— Sem ranking"
+    current = row.get("rank_position")
+    prev = row.get("prev_rank_position")
     if current is None:
-        return "📉 Saiu do top 100"
+        return "📉 Saiu do top 100" if prev else "⏳ Aguardando dados"
     if prev is None:
-        return f"#{current} 📈 Entrou!"
-    diff = prev - current  # positivo = subiu
+        return f"#{current} 🆕 Novo"
+    diff = prev - current  # positivt = klättrade
     if diff > 0:
         return f"#{current} 📈 +{diff} posições"
     elif diff < 0:
@@ -553,6 +567,31 @@ else:
 
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
+            domain = get_user_domain(user_id)
+
+            # --- Domän-input ---
+            if not domain:
+                st.info("💡 Adicione o endereço do seu site para monitorar sua posição no Google.")
+                col_d, col_b = st.columns([4, 1])
+                with col_d:
+                    new_domain = st.text_input("", placeholder="seobrasil.app", key="domain_input", label_visibility="collapsed")
+                with col_b:
+                    if st.button("Salvar site", key="save_domain"):
+                        if new_domain.strip():
+                            save_user_domain(user_id, new_domain)
+                            st.success("✅ Site salvo!")
+                            st.rerun()
+            else:
+                col_d, col_b = st.columns([5, 1])
+                with col_d:
+                    st.markdown(f"🌐 **Seu site:** `{domain}`")
+                with col_b:
+                    if st.button("Alterar", key="change_domain"):
+                        supabase.table("subscribers").update({"domain": None}).eq("user_id", str(user_id)).execute()
+                        st.rerun()
+
+            st.divider()
+
             tracked_list = get_tracked_keywords_list(user_id)
 
             if not tracked_list:
@@ -570,8 +609,8 @@ else:
 
                 for item in tracked_list:
                     kw = item["keyword"]
-                    history = get_rank_history_for_keyword(user_id, kw)
-                    trend = trend_label(history)
+                    rank_row = get_rank_data_for_keyword(user_id, kw, domain)
+                    trend = trend_label(rank_row)
 
                     c1, c2, c3 = st.columns([4, 3, 1.5])
                     c1.write(kw)
