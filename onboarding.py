@@ -248,6 +248,24 @@ def email_day7(email):
               <strong style="color:white">Dica:</strong> Não se preocupe com variações semanais pequenas. O que importa é a tendência ao longo de 4–8 semanas.
             </p>
 
+            <!-- Novo recurso: monitoramento de domínio -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#1e2d1e;border:1px solid #2e5c2e;border-radius:10px;margin:24px 0">
+              <tr>
+                <td style="padding:20px 24px">
+                  <p style="margin:0 0 8px;color:#4CAF50;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px">✨ Novidade — monitoramento do seu site</p>
+                  <p style="margin:0 0 12px;color:#e0e0e0;font-size:15px;line-height:1.6">
+                    Agora você pode adicionar o endereço do seu site e acompanhar exatamente em que posição ele aparece no Google — para cada palavra-chave que você rastreia.
+                  </p>
+                  <p style="margin:0 0 16px;color:#aaa;font-size:14px;line-height:1.5">
+                    Vá até a aba <strong style="color:white">Meu Monitoramento</strong>, adicione seu site (ex: <code style="background:#2a2a2a;padding:2px 6px;border-radius:4px;color:#4d9fff">meusite.com.br</code>) e os dados chegam toda segunda-feira.
+                  </p>
+                  <a href="{APP_URL}" style="display:inline-block;background:#2e5c2e;color:#4CAF50;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:bold;font-size:14px">
+                    Adicionar meu site agora →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
             <div style="text-align:center;margin:28px 0">
               <a href="{APP_URL}" style="display:inline-block;background:#1a6de0;color:white;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px">
                 Ver meu monitoramento →

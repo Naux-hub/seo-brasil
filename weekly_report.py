@@ -19,8 +19,8 @@ APP_URL = "https://seobrasil.app"
 
 
 def get_active_subscribers():
-    res = supabase.table("subscribers").select("email").execute()
-    return [r["email"] for r in res.data]
+    res = supabase.table("subscribers").select("email, domain").execute()
+    return res.data or []
 
 
 def get_user_id_by_email(email):
@@ -39,16 +39,19 @@ def get_tracked_keywords(user_id):
     return [r["keyword"] for r in res.data]
 
 
-def get_latest_two_ranks(user_id, keyword):
-    """Hämtar de två senaste rankingarna för ett sökord."""
-    res = supabase.table("rank_history") \
-        .select("position, checked_at") \
+def get_keyword_ranking(user_id, domain, keyword):
+    """Hämtar aktuell och föregående position för ett sökord från keyword_rankings."""
+    res = supabase.table("keyword_rankings") \
+        .select("rank_position, prev_rank_position") \
         .eq("user_id", user_id) \
+        .eq("domain", domain) \
         .eq("keyword", keyword) \
         .order("checked_at", desc=True) \
-        .limit(2) \
+        .limit(1) \
         .execute()
-    return res.data
+    if res.data:
+        return res.data[0]["rank_position"], res.data[0]["prev_rank_position"]
+    return None, None
 
 
 def trend_html(current, previous):
@@ -185,8 +188,14 @@ def run():
     subscribers = get_active_subscribers()
     print(f"Hittade {len(subscribers)} aktiva prenumeranter")
 
-    for email in subscribers:
-        print(f"\n→ {email}")
+    for row in subscribers:
+        email = row.get("email")
+        domain = row.get("domain")
+        print(f"\n→ {email} | domän: {domain or '—'}")
+
+        if not domain:
+            print(f"  Ingen domän registrerad, hoppar över")
+            continue
 
         user_id = get_user_id_by_email(email)
         if not user_id:
@@ -201,9 +210,7 @@ def run():
         # Bygg rankingdata: (keyword, current_position, previous_position)
         keyword_data = []
         for kw in keywords:
-            history = get_latest_two_ranks(user_id, kw)
-            current = history[0]["position"] if len(history) > 0 else None
-            previous = history[1]["position"] if len(history) > 1 else None
+            current, previous = get_keyword_ranking(user_id, domain, kw)
             keyword_data.append((kw, current, previous))
 
         # Skicka bara om det finns data
