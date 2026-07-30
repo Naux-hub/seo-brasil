@@ -81,24 +81,109 @@ def trend_html(current, previous):
 
 
 def build_email_html(email, keyword_data):
-    """Constrói o HTML do e-mail semanal."""
+    """Constrói o HTML do e-mail semanal com três seções: Atenção, Subindo e Foco."""
     today = datetime.now().strftime("%d/%m/%Y")
 
-    rows_html = ""
-    for kw, current, previous in keyword_data:
-        trend = trend_html(current, previous)
-        rows_html += f"""
-        <tr>
-            <td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;color:#e0e0e0">{kw}</td>
-            <td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;text-align:center">{trend}</td>
-        </tr>"""
+    # --- Categorias ---
+    attention = [(kw, c, p) for kw, c, p in keyword_data
+                 if c is not None and p is not None and (c - p) >= 3]
+    wins = [(kw, c, p) for kw, c, p in keyword_data
+            if c is not None and p is not None and c < p]
+    focus = [(kw, c, p) for kw, c, p in keyword_data
+             if c is not None and 11 <= c <= 20]
 
+    # --- Resumo ---
     improvements = sum(1 for _, c, p in keyword_data if c and p and c < p)
     declines = sum(1 for _, c, p in keyword_data if c and p and c > p)
     stable = sum(1 for _, c, p in keyword_data if c and p and c == p)
     new_entries = sum(1 for _, c, p in keyword_data if c and p is None)
-
     summary = f"{improvements} subindo • {declines} descendo • {stable} estável • {new_entries} novo(s)"
+
+    # --- Seção: Atenção ---
+    attention_html = ""
+    if attention:
+        rows = ""
+        for kw, c, p in attention:
+            diff = c - p
+            rows += (
+                f'<tr>'
+                f'<td style="padding:8px 14px;color:#e0e0e0;font-size:14px">{kw}</td>'
+                f'<td style="padding:8px 14px;text-align:right;color:#e53935;font-weight:bold">'
+                f'#{c} <span style="font-size:12px;font-weight:normal">▼ {diff} pos</span></td>'
+                f'</tr>'
+            )
+        attention_html = (
+            '<tr><td style="padding:24px 32px 8px">'
+            '<p style="margin:0 0 8px;color:#e53935;font-size:12px;font-weight:bold;'
+            'text-transform:uppercase;letter-spacing:0.5px">🔴 Precisa da sua atenção</p>'
+            f'<table width="100%" cellpadding="0" cellspacing="0" '
+            f'style="background:#2a1a1a;border-radius:8px;overflow:hidden">{rows}</table>'
+            '<p style="margin:8px 0 0;color:#888;font-size:12px">Considere atualizar o '
+            'conteúdo dessas páginas ou verificar a velocidade do site.</p>'
+            '</td></tr>'
+        )
+
+    # --- Seção: Subindo ---
+    wins_html = ""
+    if wins:
+        rows = ""
+        for kw, c, p in wins:
+            diff = p - c
+            rows += (
+                f'<tr>'
+                f'<td style="padding:8px 14px;color:#e0e0e0;font-size:14px">{kw}</td>'
+                f'<td style="padding:8px 14px;text-align:right;color:#4CAF50;font-weight:bold">'
+                f'#{c} <span style="font-size:12px;font-weight:normal">▲ +{diff} pos</span></td>'
+                f'</tr>'
+            )
+        wins_html = (
+            '<tr><td style="padding:8px 32px">'
+            '<p style="margin:0 0 8px;color:#4CAF50;font-size:12px;font-weight:bold;'
+            'text-transform:uppercase;letter-spacing:0.5px">🟢 Subindo esta semana</p>'
+            f'<table width="100%" cellpadding="0" cellspacing="0" '
+            f'style="background:#1a2a1a;border-radius:8px;overflow:hidden">{rows}</table>'
+            '</td></tr>'
+        )
+
+    # --- Seção: Foco (posições 11–20) ---
+    focus_html = ""
+    if focus:
+        rows = ""
+        for kw, c, p in focus:
+            if p is not None:
+                diff = p - c
+                trend_str = f" ▲ +{diff}" if diff > 0 else (f" ▼ {abs(diff)}" if diff < 0 else "")
+            else:
+                trend_str = " 🆕"
+            rows += (
+                f'<tr>'
+                f'<td style="padding:8px 14px;color:#e0e0e0;font-size:14px">{kw}</td>'
+                f'<td style="padding:8px 14px;text-align:right;color:#f5a623;font-weight:bold">'
+                f'#{c} <span style="font-size:12px;color:#888;font-weight:normal">'
+                f'— quase na pág. 1{trend_str}</span></td>'
+                f'</tr>'
+            )
+        focus_html = (
+            '<tr><td style="padding:8px 32px">'
+            '<p style="margin:0 0 8px;color:#f5a623;font-size:12px;font-weight:bold;'
+            'text-transform:uppercase;letter-spacing:0.5px">🎯 Foco desta semana — quase na página 1</p>'
+            f'<table width="100%" cellpadding="0" cellspacing="0" '
+            f'style="background:#2a2210;border-radius:8px;overflow:hidden">{rows}</table>'
+            '<p style="margin:8px 0 0;color:#888;font-size:12px">Essas palavras estão entre as '
+            'posições 11–20. Um pouco mais de esforço pode colocá-las na primeira página do Google.</p>'
+            '</td></tr>'
+        )
+
+    # --- Tabela completa ---
+    rows_html = ""
+    for kw, current, previous in keyword_data:
+        trend = trend_html(current, previous)
+        rows_html += (
+            f'<tr>'
+            f'<td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;color:#e0e0e0">{kw}</td>'
+            f'<td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;text-align:center">{trend}</td>'
+            f'</tr>'
+        )
 
     html = f"""
 <!DOCTYPE html>
@@ -124,9 +209,14 @@ def build_email_html(email, keyword_data):
           </td>
         </tr>
 
-        <!-- Tabela de palavras-chave -->
+        {attention_html}
+        {wins_html}
+        {focus_html}
+
+        <!-- Todas as palavras -->
         <tr>
-          <td style="padding:8px 32px 24px">
+          <td style="padding:24px 32px 8px">
+            <p style="margin:0 0 8px;color:#888;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px">Todas as palavras</p>
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <th style="padding:8px;text-align:left;color:#888;font-size:12px;text-transform:uppercase;border-bottom:1px solid #333">Palavra-chave</th>
@@ -139,7 +229,7 @@ def build_email_html(email, keyword_data):
 
         <!-- CTA -->
         <tr>
-          <td style="padding:0 32px 32px;text-align:center">
+          <td style="padding:16px 32px 32px;text-align:center">
             <a href="{APP_URL}" style="display:inline-block;background:#1a6de0;color:white;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:15px">
               Ver meu monitoramento →
             </a>
