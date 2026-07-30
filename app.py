@@ -60,15 +60,15 @@ def get_social_proof():
     except Exception:
         return 2000
 
-def get_user_domain(user_id):
-    res = supabase.table("subscribers").select("domain").eq("user_id", str(user_id)).execute()
+def get_user_domain(email):
+    res = supabase.table("subscribers").select("domain").eq("email", email).execute()
     if res.data and res.data[0].get("domain"):
         return res.data[0]["domain"]
     return None
 
-def save_user_domain(user_id, domain):
+def save_user_domain(email, domain):
     domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
-    supabase.table("subscribers").update({"domain": domain}).eq("user_id", str(user_id)).execute()
+    supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
 
 def get_rank_data_for_keyword(user_id, keyword, domain):
     if not domain:
@@ -485,6 +485,33 @@ else:
         if "search_results" not in st.session_state:
             st.session_state.search_results = None
 
+        # --- Onboarding-banner: visa om ingen domän är satt ---
+        _ob_email = st.session_state.user.email
+        _ob_domain = get_user_domain(_ob_email)
+
+        if not _ob_domain:
+            st.markdown("""
+            <div style="background:rgba(26,109,224,0.12);border:1px solid rgba(26,109,224,0.35);
+            border-radius:10px;padding:0.9rem 1.2rem;margin-bottom:0.5rem">
+                <strong style="color:#4d9fff">🚀 Configure seu site para monitorar seu ranking</strong><br>
+                <span style="font-size:0.87rem;opacity:0.8">
+                Adicione o endereço do seu site uma única vez e acompanhe sua posição no Google toda segunda-feira.
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+            col_ob, col_ob_btn = st.columns([4, 1])
+            with col_ob:
+                ob_domain_val = st.text_input("", placeholder="meusite.com.br",
+                                              key="onboard_domain_input",
+                                              label_visibility="collapsed")
+            with col_ob_btn:
+                if st.button("Salvar site", key="onboard_save_btn"):
+                    if ob_domain_val.strip():
+                        save_user_domain(_ob_email, ob_domain_val)
+                        st.success("✅ Site salvo!")
+                        st.rerun()
+            st.divider()
+
         tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
 
         # ── TAB 1: SÖKNING ──────────────────────────────
@@ -567,7 +594,8 @@ else:
 
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
-            domain = get_user_domain(user_id)
+            user_email = st.session_state.user.email
+            domain = get_user_domain(user_email)
 
             # --- Domän-input ---
             if not domain:
@@ -578,7 +606,7 @@ else:
                 with col_b:
                     if st.button("Salvar site", key="save_domain"):
                         if new_domain.strip():
-                            save_user_domain(user_id, new_domain)
+                            save_user_domain(user_email, new_domain)
                             st.success("✅ Site salvo!")
                             st.rerun()
             else:
@@ -587,7 +615,7 @@ else:
                     st.markdown(f"🌐 **Seu site:** `{domain}`")
                 with col_b:
                     if st.button("Alterar", key="change_domain"):
-                        supabase.table("subscribers").update({"domain": None}).eq("user_id", str(user_id)).execute()
+                        supabase.table("subscribers").update({"domain": None}).eq("email", user_email).execute()
                         st.rerun()
 
             st.divider()
