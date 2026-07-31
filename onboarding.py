@@ -292,7 +292,7 @@ def email_winback(email, day):
         body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
             Faz uma semana desde que seu período de teste terminou.<br><br>
             Durante esses 7 dias, você viu de perto como o SEO Brasil funciona — os dados de busca, o monitoramento de posições e o relatório automático toda segunda-feira.<br><br>
-            Se você ainda quer aparecer no Google e atrair clientes de forma orgânica, o plano está disponível por R$197/mês.
+            Se você ainda quer aparecer no Google e atrair clientes de forma orgânica, o plano está disponível por R$197/mês — menos do que um dia de anúncio no Meta.
         </p>"""
     elif day == 14:
         subject = "Última chance de retomar seu monitoramento de SEO 📊"
@@ -325,7 +325,7 @@ def email_winback(email, day):
               👉 Reativar minha conta — R$197/mês
             </a>
           </div>
-          <p style="color:#555;font-size:13px">Dúvidas? Responda este e-mail.<br>Abraço,<br>Samuel — SEO Brasil</p>
+          <p style="color:#9CA3AF;font-size:13px">Dúvidas? Responda este e-mail.<br>Abraço,<br>Samuel — SEO Brasil</p>
         </td></tr>
       </table>
     </td></tr>
