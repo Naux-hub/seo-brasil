@@ -66,6 +66,19 @@ def get_user_domain(email):
         return res.data[0]["domain"]
     return None
 
+def get_trial_status(email):
+    res = supabase.table("subscribers").select("subscription_status, created_at").eq("email", email).execute()
+    if not res.data:
+        return "NO_SUBSCRIBER"
+    row = res.data[0]
+    if row.get("subscription_status") == "active":
+        return "ACTIVE"
+    created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+    days = (datetime.now(timezone.utc) - created_at).days
+    if days <= 7:
+        return "TRIAL_ACTIVE"
+    return "TRIAL_EXPIRED"
+
 def save_user_domain(email, domain):
     domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
     supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
@@ -337,6 +350,29 @@ if _fb_type in ("up", "down"):
                     st.warning("Escreva algo antes de enviar.")
 
     st.stop()
+
+# =====================================================
+# TRIAL CHECK — körs om användaren är inloggad
+# =====================================================
+if st.session_state.user is not None:
+    _trial_email = st.session_state.user.email
+    _trial_status = get_trial_status(_trial_email)
+
+    if _trial_status == "TRIAL_EXPIRED":
+        st.markdown("<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align:center;padding:2rem 1rem;'>
+            <div style='font-size:2.5rem;margin-bottom:1rem;'>🔒</div>
+            <h2 style='margin-bottom:0.5rem;'>Seu período de teste de 7 dias terminou!</h2>
+            <p style='color:#888;margin-bottom:2rem;max-width:480px;margin-left:auto;margin-right:auto;'>
+                Para continuar recebendo seus relatórios semanais e descobrindo
+                palavras-chave de alta conversão, assine o plano completo.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        hotmart_url_with_email = f"https://pay.hotmart.com/L106736067M?email={_trial_email}"
+        st.link_button("👉 Assinar por R$197/mês na Hotmart", hotmart_url_with_email, type="primary", use_container_width=True)
+        st.stop()
 
 # =====================================================
 # NÃO LOGADO — Landningssida
