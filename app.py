@@ -288,57 +288,6 @@ elif st.session_state.user is None:
         pass
 
 # =====================================================
-# FEEDBACK — visas om ?feedback=up/down finns i URL
-# =====================================================
-_fb_params = st.query_params
-_fb_type  = _fb_params.get("feedback")
-_fb_email = _fb_params.get("email", "")
-
-if _fb_type in ("up", "down"):
-    st.markdown("<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
-
-    if _fb_type == "up":
-        if "fb_logged" not in st.session_state:
-            try:
-                supabase.table("email_feedback").insert({
-                    "email": _fb_email, "rating": "up"
-                }).execute()
-            except Exception:
-                pass
-            st.session_state.fb_logged = True
-        st.success("Obrigado! Fico feliz que o relatório foi útil. 😊")
-        st.caption("Você pode fechar esta aba.")
-
-    else:  # down
-        if st.session_state.get("fb_done"):
-            st.success("Obrigado pelo feedback! Vamos melhorar. 🙏")
-            st.caption("Você pode fechar esta aba.")
-        else:
-            st.warning("Que pena! Nos conte o que poderia ser melhor:")
-            comment = st.text_area(
-                "",
-                placeholder="O que faltou no relatório desta semana?",
-                label_visibility="collapsed",
-                height=120,
-            )
-            if st.button("Enviar feedback", type="primary"):
-                if comment.strip():
-                    try:
-                        supabase.table("email_feedback").insert({
-                            "email": _fb_email,
-                            "rating": "down",
-                            "comment": comment.strip(),
-                        }).execute()
-                    except Exception:
-                        pass
-                    st.session_state.fb_done = True
-                    st.rerun()
-                else:
-                    st.warning("Escreva algo antes de enviar.")
-
-    st.stop()
-
-# =====================================================
 # NÃO LOGADO — Landningssida
 # =====================================================
 if st.session_state.user is None:
@@ -535,33 +484,6 @@ else:
         # Initiera session state för sökresultat
         if "search_results" not in st.session_state:
             st.session_state.search_results = None
-
-        # --- Onboarding-banner: visa om ingen domän är satt ---
-        _ob_email = st.session_state.user.email
-        _ob_domain = get_user_domain(_ob_email)
-
-        if not _ob_domain:
-            st.markdown("""
-            <div style="background:rgba(26,109,224,0.12);border:1px solid rgba(26,109,224,0.35);
-            border-radius:10px;padding:0.9rem 1.2rem;margin-bottom:0.5rem">
-                <strong style="color:#4d9fff">🚀 Configure seu site para monitorar seu ranking</strong><br>
-                <span style="font-size:0.87rem;opacity:0.8">
-                Adicione o endereço do seu site uma única vez e acompanhe sua posição no Google toda segunda-feira.
-                </span>
-            </div>
-            """, unsafe_allow_html=True)
-            col_ob, col_ob_btn = st.columns([4, 1])
-            with col_ob:
-                ob_domain_val = st.text_input("", placeholder="meusite.com.br",
-                                              key="onboard_domain_input",
-                                              label_visibility="collapsed")
-            with col_ob_btn:
-                if st.button("Salvar site", key="onboard_save_btn"):
-                    if ob_domain_val.strip():
-                        save_user_domain(_ob_email, ob_domain_val)
-                        st.success("✅ Site salvo!")
-                        st.rerun()
-            st.divider()
 
         tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
 
