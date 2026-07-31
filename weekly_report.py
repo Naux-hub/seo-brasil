@@ -6,6 +6,7 @@ Körs varje måndag via GitHub Actions, efter rank_tracker.py.
 import os
 import requests
 from datetime import datetime, timezone
+from urllib.parse import quote as url_quote
 from supabase import create_client
 
 # --- Anslutningar ---
@@ -83,14 +84,18 @@ def trend_html(current, previous):
 def build_email_html(email, keyword_data):
     """Constrói o HTML do e-mail semanal com três seções: Atenção, Subindo e Foco."""
     today = datetime.now().strftime("%d/%m/%Y")
+    email_enc = url_quote(email, safe="")
+    feedback_up_url = f"{APP_URL}?feedback=up&email={email_enc}"
+    feedback_down_url = f"{APP_URL}?feedback=down&email={email_enc}"
 
     # --- Categorias ---
     attention = [(kw, c, p) for kw, c, p in keyword_data
                  if c is not None and p is not None and (c - p) >= 3]
     wins = [(kw, c, p) for kw, c, p in keyword_data
             if c is not None and p is not None and c < p]
+    wins_kws = {kw for kw, _, _ in wins}
     focus = [(kw, c, p) for kw, c, p in keyword_data
-             if c is not None and 11 <= c <= 20]
+             if c is not None and 11 <= c <= 20 and kw not in wins_kws]
 
     # --- Resumo ---
     improvements = sum(1 for _, c, p in keyword_data if c and p and c < p)
@@ -154,7 +159,7 @@ def build_email_html(email, keyword_data):
                 diff = p - c
                 trend_str = f" ▲ +{diff}" if diff > 0 else (f" ▼ {abs(diff)}" if diff < 0 else "")
             else:
-                trend_str = " 🆕"
+                trend_str = " 🆕 Novo"
             rows += (
                 f'<tr>'
                 f'<td style="padding:8px 14px;color:#e0e0e0;font-size:14px">{kw}</td>'
@@ -224,6 +229,15 @@ def build_email_html(email, keyword_data):
               </tr>
               {rows_html}
             </table>
+          </td>
+        </tr>
+
+        <!-- Feedback -->
+        <tr>
+          <td style="padding:24px 32px 8px;text-align:center;border-top:1px solid #2a2a2a">
+            <p style="color:#888;font-size:13px;margin:0 0 14px">Este relatório foi útil hoje?</p>
+            <a href="{feedback_up_url}" style="display:inline-block;background:#1a2a1a;color:#4CAF50;text-decoration:none;padding:8px 22px;border-radius:6px;font-size:14px;margin:0 6px;border:1px solid #2e5c2e">👍 Sim</a>
+            <a href="{feedback_down_url}" style="display:inline-block;background:#2a1a1a;color:#e53935;text-decoration:none;padding:8px 22px;border-radius:6px;font-size:14px;margin:0 6px;border:1px solid #5c2e2e">👎 Não</a>
           </td>
         </tr>
 

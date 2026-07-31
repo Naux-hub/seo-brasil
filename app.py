@@ -288,6 +288,57 @@ elif st.session_state.user is None:
         pass
 
 # =====================================================
+# FEEDBACK — visas om ?feedback=up/down finns i URL
+# =====================================================
+_fb_params = st.query_params
+_fb_type  = _fb_params.get("feedback")
+_fb_email = _fb_params.get("email", "")
+
+if _fb_type in ("up", "down"):
+    st.markdown("<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
+
+    if _fb_type == "up":
+        if "fb_logged" not in st.session_state:
+            try:
+                supabase.table("email_feedback").insert({
+                    "email": _fb_email, "rating": "up"
+                }).execute()
+            except Exception:
+                pass
+            st.session_state.fb_logged = True
+        st.success("Obrigado! Fico feliz que o relatório foi útil. 😊")
+        st.caption("Você pode fechar esta aba.")
+
+    else:  # down
+        if st.session_state.get("fb_done"):
+            st.success("Obrigado pelo feedback! Vamos melhorar. 🙏")
+            st.caption("Você pode fechar esta aba.")
+        else:
+            st.warning("Que pena! Nos conte o que poderia ser melhor:")
+            comment = st.text_area(
+                "",
+                placeholder="O que faltou no relatório desta semana?",
+                label_visibility="collapsed",
+                height=120,
+            )
+            if st.button("Enviar feedback", type="primary"):
+                if comment.strip():
+                    try:
+                        supabase.table("email_feedback").insert({
+                            "email": _fb_email,
+                            "rating": "down",
+                            "comment": comment.strip(),
+                        }).execute()
+                    except Exception:
+                        pass
+                    st.session_state.fb_done = True
+                    st.rerun()
+                else:
+                    st.warning("Escreva algo antes de enviar.")
+
+    st.stop()
+
+# =====================================================
 # NÃO LOGADO — Landningssida
 # =====================================================
 if st.session_state.user is None:
