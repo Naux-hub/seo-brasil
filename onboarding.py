@@ -22,9 +22,9 @@ APP_URL = "https://seobrasil.app"
 # Hjälpfunktioner
 # ---------------------------------------------------------------------------
 
-def get_active_subscribers():
-    """Hämtar email, user_id och created_at för alla aktiva prenumeranter."""
-    res = supabase.table("subscribers").select("email, user_id, created_at").execute()
+def get_all_subscribers():
+    """Hämtar email, user_id, created_at och subscription_status för alla prenumeranter."""
+    res = supabase.table("subscribers").select("email, user_id, created_at, subscription_status").execute()
     return res.data
 
 
@@ -103,8 +103,8 @@ def email_day1(email):
             <p style="color:#e0e0e0;font-size:15px;line-height:1.6"><strong style="color:white">Comece agora em 3 passos:</strong></p>
             <ol style="color:#e0e0e0;font-size:15px;line-height:2">
               <li>Acesse a ferramenta e faça login</li>
-              <li>Pesquise as palavras-chave do seu nicho</li>
-              <li>Clique em <strong style="color:#1a6de0">+ Rastrear</strong> nas palavras que mais importam para você</li>
+              <li>Cadastre o endereço do seu site <span style="color:#aaa;font-size:13px">(para ativar o relatório semanal)</span></li>
+              <li>Pesquise suas palavras-chave e clique em <strong style="color:#1a6de0">+ Rastrear</strong></li>
             </ol>
 
             <p style="color:#aaa;font-size:14px;line-height:1.6">
@@ -169,7 +169,7 @@ def email_day3(email):
             </table>
 
             <p style="color:#aaa;font-size:14px;line-height:1.6">
-              No SEO Brasil, filtre por <strong>KD baixo</strong> (dificuldade de competição) e <strong>volume acima de 100</strong> para encontrar essas oportunidades.
+              No SEO Brasil, filtre por <strong>Competição baixa</strong> e <strong>volume acima de 100</strong> para encontrar essas oportunidades.
             </p>
 
             <div style="text-align:center;margin:28px 0">
@@ -215,16 +215,16 @@ def email_day7(email):
 
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 24px">
               <tr style="background:#2a2a2a">
-                <td style="padding:12px 14px;color:#4CAF50;font-size:18px;width:40px">📈</td>
+                <td style="padding:12px 14px;color:#4CAF50;font-size:18px;width:40px">🟢</td>
                 <td style="padding:12px 14px">
-                  <p style="margin:0;color:white;font-size:14px;font-weight:bold">Subindo posições</p>
+                  <p style="margin:0;color:white;font-size:14px;font-weight:bold">Subindo esta semana</p>
                   <p style="margin:4px 0 0;color:#aaa;font-size:13px">Seu conteúdo está ganhando relevância. Continue publicando sobre esse tema.</p>
                 </td>
               </tr>
               <tr>
-                <td style="padding:12px 14px;color:#e53935;font-size:18px">📉</td>
+                <td style="padding:12px 14px;color:#e53935;font-size:18px">🔴</td>
                 <td style="padding:12px 14px">
-                  <p style="margin:0;color:white;font-size:14px;font-weight:bold">Descendo posições</p>
+                  <p style="margin:0;color:white;font-size:14px;font-weight:bold">Precisa da sua atenção</p>
                   <p style="margin:4px 0 0;color:#aaa;font-size:13px">Um concorrente pode ter publicado algo novo. Considere atualizar ou expandir seu conteúdo.</p>
                 </td>
               </tr>
@@ -236,10 +236,10 @@ def email_day7(email):
                 </td>
               </tr>
               <tr>
-                <td style="padding:12px 14px;color:#4CAF50;font-size:18px">🆕</td>
+                <td style="padding:12px 14px;color:#f5a623;font-size:18px">🎯</td>
                 <td style="padding:12px 14px">
-                  <p style="margin:0;color:white;font-size:14px;font-weight:bold">Novo no ranking</p>
-                  <p style="margin:4px 0 0;color:#aaa;font-size:13px">Sua página entrou no top 100 do Google. Bom sinal!</p>
+                  <p style="margin:0;color:white;font-size:14px;font-weight:bold">Foco desta semana</p>
+                  <p style="margin:4px 0 0;color:#aaa;font-size:13px">Sua página está entre as posições 11–20. Um pouco mais de esforço pode colocá-la na primeira página do Google.</p>
                 </td>
               </tr>
             </table>
@@ -266,12 +266,6 @@ def email_day7(email):
               </tr>
             </table>
 
-            <div style="text-align:center;margin:28px 0">
-              <a href="{APP_URL}" style="display:inline-block;background:#1a6de0;color:white;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px">
-                Ver meu monitoramento →
-              </a>
-            </div>
-
             <p style="color:#555;font-size:13px">Abraço,<br>Samuel — SEO Brasil</p>
           </td>
         </tr>
@@ -285,39 +279,111 @@ def email_day7(email):
 
 
 # ---------------------------------------------------------------------------
+# Winback-mejl (dag 8, 14, 30) — för expired trial-användare
+# ---------------------------------------------------------------------------
+
+def email_winback(email, day):
+    from urllib.parse import quote as url_quote
+    email_enc = url_quote(email, safe="")
+    hotmart_url = f"https://pay.hotmart.com/L106736067M?email={email_enc}"
+
+    if day == 8:
+        subject = "Você ainda pensa em crescer no Google? 🌎"
+        body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
+            Faz uma semana desde que seu período de teste terminou.<br><br>
+            Durante esses 7 dias, você viu de perto como o SEO Brasil funciona — os dados de busca, o monitoramento de posições e o relatório automático toda segunda-feira.<br><br>
+            Se você ainda quer aparecer no Google e atrair clientes de forma orgânica, o plano está disponível por R$197/mês.
+        </p>"""
+    elif day == 14:
+        subject = "Última chance de retomar seu monitoramento de SEO 📊"
+        body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
+            Já faz duas semanas desde que seu teste terminou.<br><br>
+            Enquanto isso, seus concorrentes continuam sendo rastreados no Google toda semana.<br><br>
+            Você pode retomar agora e já receber o próximo relatório na segunda-feira.
+        </p>"""
+    else:  # day == 30
+        subject = "Ainda dá tempo de começar a crescer no Google 🚀"
+        body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
+            Um mês atrás você testou o SEO Brasil.<br><br>
+            Muita coisa pode ter mudado nas buscas do Google desde então — novos concorrentes, novas oportunidades de palavras-chave.<br><br>
+            O SEO Brasil está aqui quando você estiver pronto para crescer de forma orgânica.
+        </p>"""
+
+    html = f"""<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#0e0e0e;font-family:Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0e0e0e;padding:40px 20px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border-radius:12px;overflow:hidden">
+        <tr><td style="background:#1a6de0;padding:28px 32px">
+          <h1 style="margin:0;color:white;font-size:22px">SEO Brasil 🌎</h1>
+        </td></tr>
+        <tr><td style="padding:32px">
+          {body}
+          <div style="text-align:center;margin:28px 0">
+            <a href="{hotmart_url}" style="display:inline-block;background:#1a6de0;color:white;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px">
+              👉 Reativar minha conta — R$197/mês
+            </a>
+          </div>
+          <p style="color:#555;font-size:13px">Dúvidas? Responda este e-mail.<br>Abraço,<br>Samuel — SEO Brasil</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+    return subject, html
+
+
+# ---------------------------------------------------------------------------
 # Huvudlogik
 # ---------------------------------------------------------------------------
 
-EMAIL_DAYS = {1: email_day1, 3: email_day3, 7: email_day7}
+ONBOARDING_DAYS = {1: email_day1, 3: email_day3, 7: email_day7}
+WINBACK_DAYS = [8, 14, 30]
 
 
 def run():
     print(f"=== Onboarding kör {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
 
-    subscribers = get_active_subscribers()
+    subscribers = get_all_subscribers()
     print(f"Hittade {len(subscribers)} prenumeranter")
 
     for sub in subscribers:
         email = sub.get("email")
         user_id = sub.get("user_id")
         created_at = sub.get("created_at")
+        status = sub.get("subscription_status", "trial")
 
         if not user_id or not created_at:
             print(f"  {email}: saknar user_id eller created_at, hoppar över")
             continue
 
         age = days_since(created_at)
-        print(f"\n→ {email} (dag {age})")
+        print(f"\n→ {email} (dag {age}, status: {status})")
 
-        for day, build_email in EMAIL_DAYS.items():
-            if age >= day and not already_sent(user_id, day):
-                subject, html = build_email(email)
-                ok = send_email(email, subject, html)
-                if ok:
-                    log_sent(user_id, day)
-                    print(f"  ✓ Dag {day}-mail skickat")
-                else:
-                    print(f"  ✗ Dag {day}-mail misslyckades")
+        if status == "active" or age <= 7:
+            # Onboarding-mejl dag 1, 3, 7
+            for day, build_email in ONBOARDING_DAYS.items():
+                if age >= day and not already_sent(user_id, day):
+                    subject, html = build_email(email)
+                    ok = send_email(email, subject, html)
+                    if ok:
+                        log_sent(user_id, day)
+                        print(f"  ✓ Dag {day}-mail skickat")
+                    else:
+                        print(f"  ✗ Dag {day}-mail misslyckades")
+        else:
+            # Winback-mejl dag 8, 14, 30 — bara till expired trials
+            for day in WINBACK_DAYS:
+                if age >= day and not already_sent(user_id, day):
+                    subject, html = email_winback(email, day)
+                    ok = send_email(email, subject, html)
+                    if ok:
+                        log_sent(user_id, day)
+                        print(f"  ✓ Winback dag {day}-mail skickat")
+                    else:
+                        print(f"  ✗ Winback dag {day}-mail misslyckades")
 
     print("\n=== Onboarding klar ===")
 

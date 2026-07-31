@@ -20,8 +20,73 @@ APP_URL = "https://seobrasil.app"
 
 
 def get_active_subscribers():
-    res = supabase.table("subscribers").select("email, domain").execute()
-    return res.data or []
+    """Returnerar prenumeranter med aktiv status ELLER trial inom 7 dagar."""
+    res = supabase.table("subscribers").select("email, domain, subscription_status, created_at").execute()
+    now = datetime.now(timezone.utc)
+    active = []
+    expired = []
+    for row in (res.data or []):
+        status = row.get("subscription_status", "trial")
+        if status == "active":
+            active.append(row)
+        else:
+            created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
+            days = (now - created_at).days
+            if days <= 7:
+                active.append(row)
+            else:
+                expired.append(row)
+    return active, expired
+
+
+def build_teaser_html(email, domain):
+    """Teaser-mejl till trial-expired användare — påminner om vad de missar."""
+    email_enc = url_quote(email, safe="")
+    hotmart_url = f"https://pay.hotmart.com/L106736067M?email={email_enc}"
+    today = datetime.now().strftime("%d/%m/%Y")
+    return f"""<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#0e1117;font-family:'Helvetica Neue',Arial,sans-serif;color:#e0e0e0">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1d24;border-radius:12px;overflow:hidden;max-width:600px">
+
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#1a6de0,#0d47a1);padding:28px 32px;text-align:center">
+          <div style="font-size:1.5rem;font-weight:800;color:white;letter-spacing:-0.5px">SEO Brasil 🌎</div>
+          <div style="color:rgba(255,255,255,0.8);font-size:0.85rem;margin-top:4px">Relatório da semana — {today}</div>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:32px">
+          <p style="margin:0 0 16px;font-size:1rem;color:#ccc;">Olá!</p>
+          <p style="margin:0 0 24px;font-size:1rem;color:#ccc;">
+            Esta semana atualizamos as posições e o volume de busca das palavras-chave monitoradas para
+            <strong style="color:#fff">{domain}</strong>.
+          </p>
+          <div style="background:#2a2d35;border-left:4px solid #e53935;border-radius:8px;padding:20px 24px;margin-bottom:24px;">
+            <div style="font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:8px;">⚠️ Relatório pausado</div>
+            <p style="margin:0;color:#aaa;font-size:0.95rem;">
+              Como seu período de teste de 7 dias terminou, seu relatório semanal foi pausado.
+              Assine para ver quais termos subiram, quais caíram e onde focar esta semana.
+            </p>
+          </div>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="{hotmart_url}" style="display:inline-block;background:#1a6de0;color:white;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;">
+              👉 Reativar minha conta — R$197/mês
+            </a>
+          </div>
+          <p style="text-align:center;color:#555;font-size:12px;margin:0;">
+            Dúvidas? Responda este e-mail.<br>
+            <a href="https://seobrasil.app" style="color:#555;">seobrasil.app</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
 
 
 def get_user_id_by_email(email):
@@ -289,10 +354,24 @@ def log_report(user_id, keyword_count, status):
 def run():
     print(f"=== Weekly Report kör {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
 
-    subscribers = get_active_subscribers()
-    print(f"Hittade {len(subscribers)} aktiva prenumeranter")
+    active_subscribers, expired_subscribers = get_active_subscribers()
+    print(f"Aktiva: {len(active_subscribers)} | Expired trials: {len(expired_subscribers)}")
 
-    for row in subscribers:
+    # --- Teaser-mejl till expired trials ---
+    for row in expired_subscribers:
+        email = row.get("email")
+        domain = row.get("domain")
+        if not domain:
+            print(f"  [teaser] {email} — ingen domän, hoppar över")
+            continue
+        html = build_teaser_html(email, domain)
+        today = datetime.now().strftime("%d/%m/%Y")
+        subject = f"⚠️ Sua análise semanal do Google está pronta (mas pausada)"
+        ok = send_email(email, subject, html)
+        print(f"  [teaser] {email} — {'skickat' if ok else 'fel'}")
+
+    # --- Vanlig rapport till aktiva ---
+    for row in active_subscribers:
         email = row.get("email")
         domain = row.get("domain")
         print(f"\n→ {email} | domän: {domain or '—'}")
