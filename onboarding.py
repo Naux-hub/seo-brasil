@@ -210,7 +210,7 @@ def email_day7(email):
         <tr>
           <td style="padding:32px">
             <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-              Hoje você recebeu (ou está prestes a receber) seu primeiro relatório semanal de SEO. Veja como interpretar os resultados:
+              Na próxima segunda-feira você vai receber seu primeiro relatório semanal de SEO. Veja abaixo como interpretar os resultados quando ele chegar:
             </p>
 
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 24px">
@@ -259,7 +259,7 @@ def email_day7(email):
                   <p style="margin:0 0 16px;color:#aaa;font-size:14px;line-height:1.5">
                     Vá até a aba <strong style="color:white">Meu Monitoramento</strong>, adicione seu site (ex: <code style="background:#2a2a2a;padding:2px 6px;border-radius:4px;color:#4d9fff">meusite.com.br</code>) e os dados chegam toda segunda-feira.
                   </p>
-                  <a href="{APP_URL}" style="display:inline-block;background:#2e5c2e;color:#4CAF50;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:bold;font-size:14px">
+                  <a href="{APP_URL}" style="display:inline-block;background:#2e5c2e;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:bold;font-size:14px">
                     Adicionar meu site agora →
                   </a>
                 </td>
