@@ -464,7 +464,7 @@ if st.session_state.user is None:
             <li>✅ Dados do mercado brasileiro</li>
             <li>✅ Exportação CSV</li>
             <li>✅ Relatórios semanais no seu e-mail</li>
-            <li>✅ Garantia de 15 dias</li>
+            <li>✅ 14 dias grátis, sem cartão</li>
             <li>✅ Cancele quando quiser</li>
         </ul>
         <a class="cta-btn" href="#criar-conta">Começar teste grátis →</a>
@@ -771,7 +771,7 @@ else:
                             st.rerun()
 
     else:
-        st.info("✨ Acesso completo por R$197/mês. Garantia de 15 dias.")
+        st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
         st.markdown(f'<a href="{HOTMART_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
 
 st.divider()

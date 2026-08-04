@@ -287,21 +287,21 @@ def email_winback(email, day):
     email_enc = url_quote(email, safe="")
     hotmart_url = f"https://pay.hotmart.com/L106736067M?email={email_enc}"
 
-    if day == 8:
+    if day == 15:
         subject = "Você ainda pensa em crescer no Google? 🌎"
         body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-            Faz uma semana desde que seu período de teste terminou.<br><br>
-            Durante esses 7 dias, você viu de perto como o SEO Brasil funciona — os dados de busca, o monitoramento de posições e o relatório automático toda segunda-feira.<br><br>
+            Seu período de teste de 14 dias terminou ontem.<br><br>
+            Durante esses 14 dias, você viu de perto como o SEO Brasil funciona — os dados de busca, o monitoramento de posições e o relatório automático toda segunda-feira.<br><br>
             Se você ainda quer aparecer no Google e atrair clientes de forma orgânica, o plano está disponível por R$197/mês — menos do que um dia de anúncio no Meta.
         </p>"""
-    elif day == 14:
+    elif day == 22:
         subject = "Última chance de retomar seu monitoramento de SEO 📊"
         body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-            Já faz duas semanas desde que seu teste terminou.<br><br>
+            Já faz uma semana desde que seu teste de 14 dias terminou.<br><br>
             Enquanto isso, seus concorrentes continuam sendo rastreados no Google toda semana.<br><br>
             Você pode retomar agora e já receber o próximo relatório na segunda-feira.
         </p>"""
-    else:  # day == 30
+    else:  # day == 44
         subject = "Ainda dá tempo de começar a crescer no Google 🚀"
         body = f"""<p style="color:#e0e0e0;font-size:15px;line-height:1.6">
             Um mês atrás você testou o SEO Brasil.<br><br>
@@ -340,7 +340,7 @@ def email_winback(email, day):
 # ---------------------------------------------------------------------------
 
 ONBOARDING_DAYS = {1: email_day1, 3: email_day3, 7: email_day7}
-WINBACK_DAYS = [8, 14, 30]
+WINBACK_DAYS = [15, 22, 44]
 
 
 def run():
