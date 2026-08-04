@@ -751,24 +751,27 @@ else:
                 st.caption(f"{count}/20 palavras rastreadas — dados atualizados toda segunda-feira")
                 st.divider()
 
-                h1, h2, h3 = st.columns([4, 3, 1.5])
-                h1.markdown("**Palavra-chave**")
-                h2.markdown("**Posição no Google**")
-                h3.markdown("**Remover**")
-                st.divider()
-
                 for item in tracked_list:
                     kw = item["keyword"]
                     rank_row = get_rank_data_for_keyword(user_id, kw, domain)
                     trend = trend_label(rank_row)
 
-                    c1, c2, c3 = st.columns([4, 3, 1.5])
-                    c1.write(kw)
-                    c2.write(trend)
-                    with c3:
+                    col_card, col_btn = st.columns([10, 1])
+                    with col_card:
+                        st.markdown(f"""
+                        <div style="background:#1e1e1e;border-radius:8px;padding:10px 14px;
+                                    display:flex;justify-content:space-between;align-items:center;
+                                    margin-bottom:2px">
+                            <span style="color:white;font-size:14px;font-weight:500">{kw}</span>
+                            <span style="color:#9CA3AF;font-size:13px">{trend}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col_btn:
+                        st.markdown("<div style='margin-top:4px'>", unsafe_allow_html=True)
                         if st.button("✕", key=f"remove_{kw}"):
                             remove_tracking(kw, user_id)
                             st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
 
     else:
         st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
