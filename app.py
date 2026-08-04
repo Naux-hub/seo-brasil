@@ -393,8 +393,8 @@ if st.session_state.user is None:
             <span>📈 Dados atualizados toda semana</span>
             <span>🇧🇷 Focado no mercado brasileiro</span>
         </div>
-        <a class="cta-btn" href="{HOTMART_URL}" target="_blank">Começar agora — R$197/mês →</a>
-        <div class="garantia">✅ Garantia de 15 dias • Cancele quando quiser</div>
+        <a class="cta-btn" href="#criar-conta">Começar grátis — 14 dias sem cartão →</a>
+        <div class="garantia">✅ 14 dias grátis • Sem cartão de crédito • Cancele quando quiser</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -467,23 +467,24 @@ if st.session_state.user is None:
             <li>✅ Garantia de 15 dias</li>
             <li>✅ Cancele quando quiser</li>
         </ul>
-        <a class="cta-btn" href="{HOTMART_URL}" target="_blank">Assinar agora →</a>
+        <a class="cta-btn" href="#criar-conta">Começar teste grátis →</a>
     </div>
     """, unsafe_allow_html=True)
 
     st.divider()
 
-    # --- Login (längre ner) ---
-    st.markdown('<div class="section-title">Já é assinante? Entre aqui</div>', unsafe_allow_html=True)
+    # --- Registrering / Login ---
+    st.markdown('<div class="section-title" id="criar-conta">Comece seu teste gratuito de 14 dias</div>', unsafe_allow_html=True)
+    st.caption("Sem cartão de crédito. Cancele quando quiser.")
 
     with st.form("login_form"):
         email = st.text_input("E-mail")
         senha = st.text_input("Senha", type="password")
         col1, col2 = st.columns(2)
         with col1:
-            entrar = st.form_submit_button("Entrar")
+            criar = st.form_submit_button("✅ Criar conta grátis", type="primary")
         with col2:
-            criar = st.form_submit_button("Criar conta")
+            entrar = st.form_submit_button("Entrar")
 
     if entrar:
         try:
@@ -508,11 +509,44 @@ if st.session_state.user is None:
             st.error("E-mail ou senha incorretos.")
 
     if criar:
-        try:
-            res = supabase.auth.sign_up({"email": email, "password": senha})
-            st.success("Conta criada! Verifique seu e-mail para confirmar.")
-        except Exception:
-            st.error("Erro ao criar conta.")
+        if not email or not senha:
+            st.error("Preencha e-mail e senha.")
+        elif len(senha) < 6:
+            st.error("A senha deve ter pelo menos 6 caracteres.")
+        else:
+            try:
+                res = supabase.auth.sign_up({"email": email, "password": senha})
+                if res.user:
+                    user_id = str(res.user.id)
+                    # Skapa rad i subscribers med trial-status
+                    try:
+                        supabase.table("subscribers").insert({
+                            "email": email,
+                            "user_id": user_id,
+                            "subscription_status": "trial",
+                        }).execute()
+                    except Exception:
+                        pass  # Raden kan redan finnas
+                    # Logga in direkt
+                    try:
+                        login_res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
+                        st.session_state.user = login_res.user
+                        st.session_state.access_token = login_res.session.access_token
+                        st.session_state.refresh_token = login_res.session.refresh_token
+                        supabase.postgrest.auth(login_res.session.access_token)
+                        cookie.set("sb_access_token", login_res.session.access_token, max_age=COOKIE_MAX_AGE)
+                        cookie.set("sb_refresh_token", login_res.session.refresh_token, max_age=COOKIE_MAX_AGE)
+                        st.rerun()
+                    except Exception:
+                        st.success("✅ Conta criada! Faça login para começar seu teste gratuito de 14 dias.")
+                else:
+                    st.error("Erro ao criar conta. Tente novamente.")
+            except Exception as e:
+                err = str(e).lower()
+                if "already registered" in err or "already exists" in err:
+                    st.error("Este e-mail já está cadastrado. Faça login abaixo.")
+                else:
+                    st.error("Erro ao criar conta. Tente novamente.")
 
     with st.expander("Esqueceu a senha?"):
         email_reset = st.text_input("Digite seu e-mail para redefinir a senha", key="reset_email")
