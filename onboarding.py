@@ -362,7 +362,7 @@ def run():
         age = days_since(created_at)
         print(f"\n→ {email} (dag {age}, status: {status})")
 
-        if status == "active" or age <= 7:
+        if status == "active" or age <= 14:
             # Onboarding-mejl dag 1, 3, 7
             for day, build_email in ONBOARDING_DAYS.items():
                 if age >= day and not already_sent(user_id, day):

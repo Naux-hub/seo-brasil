@@ -75,7 +75,7 @@ def get_trial_status(email):
         return "ACTIVE"
     created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
     days = (datetime.now(timezone.utc) - created_at).days
-    if days <= 7:
+    if days <= 14:
         return "TRIAL_ACTIVE"
     return "TRIAL_EXPIRED"
 
@@ -664,7 +664,8 @@ else:
                             if st.button("+ Rastrear", key=f"track_{i}"):
                                 ok, msg = add_tracking(kw, user_id)
                                 if ok:
-                                    st.success(f"✅ '{kw}' adicionado!")
+                                    st.success(f"✅ '{kw}' adicionado ao monitoramento!")
+                                    st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
                                     st.rerun()
                                 else:
                                     st.error(msg)

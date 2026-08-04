@@ -32,7 +32,7 @@ def get_active_subscribers():
         else:
             created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
             days = (now - created_at).days
-            if days <= 7:
+            if days <= 14:
                 active.append(row)
             else:
                 expired.append(row)
