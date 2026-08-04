@@ -5,6 +5,7 @@ from keyword_cache import get_keyword_data
 from datetime import datetime, timedelta, timezone
 from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
+from urllib.parse import quote as urlquote
 
 DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
@@ -742,6 +743,14 @@ else:
 
             st.divider()
 
+            # Hantera borttagning via query param (från ✕-knapp i HTML-kortet)
+            if "del_kw" in st.query_params:
+                kw_to_del = st.query_params.get("del_kw", "")
+                if kw_to_del:
+                    remove_tracking(kw_to_del, user_id)
+                st.query_params.clear()
+                st.rerun()
+
             tracked_list = get_tracked_keywords_list(user_id)
 
             if not tracked_list:
@@ -755,23 +764,22 @@ else:
                     kw = item["keyword"]
                     rank_row = get_rank_data_for_keyword(user_id, kw, domain)
                     trend = trend_label(rank_row)
+                    kw_enc = urlquote(kw)
 
-                    col_card, col_btn = st.columns([10, 1])
-                    with col_card:
-                        st.markdown(f"""
-                        <div style="background:#1e1e1e;border-radius:8px;padding:10px 14px;
-                                    display:flex;justify-content:space-between;align-items:center;
-                                    margin-bottom:2px">
-                            <span style="color:white;font-size:14px;font-weight:500">{kw}</span>
-                            <span style="color:#9CA3AF;font-size:13px">{trend}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    with col_btn:
-                        st.markdown("<div style='margin-top:4px'>", unsafe_allow_html=True)
-                        if st.button("✕", key=f"remove_{kw}"):
-                            remove_tracking(kw, user_id)
-                            st.rerun()
-                        st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style="background:#1e1e1e;border-radius:8px;padding:10px 14px;
+                                display:flex;justify-content:space-between;align-items:center;
+                                margin-bottom:6px">
+                        <span style="color:white;font-size:14px;font-weight:500;
+                                     flex:1;margin-right:10px">{kw}</span>
+                        <span style="color:#9CA3AF;font-size:13px;
+                                     white-space:nowrap;margin-right:12px">{trend}</span>
+                        <a href="?del_kw={kw_enc}"
+                           style="color:#6B7280;text-decoration:none;font-size:14px;
+                                  padding:3px 9px;border:1px solid #444;border-radius:5px;
+                                  flex-shrink:0;line-height:1.5">✕</a>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     else:
         st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
