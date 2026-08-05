@@ -287,6 +287,17 @@ if st.session_state.access_token:
         pass
 elif st.session_state.user is None:
     # Försök återställa session från cookie
+    # Cookie-controllern laddar via iframe — vänta tills den är redo
+    if "cookie_ready" not in st.session_state:
+        st.session_state.cookie_ready = False
+
+    if not st.session_state.cookie_ready:
+        all_cookies = cookie.getAll()
+        if all_cookies is None:
+            # Inte redo än — rerun och vänta
+            st.rerun()
+        st.session_state.cookie_ready = True
+
     try:
         at = cookie.get("sb_access_token")
         rt = cookie.get("sb_refresh_token")
