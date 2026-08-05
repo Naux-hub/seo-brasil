@@ -657,22 +657,67 @@ else:
                             st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
                             st.session_state.search_results = None
 
-            # Visa resultat med "+ Spåra"-knappar
+            # Visa resultat med "+ Rastrear"-knappar
             if st.session_state.search_results:
                 items = st.session_state.search_results
                 tracked_set = get_tracked_set(user_id)
 
-                # Rubrikrad
-                h1, h2, h3, h4, h5 = st.columns([3, 2, 1.8, 1.8, 1.4])
-                h1.markdown("**Palavra-chave**")
-                h2.markdown("**Volume/mês**")
-                h3.markdown("**Competição**")
-                h4.markdown("**CPC (R$)**")
-                h5.markdown("**Rastrear**")
-                st.divider()
+                # Hantera + Rastrear via query param
+                if "add_kw" in st.query_params:
+                    kw_to_add = st.query_params.get("add_kw", "")
+                    if kw_to_add:
+                        ok, msg = add_tracking(kw_to_add, user_id)
+                        st.session_state["_add_msg"] = ("ok", kw_to_add) if ok else ("err", msg)
+                    st.query_params.clear()
+                    st.rerun()
+
+                if "_add_msg" in st.session_state:
+                    kind, val = st.session_state.pop("_add_msg")
+                    if kind == "ok":
+                        st.success(f"✅ '{val}' adicionado ao monitoramento!")
+                        st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
+                    else:
+                        st.error(val)
+
+                # CSS: desktop-tabell + mobilkort
+                st.markdown("""
+                <style>
+                .kw-header{display:flex;padding:4px 14px 8px;gap:8px}
+                .kw-header span{color:#6B7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+                .h-name{flex:3}.h-vol,.h-comp,.h-cpc{flex:1.2;text-align:right}.h-btn{width:95px;text-align:right}
+                .kw-card{display:flex;align-items:center;background:#1e1e1e;border-radius:8px;
+                         padding:10px 14px;margin-bottom:6px;gap:8px}
+                .kw-name{flex:3;color:white;font-size:14px;font-weight:500;word-break:break-word}
+                .kw-vol,.kw-comp,.kw-cpc{flex:1.2;color:#9CA3AF;font-size:13px;text-align:right}
+                .kw-action{width:95px;text-align:right;flex-shrink:0}
+                .kw-btn{color:white;background:#1a6de0;text-decoration:none;padding:5px 10px;
+                        border-radius:5px;font-size:12px;white-space:nowrap}
+                .kw-tracked{color:#4CAF50;font-size:13px;white-space:nowrap}
+                .kw-label{display:none;color:#6B7280;font-size:11px;margin-right:3px}
+                @media(max-width:640px){
+                  .kw-header{display:none}
+                  .kw-card{flex-wrap:wrap;row-gap:4px}
+                  .kw-name{flex:1 0 100%}
+                  .kw-vol,.kw-comp,.kw-cpc{flex:0 0 auto;text-align:left}
+                  .kw-label{display:inline}
+                  .kw-action{margin-left:auto}
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
+                # Desktop-rubrik (dold på mobil via CSS)
+                st.markdown("""
+                <div class="kw-header">
+                  <span class="h-name">Palavra-chave</span>
+                  <span class="h-vol">Volume/mês</span>
+                  <span class="h-comp">Competição</span>
+                  <span class="h-cpc">CPC (R$)</span>
+                  <span class="h-btn">Rastrear</span>
+                </div>
+                """, unsafe_allow_html=True)
 
                 csv_rows = []
-                for i, item in enumerate(items):
+                for item in items:
                     kw = item.get("keyword", "")
                     volume = item.get("search_volume") or 0
                     cpc = item.get("cpc") or 0
@@ -687,23 +732,21 @@ else:
                         "CPC médio (R$)": cpc_fmt,
                     })
 
-                    c1, c2, c3, c4, c5 = st.columns([3, 2, 1.8, 1.8, 1.4])
-                    c1.write(kw)
-                    c2.write(volume_fmt)
-                    c3.write(comp)
-                    c4.write(cpc_fmt)
-                    with c5:
-                        if kw in tracked_set:
-                            st.write("✅ Rastreando")
-                        else:
-                            if st.button("+ Rastrear", key=f"track_{i}"):
-                                ok, msg = add_tracking(kw, user_id)
-                                if ok:
-                                    st.success(f"✅ '{kw}' adicionado ao monitoramento!")
-                                    st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
-                                    st.rerun()
-                                else:
-                                    st.error(msg)
+                    if kw in tracked_set:
+                        action_html = '<span class="kw-tracked">✅ Rastreando</span>'
+                    else:
+                        kw_enc = urlquote(kw)
+                        action_html = f'<a href="?add_kw={kw_enc}" class="kw-btn">+ Rastrear</a>'
+
+                    st.markdown(f"""
+                    <div class="kw-card">
+                      <span class="kw-name">{kw}</span>
+                      <span class="kw-vol"><span class="kw-label">Vol.</span>{volume_fmt}</span>
+                      <span class="kw-comp"><span class="kw-label">Comp.</span>{comp}</span>
+                      <span class="kw-cpc"><span class="kw-label">CPC </span>R${cpc_fmt}</span>
+                      <span class="kw-action">{action_html}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 st.divider()
                 df_csv = pd.DataFrame(csv_rows)
