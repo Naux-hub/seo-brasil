@@ -301,13 +301,31 @@ elif st.session_state.user is None:
     try:
         at = cookie.get("sb_access_token")
         rt = cookie.get("sb_refresh_token")
-        if at and rt:
-            res = supabase.auth.set_session(at, rt)
+        if rt:
+            res = None
+            # Försök återställa med befintliga tokens
+            if at:
+                try:
+                    res = supabase.auth.set_session(at, rt)
+                except Exception:
+                    pass
+            # Fallback: refresh_session om set_session failade eller access token expirerat
+            if not (res and res.user):
+                try:
+                    res = supabase.auth.refresh_session(rt)
+                except Exception:
+                    pass
             if res and res.user:
                 st.session_state.user = res.user
                 st.session_state.access_token = res.session.access_token
                 st.session_state.refresh_token = res.session.refresh_token
                 supabase.postgrest.auth(st.session_state.access_token)
+                # Uppdatera cookies med förnyade tokens
+                try:
+                    cookie.set("sb_access_token", res.session.access_token, max_age=COOKIE_MAX_AGE)
+                    cookie.set("sb_refresh_token", res.session.refresh_token, max_age=COOKIE_MAX_AGE)
+                except Exception:
+                    pass
                 st.rerun()
     except Exception:
         pass
