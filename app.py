@@ -512,9 +512,12 @@ if st.session_state.user is None:
             st.session_state.access_token = res.session.access_token
             st.session_state.refresh_token = res.session.refresh_token
             supabase.postgrest.auth(res.session.access_token)
-            # Uppdatera last_login för dormant user alerts
+            # Uppdatera last_login + user_id (fylls i vid första inlogg efter Hotmart-köp)
             try:
-                supabase.table("subscribers").update({"last_login": datetime.now(timezone.utc).isoformat()}).eq("email", email).execute()
+                supabase.table("subscribers").update({
+                    "last_login": datetime.now(timezone.utc).isoformat(),
+                    "user_id": str(res.user.id),
+                }).eq("email", email).execute()
             except Exception:
                 pass
             # Sätt cookies för persistent session
