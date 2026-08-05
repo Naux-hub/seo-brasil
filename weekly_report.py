@@ -67,7 +67,7 @@ def build_teaser_html(email, domain):
           <div style="background:#2a2d35;border-left:4px solid #e53935;border-radius:8px;padding:20px 24px;margin-bottom:24px;">
             <div style="font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:8px;">⚠️ Relatório pausado</div>
             <p style="margin:0;color:#aaa;font-size:0.95rem;">
-              Como seu período de teste de 7 dias terminou, seu relatório semanal foi pausado.
+              Como seu período de teste de 14 dias terminou, seu relatório semanal foi pausado.
               Assine para ver quais termos subiram, quais caíram e onde focar esta semana.
             </p>
           </div>
@@ -343,6 +343,26 @@ def send_email(to_email, subject, html):
     return response.status_code == 200
 
 
+def upload_report_html(user_id, html):
+    """Laddar upp HTML-rapporten till Supabase Storage och returnerar en signed URL (7 dagar)."""
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    path = f"{user_id}/{date_str}.html"
+    try:
+        supabase.storage.from_("reports").upload(
+            path=path,
+            file=html.encode("utf-8"),
+            file_options={"contentType": "text/html; charset=utf-8", "upsert": "true"},
+        )
+        res = supabase.storage.from_("reports").create_signed_url(
+            path=path,
+            expires_in=604800,  # 7 dagar
+        )
+        return res.get("signedURL") or res.get("signed_url") or ""
+    except Exception as e:
+        print(f"  Storage-fel: {e}")
+        return ""
+
+
 def log_report(user_id, keyword_count, status):
     supabase.table("weekly_reports").insert({
         "user_id": user_id,
@@ -409,6 +429,13 @@ def run():
         status = "sent" if ok else "failed"
         log_report(user_id, len(keywords), status)
         print(f"  E-post: {status}")
+
+        # Ladda upp rapport till Supabase Storage → WhatsApp-länk
+        report_url = upload_report_html(user_id, html)
+        if report_url:
+            print(f"  📲 WhatsApp-länk ({email}): {report_url}")
+        else:
+            print(f"  ⚠️  Kunde inte generera WhatsApp-länk")
 
     print("\n=== Weekly Report klar ===")
 
