@@ -375,7 +375,7 @@ if st.session_state.user is not None:
         st.markdown("""
         <div style='text-align:center;padding:2rem 1rem;'>
             <div style='font-size:2.5rem;margin-bottom:1rem;'>🔒</div>
-            <h2 style='margin-bottom:0.5rem;'>Seu período de teste de 7 dias terminou!</h2>
+            <h2 style='margin-bottom:0.5rem;'>Seu período de teste de 14 dias terminou!</h2>
             <p style='color:#888;margin-bottom:2rem;max-width:480px;margin-left:auto;margin-right:auto;'>
                 Para continuar recebendo seus relatórios semanais e descobrindo
                 palavras-chave de alta conversão, assine o plano completo.
@@ -405,8 +405,8 @@ if st.session_state.user is None:
             <span>📈 Dados atualizados toda semana</span>
             <span>🇧🇷 Focado no mercado brasileiro</span>
         </div>
-        <a class="cta-btn" href="#criar-conta">Começar grátis — 14 dias sem cartão →</a>
-        <div class="garantia">✅ 14 dias grátis • Sem cartão de crédito • Cancele quando quiser</div>
+        <a class="cta-btn" href="{HOTMART_URL}">Assinar agora — R$197/mês →</a>
+        <div class="garantia">✅ Acesso imediato • Relatórios toda segunda-feira • Cancele quando quiser</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -476,27 +476,34 @@ if st.session_state.user is None:
             <li>✅ Dados do mercado brasileiro</li>
             <li>✅ Exportação CSV</li>
             <li>✅ Relatórios semanais no seu e-mail</li>
-            <li>✅ 14 dias grátis, sem cartão</li>
             <li>✅ Cancele quando quiser</li>
         </ul>
-        <a class="cta-btn" href="#criar-conta">Começar teste grátis →</a>
+        <a class="cta-btn" href="{HOTMART_URL}">Assinar agora →</a>
     </div>
     """, unsafe_allow_html=True)
 
     st.divider()
 
-    # --- Registrering / Login ---
-    st.markdown('<div class="section-title" id="criar-conta">Comece seu teste gratuito de 14 dias</div>', unsafe_allow_html=True)
-    st.caption("Sem cartão de crédito. Cancele quando quiser.")
+    # --- Login ---
+    # Banner: köp mottaget från Hotmart-redirect
+    if st.query_params.get("source") == "hotmart":
+        st.markdown("""
+        <div style="background:rgba(26,224,109,0.1);border:1px solid rgba(26,224,109,0.35);
+        border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.5rem;text-align:center">
+            <strong style="color:#4dff99;font-size:1rem">🎉 Sua compra foi recebida!</strong><br>
+            <span style="font-size:0.9rem;opacity:0.85">
+            A ativação da conta leva cerca de 1 a 2 minutos.<br>
+            Você receberá um e-mail para definir sua senha — verifique também a caixa de spam.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('<div class="section-title">Acesse sua conta</div>', unsafe_allow_html=True)
 
     with st.form("login_form"):
         email = st.text_input("E-mail")
         senha = st.text_input("Senha", type="password")
-        col1, col2 = st.columns(2)
-        with col1:
-            criar = st.form_submit_button("✅ Criar conta grátis", type="primary")
-        with col2:
-            entrar = st.form_submit_button("Entrar")
+        entrar = st.form_submit_button("Entrar", type="primary", use_container_width=True)
 
     if entrar:
         try:
@@ -520,45 +527,11 @@ if st.session_state.user is None:
         except Exception:
             st.error("E-mail ou senha incorretos.")
 
-    if criar:
-        if not email or not senha:
-            st.error("Preencha e-mail e senha.")
-        elif len(senha) < 6:
-            st.error("A senha deve ter pelo menos 6 caracteres.")
-        else:
-            try:
-                res = supabase.auth.sign_up({"email": email, "password": senha})
-                if res.user:
-                    user_id = str(res.user.id)
-                    # Skapa rad i subscribers med trial-status
-                    try:
-                        supabase.table("subscribers").insert({
-                            "email": email,
-                            "user_id": user_id,
-                            "subscription_status": "trial",
-                        }).execute()
-                    except Exception:
-                        pass  # Raden kan redan finnas
-                    # Logga in direkt
-                    try:
-                        login_res = supabase.auth.sign_in_with_password({"email": email, "password": senha})
-                        st.session_state.user = login_res.user
-                        st.session_state.access_token = login_res.session.access_token
-                        st.session_state.refresh_token = login_res.session.refresh_token
-                        supabase.postgrest.auth(login_res.session.access_token)
-                        cookie.set("sb_access_token", login_res.session.access_token, max_age=COOKIE_MAX_AGE)
-                        cookie.set("sb_refresh_token", login_res.session.refresh_token, max_age=COOKIE_MAX_AGE)
-                        st.rerun()
-                    except Exception:
-                        st.success("✅ Conta criada! Faça login para começar seu teste gratuito de 14 dias.")
-                else:
-                    st.error("Erro ao criar conta. Tente novamente.")
-            except Exception as e:
-                err = str(e).lower()
-                if "already registered" in err or "already exists" in err:
-                    st.error("Este e-mail já está cadastrado. Faça login abaixo.")
-                else:
-                    st.error("Erro ao criar conta. Tente novamente.")
+    st.markdown(f"""
+    <div style="text-align:center;margin-top:1.2rem;font-size:0.92rem;opacity:0.75">
+    Ainda não tem uma conta? <a href="{HOTMART_URL}" style="color:#4d9fff;text-decoration:none;font-weight:600">Assine agora →</a>
+    </div>
+    """, unsafe_allow_html=True)
 
     with st.expander("Esqueceu a senha?"):
         email_reset = st.text_input("Digite seu e-mail para redefinir a senha", key="reset_email")
