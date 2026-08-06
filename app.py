@@ -409,6 +409,128 @@ if st.session_state.user is not None:
 # =====================================================
 if st.session_state.user is None:
 
+    # ── INVITE TOKEN FLOW ─────────────────────────────────────────────────────
+    _invite_token = st.query_params.get("invite_token")
+    if _invite_token:
+        # Validate: exists, unused, not expired
+        _tok_valid = False
+        try:
+            _tok_res = supabase.table("invite_tokens").select("*") \
+                .eq("token", _invite_token).is_("used_at", "null").execute()
+            if _tok_res.data:
+                _tok_exp = datetime.fromisoformat(
+                    _tok_res.data[0]["expires_at"].replace("Z", "+00:00")
+                )
+                if _tok_exp > datetime.now(timezone.utc):
+                    _tok_valid = True
+        except Exception:
+            pass
+
+        st.markdown(
+            "<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>"
+            "SEO Brasil 🌎</div>",
+            unsafe_allow_html=True,
+        )
+
+        if not _tok_valid:
+            st.error("Este link de convite é inválido, expirou ou já foi utilizado.")
+            st.markdown(
+                f"<div style='text-align:center;margin-top:1.2rem;font-size:0.92rem;opacity:0.75'>"
+                f"Já tem uma conta? <a href='https://seobrasil.app' "
+                f"style='color:#4d9fff;text-decoration:none;font-weight:600'>Fazer login →</a></div>",
+                unsafe_allow_html=True,
+            )
+            st.stop()
+
+        st.markdown("""
+        <div style="text-align:center;padding:1.5rem 1rem 0.5rem 1rem">
+            <div style='font-size:1.5rem;margin-bottom:0.5rem'>🎉</div>
+            <h2 style='margin-bottom:0.4rem;font-size:1.6rem;'>Você foi convidado!</h2>
+            <p style='opacity:0.7;max-width:420px;margin:0 auto;font-size:0.95rem;'>
+            Crie sua conta e comece seu teste gratuito de 14 dias — sem cartão de crédito.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        with st.form("invite_form"):
+            inv_email = st.text_input("E-mail")
+            inv_senha = st.text_input("Senha (mín. 6 caracteres)", type="password")
+            inv_submit = st.form_submit_button(
+                "Criar conta e começar →", type="primary", use_container_width=True
+            )
+
+        if inv_submit:
+            if not inv_email or not inv_senha:
+                st.error("Preencha e-mail e senha.")
+            elif len(inv_senha) < 6:
+                st.error("A senha deve ter pelo menos 6 caracteres.")
+            else:
+                # Mark token as used first (prevent double-use)
+                try:
+                    supabase.table("invite_tokens").update({
+                        "used_at": datetime.now(timezone.utc).isoformat()
+                    }).eq("token", _invite_token).execute()
+                except Exception:
+                    st.error("Erro ao validar o convite. Tente novamente.")
+                    st.stop()
+
+                try:
+                    # Create auth user with email already confirmed (requires service_role key)
+                    _inv_res = supabase.auth.admin.create_user({
+                        "email": inv_email,
+                        "password": inv_senha,
+                        "email_confirm": True,
+                    })
+                    _inv_uid = str(_inv_res.user.id)
+
+                    # Create subscribers row with trial status
+                    try:
+                        supabase.table("subscribers").insert({
+                            "email": inv_email,
+                            "user_id": _inv_uid,
+                            "subscription_status": "trial",
+                        }).execute()
+                    except Exception:
+                        pass
+
+                    # Auto-login
+                    _login = supabase.auth.sign_in_with_password(
+                        {"email": inv_email, "password": inv_senha}
+                    )
+                    st.session_state.user = _login.user
+                    st.session_state.access_token = _login.session.access_token
+                    st.session_state.refresh_token = _login.session.refresh_token
+                    supabase.postgrest.auth(_login.session.access_token)
+                    try:
+                        cookie.set("sb_access_token", _login.session.access_token, max_age=COOKIE_MAX_AGE)
+                        cookie.set("sb_refresh_token", _login.session.refresh_token, max_age=COOKIE_MAX_AGE)
+                    except Exception:
+                        pass
+                    st.rerun()
+
+                except Exception as _inv_err:
+                    # Un-mark token so the same link can be retried
+                    try:
+                        supabase.table("invite_tokens").update(
+                            {"used_at": None}
+                        ).eq("token", _invite_token).execute()
+                    except Exception:
+                        pass
+                    _err_str = str(_inv_err).lower()
+                    if any(x in _err_str for x in ("already registered", "already exists", "duplicate")):
+                        st.error("Este e-mail já está cadastrado.")
+                        st.markdown(
+                            "<div style='text-align:center;margin-top:0.8rem'>"
+                            "<a href='https://seobrasil.app' style='color:#4d9fff;font-weight:600'>"
+                            "Ir para o login →</a></div>",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.error("Erro ao criar conta. Tente novamente.")
+
+        st.stop()
+    # ── FIM INVITE TOKEN FLOW ─────────────────────────────────────────────────
+
     # --- Social proof ---
     kw_count = get_social_proof()
 
