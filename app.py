@@ -524,7 +524,7 @@ if st.session_state.user is None:
                     except Exception:
                         pass
                     _err_str = str(_inv_err).lower()
-                    if any(x in _err_str for x in ("already registered", "already exists", "duplicate")):
+                    if any(x in _err_str for x in ("already", "duplicate")):
                         st.error("Este e-mail já está cadastrado.")
                         st.markdown(
                             "<div style='text-align:center;margin-top:0.8rem'>"
@@ -533,7 +533,7 @@ if st.session_state.user is None:
                             unsafe_allow_html=True,
                         )
                     else:
-                        st.error(f"DEBUG: {str(_inv_err)}")
+                        st.error("Erro ao criar conta. Tente novamente.")
 
         st.stop()
     # ── FIM INVITE TOKEN FLOW ─────────────────────────────────────────────────
