@@ -533,7 +533,7 @@ if st.session_state.user is None:
                             unsafe_allow_html=True,
                         )
                     else:
-                        st.error("Erro ao criar conta. Tente novamente.")
+                        st.error(f"DEBUG: {str(_inv_err)}")
 
         st.stop()
     # ── FIM INVITE TOKEN FLOW ─────────────────────────────────────────────────
