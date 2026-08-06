@@ -475,13 +475,20 @@ if st.session_state.user is None:
                     st.stop()
 
                 try:
-                    # Create auth user with email already confirmed (requires service_role key)
-                    _inv_res = supabase.auth.admin.create_user({
-                        "email": inv_email,
-                        "password": inv_senha,
-                        "email_confirm": True,
-                    })
-                    _inv_uid = str(_inv_res.user.id)
+                    # Create auth user via admin REST API (same as Make.com)
+                    import requests as _req
+                    _adm_resp = _req.post(
+                        f"{st.secrets['SUPABASE_URL']}/auth/v1/admin/users",
+                        headers={
+                            "apikey": st.secrets["SUPABASE_KEY"],
+                            "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
+                            "Content-Type": "application/json",
+                        },
+                        json={"email": inv_email, "password": inv_senha, "email_confirm": True},
+                    )
+                    if not _adm_resp.ok:
+                        raise Exception(_adm_resp.json().get("msg", _adm_resp.text))
+                    _inv_uid = _adm_resp.json()["id"]
 
                     # Create subscribers row with trial status
                     try:
