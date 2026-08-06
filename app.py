@@ -269,6 +269,21 @@ st.markdown("""
         font-weight: 700;
         margin-bottom: 1.2rem;
     }
+
+    /* Alla primärknapper — blå (#1a6de0) istället för Streamlits röda standard */
+    .stButton > button[kind="primary"],
+    .stFormSubmitButton > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        background-color: #1a6de0 !important;
+        border-color: #1a6de0 !important;
+        color: white !important;
+    }
+    .stButton > button[kind="primary"]:hover,
+    .stFormSubmitButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #1558b8 !important;
+        border-color: #1558b8 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -541,6 +556,19 @@ if st.session_state.user is None:
     # --- Social proof ---
     kw_count = get_social_proof()
 
+    # --- Hotmart-banner högst upp (vid redirect från köpflödet) ---
+    if st.query_params.get("source") == "hotmart":
+        st.markdown("""
+        <div style="background:rgba(26,224,109,0.1);border:1px solid rgba(26,224,109,0.35);
+        border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;text-align:center">
+            <strong style="color:#4dff99;font-size:1rem">🎉 Sua compra foi recebida!</strong><br>
+            <span style="font-size:0.9rem;opacity:0.85">
+            A ativação da conta leva cerca de 1 a 2 minutos.<br>
+            Você receberá um e-mail para definir sua senha — verifique também a caixa de spam.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
     # --- Hero ---
     st.markdown(f"""
     <div class="hero">
@@ -554,6 +582,12 @@ if st.session_state.user is None:
         </div>
         <a class="cta-btn" href="{HOTMART_URL}">Assinar agora — R$197/mês →</a>
         <div class="garantia">✅ Acesso imediato • Relatórios toda segunda-feira • Cancele quando quiser</div>
+        <div style="margin-top:1.2rem;font-size:0.9rem;opacity:0.65">
+            Já tem uma conta?
+            <a href="javascript:void(0)"
+               onclick="(function(){{var el=document.getElementById('login-section');if(el)el.scrollIntoView({{behavior:'smooth'}});else window.scrollTo({{top:9999,behavior:'smooth'}});}})();"
+               style="color:#4d9fff;text-decoration:none;font-weight:600">Entrar aqui ↓</a>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -632,19 +666,7 @@ if st.session_state.user is None:
     st.divider()
 
     # --- Login ---
-    # Banner: köp mottaget från Hotmart-redirect
-    if st.query_params.get("source") == "hotmart":
-        st.markdown("""
-        <div style="background:rgba(26,224,109,0.1);border:1px solid rgba(26,224,109,0.35);
-        border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.5rem;text-align:center">
-            <strong style="color:#4dff99;font-size:1rem">🎉 Sua compra foi recebida!</strong><br>
-            <span style="font-size:0.9rem;opacity:0.85">
-            A ativação da conta leva cerca de 1 a 2 minutos.<br>
-            Você receberá um e-mail para definir sua senha — verifique também a caixa de spam.
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-
+    st.markdown('<div id="login-section"></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Acesse sua conta</div>', unsafe_allow_html=True)
 
     with st.form("login_form"):
@@ -722,7 +744,6 @@ else:
         st.markdown(f"<div style='font-size:0.85rem;opacity:0.6;padding-top:10px;text-align:right'>{st.session_state.user.email}</div>", unsafe_allow_html=True)
     with col_sair:
         sair_clicked = st.button("Sair", key="sair_btn")
-    st.divider()
 
     if sair_clicked:
         try:
@@ -779,6 +800,12 @@ else:
             )
 
             if st.button("Buscar"):
+                # Säkerställ att JWT är satt på supabase-klienten inför sökning
+                if st.session_state.access_token:
+                    try:
+                        supabase.postgrest.auth(st.session_state.access_token)
+                    except Exception:
+                        pass
                 sokordslista = [s.strip() for s in sokord_text.split("\n") if s.strip()][:10]
                 if not sokordslista:
                     st.warning("Digite ao menos uma palavra-chave.")
@@ -812,7 +839,7 @@ else:
                         "CPC médio (R$)": cpc_fmt,
                     })
 
-                    col_info, col_btn = st.columns([8, 1])
+                    col_info, col_btn = st.columns([7, 2])
                     with col_info:
                         st.markdown(f"""
                         <div style="background:#1e1e1e;border-radius:8px;padding:10px 14px;
