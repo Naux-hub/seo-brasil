@@ -4,6 +4,7 @@ Körs dagligen via GitHub Actions.
 """
 
 import os
+import time
 import requests
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
@@ -54,22 +55,28 @@ def log_sent(user_id, day):
 
 
 def send_email(to_email, subject, html):
-    """Skickar e-post via Resend API."""
-    response = requests.post(
-        "https://api.resend.com/emails",
-        headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "from": FROM_EMAIL,
-            "to": [to_email],
-            "subject": subject,
-            "html": html,
-        },
-        timeout=15,
-    )
-    return response.status_code == 200
+    """Skickar e-post via Resend API. Returnerar False vid fel utan att krascha."""
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": FROM_EMAIL,
+                "to": [to_email],
+                "subject": subject,
+                "html": html,
+            },
+            timeout=15,
+        )
+        if response.status_code != 200:
+            print(f"    Resend HTTP {response.status_code}: {response.text[:120]}")
+        return response.status_code == 200
+    except Exception as e:
+        print(f"    send_email exception: {e}")
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -371,6 +378,7 @@ def run():
                     if ok:
                         log_sent(user_id, day)
                         print(f"  ✓ Dag {day}-mail skickat")
+                        time.sleep(0.4)  # ~2.5 mejl/sek — håller oss under rate limit
                     else:
                         print(f"  ✗ Dag {day}-mail misslyckades")
         else:
@@ -382,6 +390,7 @@ def run():
                     if ok:
                         log_sent(user_id, day)
                         print(f"  ✓ Winback dag {day}-mail skickat")
+                        time.sleep(0.4)
                     else:
                         print(f"  ✗ Winback dag {day}-mail misslyckades")
 
