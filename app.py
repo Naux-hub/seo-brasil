@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from keyword_cache import get_keyword_data
+from keyword_cache import get_keyword_data, get_keyword_ideas
 from datetime import datetime, timedelta, timezone
 from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
@@ -761,6 +761,8 @@ else:
         # Initiera session state för sökresultat
         if "search_results" not in st.session_state:
             st.session_state.search_results = None
+        if "keyword_ideas" not in st.session_state:
+            st.session_state.keyword_ideas = []
 
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
@@ -817,6 +819,19 @@ else:
                         except Exception:
                             st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
                             st.session_state.search_results = None
+
+                    if st.session_state.search_results:
+                        with st.spinner("Buscando sugestões relacionadas..."):
+                            try:
+                                ideas = get_keyword_ideas(
+                                    sokordslista, supabase, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD, limit=10
+                                )
+                                searched_set = {kw.lower() for kw in sokordslista}
+                                st.session_state.keyword_ideas = [
+                                    i for i in ideas if i["keyword"].lower() not in searched_set
+                                ]
+                            except Exception:
+                                st.session_state.keyword_ideas = []
 
             # Visa resultat med "+ Rastrear"-knappar
             if st.session_state.search_results:
@@ -881,6 +896,58 @@ else:
                     file_name="seo_brasil.csv",
                     mime="text/csv",
                 )
+
+                # --- Sugestões relacionadas ---
+                ideas = st.session_state.get("keyword_ideas", [])
+                if ideas:
+                    st.divider()
+                    st.markdown(
+                        "<div style='font-weight:700;font-size:1rem;margin-bottom:0.4rem'>"
+                        "💡 Sugestões relacionadas</div>",
+                        unsafe_allow_html=True,
+                    )
+                    for idea in ideas:
+                        ikw   = idea.get("keyword", "")
+                        ivol  = idea.get("search_volume") or 0
+                        icpc  = idea.get("cpc") or 0
+                        icomp = str(idea.get("competition", "N/A")).capitalize()
+                        ivol_fmt = f"{int(ivol):,}".replace(",", ".")
+                        icpc_fmt = f"{float(icpc):.2f}" if icpc else "N/A"
+
+                        col_info, col_btn = st.columns([7, 2])
+                        with col_info:
+                            st.markdown(f"""
+                            <div style="background:#1a1a2e;border-radius:8px;padding:10px 14px;
+                                        display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;
+                                        margin-bottom:2px;border-left:3px solid #1a6de0">
+                                <span style="color:white;font-size:14px;font-weight:500;flex:1 0 100%">{ikw}</span>
+                                <span style="color:#9CA3AF;font-size:13px">
+                                    <span style="color:#6B7280;font-size:11px">Vol. </span>{ivol_fmt}
+                                </span>
+                                <span style="color:#9CA3AF;font-size:13px">
+                                    <span style="color:#6B7280;font-size:11px">Comp. </span>{icomp}
+                                </span>
+                                <span style="color:#9CA3AF;font-size:13px">
+                                    <span style="color:#6B7280;font-size:11px">CPC </span>R${icpc_fmt}
+                                </span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with col_btn:
+                            if ikw in tracked_set:
+                                st.markdown(
+                                    "<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅</div>",
+                                    unsafe_allow_html=True,
+                                )
+                            else:
+                                st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
+                                if st.button("+ Rastrear", key=f"track_idea_{ikw}"):
+                                    ok, msg = add_tracking(ikw, user_id)
+                                    if ok:
+                                        st.success(f"✅ '{ikw}' adicionado ao monitoramento!")
+                                        st.rerun()
+                                    else:
+                                        st.error(msg)
+                                st.markdown("</div>", unsafe_allow_html=True)
 
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:

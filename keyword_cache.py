@@ -148,6 +148,84 @@ def _batch_upsert(supabase, items: list) -> None:
 
 
 # ------------------------------------------------------------------
+# Keyword ideas (relaterade sökord via keywords_for_keywords)
+# ------------------------------------------------------------------
+
+KEYWORD_IDEAS_ENDPOINT = (
+    "https://api.dataforseo.com/v3/keywords_data/google_ads/keywords_for_keywords/live"
+)
+
+
+def get_keyword_ideas(
+    seed_keywords: list,
+    supabase,
+    login: str,
+    password: str,
+    limit: int = 10,
+) -> list:
+    """
+    Hämtar relaterade sökord baserat på seed-sökorden.
+    Återanvänder _batch_upsert för att spara idéerna i keyword_cache.
+
+    Args:
+        seed_keywords:  Lista med seed-sökord (max 10, vi skickar max 5)
+        supabase:       Supabase-client
+        login/password: DataForSEO-uppgifter
+        limit:          Max antal förslag att returnera
+
+    Returns:
+        list of dicts med nycklarna: keyword, search_volume, competition, cpc
+        Sorterat på search_volume fallande.
+    """
+    seeds = [kw for kw in seed_keywords if kw][:5]
+    if not seeds:
+        return []
+
+    payload = [{
+        "keywords": seeds,
+        "location_code": LOCATION_CODE,
+        "language_code": LANGUAGE_CODE,
+    }]
+
+    try:
+        response = requests.post(
+            KEYWORD_IDEAS_ENDPOINT,
+            json=payload,
+            auth=(login, password),
+            timeout=30,
+        )
+        response.raise_for_status()
+        body = response.json()
+    except Exception as e:
+        logger.error(f"DataForSEO keywords_for_keywords misslyckades: {e}")
+        return []
+
+    tasks = body.get("tasks") or []
+    if not tasks:
+        return []
+
+    api_items = []
+    results = []
+    for task in tasks:
+        for item in (task.get("result") or []):
+            if item and item.get("keyword"):
+                api_items.append(item)
+                results.append({
+                    "keyword": item.get("keyword", ""),
+                    "search_volume": item.get("search_volume") or 0,
+                    "competition": str(item.get("competition", "N/A")),
+                    "cpc": item.get("cpc") or 0,
+                })
+
+    # Spara i keyword_cache — gratis nästa gång någon söker på dessa ord
+    _batch_upsert(supabase, api_items)
+
+    # Sortera på sökvolym och returnera top N
+    results.sort(key=lambda x: x.get("search_volume", 0), reverse=True)
+    return results[:limit]
+
+
+# ------------------------------------------------------------------
 # Huvudfunktion
 # ------------------------------------------------------------------
 
