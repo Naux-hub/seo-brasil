@@ -830,8 +830,10 @@ else:
                                 st.session_state.keyword_ideas = [
                                     i for i in ideas if i["keyword"].lower() not in searched_set
                                 ]
-                            except Exception:
+                                st.caption(f"DEBUG ideas: {len(st.session_state.keyword_ideas)} förslag hämtade")
+                            except Exception as _ideas_err:
                                 st.session_state.keyword_ideas = []
+                                st.warning(f"DEBUG ideas-fel: {_ideas_err}")
 
             # Visa resultat med "+ Rastrear"-knappar
             if st.session_state.search_results:
