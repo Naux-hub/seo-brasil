@@ -220,6 +220,13 @@ def get_keyword_ideas(
     # Spara i keyword_cache — gratis nästa gång någon söker på dessa ord
     _batch_upsert(supabase, api_items)
 
+    # Filtrera bort förslag med duplicerade ord ("whey whey protein", "protein whey protein")
+    def _has_duplicate_words(kw: str) -> bool:
+        words = kw.lower().split()
+        return len(words) != len(set(words))
+
+    results = [r for r in results if not _has_duplicate_words(r["keyword"])]
+
     # Sortera på sökvolym och returnera top N
     results.sort(key=lambda x: x.get("search_volume", 0), reverse=True)
     return results[:limit]
