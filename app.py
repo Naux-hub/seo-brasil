@@ -902,32 +902,57 @@ else:
                 # --- Sugestões relacionadas ---
                 ideas = st.session_state.get("keyword_ideas", [])
                 if ideas:
+                    def _is_opportunity(idea):
+                        return (idea.get("search_volume") or 0) > 10000 and float(idea.get("cpc") or 0) < 0.25
+
+                    def _seo_difficulty(cpc):
+                        cpc = float(cpc or 0)
+                        if cpc < 0.25:
+                            return "Low", "#2ecc71"
+                        elif cpc < 0.75:
+                            return "Medium", "#f0a500"
+                        else:
+                            return "High", "#9CA3AF"
+
+                    ideas_sorted = sorted(
+                        ideas,
+                        key=lambda x: (not _is_opportunity(x), -(x.get("search_volume") or 0))
+                    )
+
                     st.divider()
                     st.markdown(
                         "<div style='font-weight:700;font-size:1rem;margin-bottom:0.4rem'>"
                         "💡 Sugestões relacionadas</div>",
                         unsafe_allow_html=True,
                     )
-                    for idea in ideas:
-                        ikw   = idea.get("keyword", "")
-                        ivol  = idea.get("search_volume") or 0
-                        icpc  = idea.get("cpc") or 0
-                        icomp = str(idea.get("competition", "N/A")).capitalize()
+                    for idea in ideas_sorted:
+                        ikw      = idea.get("keyword", "")
+                        ivol     = idea.get("search_volume") or 0
+                        icpc     = idea.get("cpc") or 0
                         ivol_fmt = f"{int(ivol):,}".replace(",", ".")
                         icpc_fmt = f"{float(icpc):.2f}" if icpc else "N/A"
+                        is_opp   = _is_opportunity(idea)
+                        diff_label, diff_color = _seo_difficulty(icpc)
+                        border   = "#2ecc71" if is_opp else "#1a6de0"
+                        badge    = (
+                            "<span style='background:#0d2b1a;color:#2ecc71;font-size:11px;"
+                            "padding:2px 7px;border-radius:4px;font-weight:600;margin-left:6px'>"
+                            "🎯 Oportunidade</span>"
+                        ) if is_opp else ""
 
                         col_info, col_btn = st.columns([7, 2])
                         with col_info:
                             st.markdown(f"""
                             <div style="background:#1a1a2e;border-radius:8px;padding:10px 14px;
                                         display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;
-                                        margin-bottom:2px;border-left:3px solid #1a6de0">
-                                <span style="color:white;font-size:14px;font-weight:500;flex:1 0 100%">{ikw}</span>
+                                        margin-bottom:2px;border-left:3px solid {border}">
+                                <span style="color:white;font-size:14px;font-weight:500;flex:1 0 100%">{ikw}{badge}</span>
                                 <span style="color:#9CA3AF;font-size:13px">
                                     <span style="color:#6B7280;font-size:11px">Vol. </span>{ivol_fmt}
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
-                                    <span style="color:#6B7280;font-size:11px">Comp. </span>{icomp}
+                                    <span style="color:#6B7280;font-size:11px">Dificuldade SEO </span>
+                                    <span style="color:{diff_color}">{diff_label}</span>
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
                                     <span style="color:#6B7280;font-size:11px">CPC </span>R${icpc_fmt}
