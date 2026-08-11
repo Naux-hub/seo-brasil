@@ -1006,6 +1006,9 @@ else:
 
             tracked_list = get_tracked_keywords_list(user_id)
 
+            if domain:
+                st.caption("📌 Para receber seu relatório semanal, pesquise palavras-chave e clique em '+ Rastrear' nas que deseja monitorar.")
+
             if not tracked_list:
                 st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
