@@ -156,6 +156,41 @@ KEYWORD_IDEAS_ENDPOINT = (
 )
 
 
+def _get_cached_ideas(supabase, seeds_key: str) -> list | None:
+    """Returnerar cachade idéer om de finns och är färska, annars None."""
+    try:
+        res = (
+            supabase.table("keyword_ideas_cache")
+            .select("results, cached_at")
+            .eq("seeds_key", seeds_key)
+            .execute()
+        )
+        if res.data:
+            row = res.data[0]
+            if _is_fresh(row["cached_at"]):
+                logger.info(f"Idéer för '{seeds_key}' hämtades från cache.")
+                return row["results"]
+    except Exception as e:
+        logger.error(f"Fel vid lookup av keyword_ideas_cache: {e}")
+    return None
+
+
+def _set_cached_ideas(supabase, seeds_key: str, results: list) -> None:
+    """Sparar idéer i keyword_ideas_cache."""
+    try:
+        supabase.table("keyword_ideas_cache").upsert(
+            {
+                "seeds_key": seeds_key,
+                "results": results,
+                "cached_at": datetime.now(timezone.utc).isoformat(),
+            },
+            on_conflict="seeds_key",
+        ).execute()
+        logger.info(f"Sparade {len(results)} idéer i cache för '{seeds_key}'.")
+    except Exception as e:
+        logger.error(f"Fel vid upsert av keyword_ideas_cache: {e}")
+
+
 def get_keyword_ideas(
     seed_keywords: list,
     supabase,
@@ -165,7 +200,8 @@ def get_keyword_ideas(
 ) -> list:
     """
     Hämtar relaterade sökord baserat på seed-sökorden.
-    Återanvänder _batch_upsert för att spara idéerna i keyword_cache.
+    Cache-first: returnerar cachade idéer om de finns (< 30 dagar gamla).
+    Vid cache-miss: anropar DataForSEO och sparar resultatet.
 
     Args:
         seed_keywords:  Lista med seed-sökord (max 10, vi skickar max 5)
@@ -181,6 +217,14 @@ def get_keyword_ideas(
     if not seeds:
         return []
 
+    seeds_key = "|".join(sorted(s.lower() for s in seeds))
+
+    # 1. Kolla cache
+    cached = _get_cached_ideas(supabase, seeds_key)
+    if cached is not None:
+        return cached[:limit]
+
+    # 2. Cache-miss — hämta från DataForSEO
     payload = [{
         "keywords": seeds,
         "location_code": LOCATION_CODE,
@@ -217,7 +261,7 @@ def get_keyword_ideas(
                     "cpc": item.get("cpc") or 0,
                 })
 
-    # Spara i keyword_cache — gratis nästa gång någon söker på dessa ord
+    # Spara individuella sökord i keyword_cache
     _batch_upsert(supabase, api_items)
 
     # Filtrera bort förslag med duplicerade ord ("whey whey protein", "protein whey protein")
@@ -229,7 +273,12 @@ def get_keyword_ideas(
 
     # Sortera på sökvolym och returnera top N
     results.sort(key=lambda x: x.get("search_volume", 0), reverse=True)
-    return results[:limit]
+    final = results[:limit]
+
+    # 3. Spara i keyword_ideas_cache — gratis nästa gång
+    _set_cached_ideas(supabase, seeds_key, final)
+
+    return final
 
 
 # ------------------------------------------------------------------
