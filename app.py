@@ -80,6 +80,55 @@ def get_trial_status(email):
         return "TRIAL_ACTIVE"
     return "TRIAL_EXPIRED"
 
+def create_trial_account(email, senha):
+    """
+    Cria uma conta (Supabase Auth) + linha em subscribers com subscription_status='trial',
+    e faz login automático. Usada tanto pelo fluxo de convite (invite_token) quanto pelo
+    formulário público de teste grátis na landing page.
+
+    Retorna (sucesso: bool, erro: str | None). erro == "DUPLICATE" quando o e-mail já existe.
+    """
+    try:
+        import requests as _req
+        _adm_resp = _req.post(
+            f"{st.secrets['SUPABASE_URL']}/auth/v1/admin/users",
+            headers={
+                "apikey": st.secrets["SUPABASE_KEY"],
+                "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
+                "Content-Type": "application/json",
+            },
+            json={"email": email, "password": senha, "email_confirm": True},
+        )
+        if not _adm_resp.ok:
+            raise Exception(_adm_resp.json().get("msg", _adm_resp.text))
+        _uid = _adm_resp.json()["id"]
+
+        try:
+            supabase.table("subscribers").insert({
+                "email": email,
+                "user_id": _uid,
+                "subscription_status": "trial",
+            }).execute()
+        except Exception:
+            pass
+
+        _login = supabase.auth.sign_in_with_password({"email": email, "password": senha})
+        st.session_state.user = _login.user
+        st.session_state.access_token = _login.session.access_token
+        st.session_state.refresh_token = _login.session.refresh_token
+        supabase.postgrest.auth(_login.session.access_token)
+        try:
+            cookie.set("sb_access_token", _login.session.access_token, max_age=COOKIE_MAX_AGE)
+            cookie.set("sb_refresh_token", _login.session.refresh_token, max_age=COOKIE_MAX_AGE)
+        except Exception:
+            pass
+        return True, None
+    except Exception as e:
+        _err_str = str(e).lower()
+        if any(x in _err_str for x in ("already", "duplicate")):
+            return False, "DUPLICATE"
+        return False, str(e)
+
 def save_user_domain(email, domain):
     domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
     supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
@@ -489,48 +538,10 @@ if st.session_state.user is None:
                     st.error("Erro ao validar o convite. Tente novamente.")
                     st.stop()
 
-                try:
-                    # Create auth user via admin REST API (same as Make.com)
-                    import requests as _req
-                    _adm_resp = _req.post(
-                        f"{st.secrets['SUPABASE_URL']}/auth/v1/admin/users",
-                        headers={
-                            "apikey": st.secrets["SUPABASE_KEY"],
-                            "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
-                            "Content-Type": "application/json",
-                        },
-                        json={"email": inv_email, "password": inv_senha, "email_confirm": True},
-                    )
-                    if not _adm_resp.ok:
-                        raise Exception(_adm_resp.json().get("msg", _adm_resp.text))
-                    _inv_uid = _adm_resp.json()["id"]
-
-                    # Create subscribers row with trial status
-                    try:
-                        supabase.table("subscribers").insert({
-                            "email": inv_email,
-                            "user_id": _inv_uid,
-                            "subscription_status": "trial",
-                        }).execute()
-                    except Exception:
-                        pass
-
-                    # Auto-login
-                    _login = supabase.auth.sign_in_with_password(
-                        {"email": inv_email, "password": inv_senha}
-                    )
-                    st.session_state.user = _login.user
-                    st.session_state.access_token = _login.session.access_token
-                    st.session_state.refresh_token = _login.session.refresh_token
-                    supabase.postgrest.auth(_login.session.access_token)
-                    try:
-                        cookie.set("sb_access_token", _login.session.access_token, max_age=COOKIE_MAX_AGE)
-                        cookie.set("sb_refresh_token", _login.session.refresh_token, max_age=COOKIE_MAX_AGE)
-                    except Exception:
-                        pass
+                _ok, _err = create_trial_account(inv_email, inv_senha)
+                if _ok:
                     st.rerun()
-
-                except Exception as _inv_err:
+                else:
                     # Un-mark token so the same link can be retried
                     try:
                         supabase.table("invite_tokens").update(
@@ -538,8 +549,7 @@ if st.session_state.user is None:
                         ).eq("token", _invite_token).execute()
                     except Exception:
                         pass
-                    _err_str = str(_inv_err).lower()
-                    if any(x in _err_str for x in ("already", "duplicate")):
+                    if _err == "DUPLICATE":
                         st.error("Este e-mail já está cadastrado.")
                         st.markdown(
                             "<div style='text-align:center;margin-top:0.8rem'>"
@@ -590,6 +600,30 @@ if st.session_state.user is None:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # --- Trial grátis self-service (sem precisar de convite manual) ---
+    _left, _mid, _right = st.columns([1, 2, 1])
+    with _mid:
+        with st.expander("🎁 Quer testar antes? Comece grátis por 14 dias — sem cartão de crédito"):
+            st.caption("Crie sua conta agora e use o SEO Brasil por 14 dias, sem compromisso.")
+            with st.form("public_trial_form"):
+                pt_email = st.text_input("E-mail", key="pt_email")
+                pt_senha = st.text_input("Senha (mín. 6 caracteres)", type="password", key="pt_senha")
+                pt_submit = st.form_submit_button("Criar conta grátis →", type="primary", use_container_width=True)
+
+            if pt_submit:
+                if not pt_email or not pt_senha:
+                    st.error("Preencha e-mail e senha.")
+                elif len(pt_senha) < 6:
+                    st.error("A senha deve ter pelo menos 6 caracteres.")
+                else:
+                    _ok, _err = create_trial_account(pt_email, pt_senha)
+                    if _ok:
+                        st.rerun()
+                    elif _err == "DUPLICATE":
+                        st.error("Este e-mail já está cadastrado. Faça login abaixo (\"Entrar aqui\").")
+                    else:
+                        st.error("Erro ao criar conta. Tente novamente em instantes.")
 
     st.divider()
 
