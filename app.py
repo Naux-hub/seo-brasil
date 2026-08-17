@@ -163,6 +163,28 @@ def trend_label(row):
     else:
         return f"#{current} → Estável"
 
+# --- Google Ads: konverteringsspårning för trial-anmälan ---
+_fire_conversion = st.session_state.pop("_fire_trial_conversion", False)
+_conversion_snippet = ""
+if _fire_conversion:
+    _conversion_snippet = """
+      gtag('event', 'conversion', {
+          'send_to': 'AW-18394590355/ESslCPjziuMcEJPZnMNE',
+          'value': 1.0,
+          'currency': 'SEK'
+      });
+    """
+components.html(f"""
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18394590355"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', 'AW-18394590355');
+  {_conversion_snippet}
+</script>
+""", height=0)
+
 # --- Global CSS ---
 st.markdown("""
     <style>
@@ -619,6 +641,7 @@ if st.session_state.user is None:
                 else:
                     _ok, _err = create_trial_account(pt_email, pt_senha)
                     if _ok:
+                        st.session_state["_fire_trial_conversion"] = True
                         st.rerun()
                     elif _err == "DUPLICATE":
                         st.error("Este e-mail já está cadastrado. Faça login abaixo (\"Entrar aqui\").")
