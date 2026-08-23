@@ -154,7 +154,7 @@ def trend_label(row):
     current = row.get("rank_position")
     prev = row.get("prev_rank_position")
     if current is None:
-        return "📉 Saiu do top 100" if prev else "⏳ Aguardando dados"
+        return "📉 Saiu do top 100" if prev else "🔍 Não encontrado no top 100"
     if prev is None:
         return f"#{current} 🆕 Novo"
     diff = prev - current  # positivt = klättrade
