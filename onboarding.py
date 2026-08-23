@@ -283,7 +283,7 @@ def email_trigger_t1(email, unsub_url=None):
       A partir daí, você acompanha sua posição automaticamente toda semana.
     </p>
     <p style="color:#aaa;font-size:14px;line-height:1.6">
-      Leva menos de dois minutos para configurar.
+      Leva menos de 2 minutos para começar.
     </p>
     {_cta_button("Adicionar minhas palavras-chave →", APP_URL)}
     <p style="color:#555;font-size:13px">Qualquer dúvida, responda este e-mail.<br>Abraço,<br>Samuel — SEO Brasil</p>"""
@@ -303,7 +303,8 @@ def email_trigger_t2(email, unsub_url=None):
     </p>
     {_cta_button("Ver meu ranking →", APP_URL)}
     <p style="color:#aaa;font-size:14px;line-height:1.6">
-      A partir de agora, seu ranking é atualizado toda segunda-feira de manhã.
+      Acompanhe como suas posições evoluem a cada semana — é assim que você sabe
+      se o que está fazendo no seu site está funcionando.
     </p>
     <p style="color:#555;font-size:13px">Abraço,<br>Samuel — SEO Brasil</p>"""
     subject = "Seu primeiro ranking está pronto 🚀"
@@ -323,12 +324,12 @@ def email_day1(email, activation, unsub_url=None):
           primeiras palavras-chave — ótimo começo.
         </p>
         <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-          Todo <strong style="color:white">domingo à noite</strong> nosso sistema verifica
-          as posições do seu site no Google. Na segunda-feira de manhã você recebe o relatório
-          com a evolução de cada palavra-chave.
+          Toda semana você recebe uma atualização com a evolução das suas posições —
+          se estão subindo, caindo ou estáveis. É a forma mais simples de saber
+          se o que você está fazendo no seu site está tendo efeito.
         </p>
         <p style="color:#aaa;font-size:14px;line-height:1.6">
-          Enquanto isso, você pode pesquisar novas palavras e adicionar mais termos ao monitoramento.
+          Você também pode pesquisar novas palavras-chave e adicionar mais termos ao monitoramento a qualquer momento.
         </p>
         {_cta_button("Ver meu monitoramento →", APP_URL)}
         <p style="color:#555;font-size:13px">Abraço,<br>Samuel — SEO Brasil</p>"""
@@ -365,20 +366,23 @@ def email_day3(email, unsub_url=None):
     """Dag 3 — Valor: por que acompanhar posicionamento ao longo do tempo."""
     body = f"""
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Saber sua posição no Google hoje é útil. Mas o que realmente importa é a tendência.
+      A posição que você ocupa hoje no Google é um dado. A tendência das últimas semanas é uma informação.
     </p>
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Uma página que está subindo semana após semana — mesmo que ainda não esteja na
-      primeira posição — está no caminho certo. Uma que está caindo precisa de atenção agora,
-      não daqui a três meses.
+      Quando você acompanha seu ranking semana a semana, começa a enxergar o que está funcionando —
+      uma página que subiu cinco posições depois de uma atualização, outra que está caindo
+      e precisa de atenção antes que o problema se agrave.
     </p>
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      É por isso que o SEO Brasil atualiza seus dados toda semana: para que você tome
-      decisões com base em tendências reais, não em snapshots isolados.
+      Cada relatório do SEO Brasil mostra se suas palavras-chave estão:
+    </p>
+    <p style="color:#e0e0e0;font-size:14px;line-height:2.2">
+      📈 <strong style="color:white">Subindo</strong> — seu conteúdo está ganhando relevância<br>
+      📉 <strong style="color:white">Caindo</strong> — vale atualizar ou expandir esse conteúdo<br>
+      → <strong style="color:white">Estável</strong> — SEO leva tempo; o que importa é a tendência em 4–8 semanas
     </p>
     <p style="color:#aaa;font-size:14px;line-height:1.6">
-      Se você ainda não adicionou seu site, é hora de fazer isso para começar a receber
-      os relatórios semanais.
+      Com o tempo, esse histórico vira seu principal guia para saber onde investir esforço no seu site.
     </p>
     {_cta_button("Ver meu monitoramento →", APP_URL)}
     <p style="color:#555;font-size:13px">Abraço,<br>Samuel — SEO Brasil</p>"""
@@ -417,11 +421,8 @@ def email_day7(email, unsub_url=None):
     """Dag 7 — Veckorapport-guide."""
     body = f"""
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Todo domingo à noite o SEO Brasil verifica as posições do seu site no Google.
-      Na segunda-feira você recebe o resultado.
-    </p>
-    <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Veja como interpretar os dados quando o relatório chegar:
+      Toda segunda-feira você recebe seu relatório com a evolução das palavras-chave
+      que está acompanhando. Veja como interpretar os dados:
     </p>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 24px">
       <tr style="background:#2a2a2a">
@@ -463,7 +464,12 @@ def email_day13(email, unsub_url=None):
       Seu período de teste gratuito do SEO Brasil termina amanhã.
     </p>
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Para continuar acompanhando seu posicionamento no Google toda semana, renove agora:
+      Nesses 14 dias, o sistema coletou dados reais sobre as posições do seu site no Google.
+      Esse histórico fica ainda mais valioso quando você continua acompanhando semana após semana —
+      é essa evolução que mostra se o que você está fazendo está funcionando.
+    </p>
+    <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
+      Sem a assinatura, você deixa de receber os relatórios semanais e interrompe esse acompanhamento.
     </p>
     <table width="100%" cellpadding="0" cellspacing="0"
            style="background:#1e1e1e;border:1px solid #333;border-radius:8px;
@@ -495,15 +501,19 @@ def email_day14(email, unsub_url=None):
     hotmart = f"{HOTMART_URL}?email={url_quote(email, safe='')}"
     body = f"""
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Seu período de teste gratuito do SEO Brasil terminou hoje.
+      Seu período de teste do SEO Brasil encerrou hoje.
     </p>
     <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
-      Se você quiser continuar acompanhando seu posicionamento no Google —
-      e receber o relatório toda segunda-feira — a assinatura está disponível por
-      <strong style="color:white">R$197/mês</strong>.
+      Suas palavras-chave e configurações continuam salvas. Se você reativar agora,
+      não começa do zero — retoma de onde parou e passa a acumular um histórico real
+      de posições, semana após semana.
+    </p>
+    <p style="color:#e0e0e0;font-size:15px;line-height:1.6">
+      É esse histórico que, com o tempo, mostra se o seu site está crescendo no Google —
+      e onde vale a pena investir esforço.
     </p>
     <p style="color:#aaa;font-size:14px;line-height:1.6">
-      Suas palavras-chave e configurações continuam salvas. É só reativar para retomar de onde parou.
+      A assinatura está disponível por <strong style="color:white">R$197/mês</strong>.
     </p>
     {_cta_button("Continuar agora →", hotmart)}
     <p style="color:#555;font-size:13px">Qualquer dúvida, responda este e-mail.<br>Abraço,<br>Samuel — SEO Brasil</p>"""
