@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import requests
+import time
 from supabase import create_client
 from keyword_cache import get_keyword_data, get_keyword_ideas
 from datetime import datetime, timedelta, timezone
@@ -163,27 +165,134 @@ def trend_label(row):
     else:
         return f"#{current} → Estável"
 
-# --- Google Ads: konverteringsspårning för trial-anmälan ---
-_fire_conversion = st.session_state.pop("_fire_trial_conversion", False)
-_conversion_snippet = ""
-if _fire_conversion:
-    _conversion_snippet = """
-      gtag('event', 'conversion', {
-          'send_to': 'AW-18394590355/ESslCPjziuMcEJPZnMNE',
-          'value': 1.0,
-          'currency': 'SEK'
-      });
+# ── ACTIVATION TRACKING ──────────────────────────────────────────────────────
+
+def log_event(user_id, event, metadata=None):
+    """Registra um evento de ativação. Nunca trava o app."""
+    try:
+        supabase.table("user_events").insert({
+            "user_id": str(user_id),
+            "event": event,
+            "metadata": metadata or {},
+        }).execute()
+    except Exception:
+        pass
+
+def has_any_rankings(user_id):
+    """Verifica se o usuário já tem dados de ranking."""
+    try:
+        res = supabase.table("keyword_rankings") \
+            .select("user_id", count="exact") \
+            .eq("user_id", str(user_id)) \
+            .limit(1).execute()
+        return (res.count or 0) > 0
+    except Exception:
+        return False
+
+# ── ON-DEMAND RANKING ─────────────────────────────────────────────────────────
+
+def _fetch_single_rank(keyword, domain, login, password):
     """
-components.html(f"""
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18394590355"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){{dataLayer.push(arguments);}}
-  gtag('js', new Date());
-  gtag('config', 'AW-18394590355');
-  {_conversion_snippet}
-</script>
-""", height=0)
+    Busca posição de um keyword no Google via DataForSEO (async + retry).
+    Retorna (position, url) ou (None, None) em caso de erro.
+    """
+    tasks = [{"keyword": keyword, "location_code": 2076, "language_code": "pt", "depth": 100}]
+    try:
+        r = requests.post(
+            "https://api.dataforseo.com/v3/serp/google/organic/task_post",
+            auth=(login, password), json=tasks, timeout=30,
+        )
+        data = r.json()
+    except Exception:
+        return None, None
+
+    if data.get("status_code") != 20000:
+        return None, None
+
+    task_items = data.get("tasks", [])
+    if not task_items:
+        return None, None
+    task_id = task_items[0].get("id")
+    if not task_id:
+        return None, None
+
+    # Retry: 15s → 5s → 5s
+    for wait_time in [15, 5, 5]:
+        time.sleep(wait_time)
+        try:
+            r = requests.get(
+                f"https://api.dataforseo.com/v3/serp/google/organic/task_get/regular/{task_id}",
+                auth=(login, password), timeout=30,
+            )
+            result_data = r.json()
+            tasks_list = result_data.get("tasks", [])
+            if not tasks_list:
+                continue
+            result = tasks_list[0].get("result") or []
+            if not result:
+                continue
+            items = result[0].get("items", [])
+            if not items:
+                continue
+            for item in items:
+                if item.get("type") != "organic":
+                    continue
+                item_url = item.get("url", "") or ""
+                item_domain = item.get("domain", "") or ""
+                if domain in item_url or domain in item_domain:
+                    return item.get("rank_absolute"), item_url
+            return None, None  # Não está no top 100
+        except Exception:
+            continue
+
+    return None, None
+
+
+def run_on_demand_ranking(user_id, domain, keywords, login, password,
+                          status_el, progress_bar):
+    """
+    Verifica posição no Google para todos os keywords com feedback visual.
+    Salva em keyword_rankings e retorna dict de resultados.
+    """
+    results = {}
+    total = len(keywords)
+
+    for i, kw in enumerate(keywords):
+        status_el.markdown(
+            f"<span style='color:#9CA3AF;font-size:0.9rem'>"
+            f"Verificando {i + 1} de {total}: <em>{kw}</em>...</span>",
+            unsafe_allow_html=True,
+        )
+        progress_bar.progress(i / total)
+        position, url = _fetch_single_rank(kw, domain, login, password)
+        results[kw] = {"position": position, "url": url}
+
+    progress_bar.progress(1.0)
+    status_el.empty()
+
+    # Salvar no Supabase
+    now = datetime.now(timezone.utc).isoformat()
+    rows = [
+        {
+            "user_id": str(user_id),
+            "keyword": kw,
+            "domain": domain,
+            "rank_position": d["position"],
+            "prev_rank_position": None,
+            "checked_at": now,
+        }
+        for kw, d in results.items()
+    ]
+    if rows:
+        try:
+            supabase.table("keyword_rankings").upsert(
+                rows, on_conflict="user_id,keyword,domain"
+            ).execute()
+        except Exception:
+            pass
+
+    return results
+
 
 # --- Global CSS ---
 st.markdown("""
@@ -641,7 +750,6 @@ if st.session_state.user is None:
                 else:
                     _ok, _err = create_trial_account(pt_email, pt_senha)
                     if _ok:
-                        st.session_state["_fire_trial_conversion"] = True
                         st.rerun()
                     elif _err == "DUPLICATE":
                         st.error("Este e-mail já está cadastrado. Faça login abaixo (\"Entrar aqui\").")
@@ -820,6 +928,14 @@ else:
             st.session_state.search_results = None
         if "keyword_ideas" not in st.session_state:
             st.session_state.keyword_ideas = []
+        if "ranking_in_progress" not in st.session_state:
+            st.session_state.ranking_in_progress = False
+        if "ranking_done" not in st.session_state:
+            st.session_state.ranking_done = False
+        if "_ranking_kws" not in st.session_state:
+            st.session_state._ranking_kws = []
+        if "_ranking_viewed_logged" not in st.session_state:
+            st.session_state._ranking_viewed_logged = False
 
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
@@ -852,6 +968,34 @@ else:
 
         # ── TAB 1: SÖKNING ──────────────────────────────
         with tab1:
+
+            # ── ON-DEMAND INITIAL RANKING ─────────────────
+            if st.session_state.ranking_in_progress:
+                _rank_domain = get_user_domain(st.session_state.user.email)
+                _rank_kws = st.session_state._ranking_kws
+                if _rank_domain and _rank_kws:
+                    st.markdown(
+                        "<div style='font-weight:700;font-size:1rem;margin-bottom:0.5rem'>"
+                        "🔍 Verificando suas posições no Google...</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _status_el = st.empty()
+                    _progress_bar = st.progress(0)
+                    log_event(user_id, "initial_ranking_started", {"keyword_count": len(_rank_kws)})
+                    _ranking_results = run_on_demand_ranking(
+                        user_id, _rank_domain, _rank_kws,
+                        DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD,
+                        _status_el, _progress_bar,
+                    )
+                    log_event(user_id, "initial_ranking_completed",
+                              {"results": {k: v["position"] for k, v in _ranking_results.items()}})
+                    st.session_state.ranking_in_progress = False
+                    st.session_state.ranking_done = True
+                    st.rerun()
+
+            if st.session_state.ranking_done:
+                st.success("✅ Seu primeiro ranking está pronto! Veja os resultados em **Meu Monitoramento**.")
+
             sokord_text = st.text_area(
                 "Digite as palavras-chave (uma por linha, máx 10):",
                 placeholder="agencia de marketing Sao Paulo\nseo para pequenas empresas\nmarketing digital Brasil",
@@ -934,11 +1078,19 @@ else:
                             st.markdown("<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅</div>", unsafe_allow_html=True)
                         else:
                             st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
-                            if st.button("+ Rastrear", key=f"track_{kw}"):
+                            if st.button("+ Rastrear", key=f"track_{kw}",
+                                         disabled=st.session_state.ranking_in_progress):
                                 ok, msg = add_tracking(kw, user_id)
                                 if ok:
-                                    st.success(f"✅ '{kw}' adicionado ao monitoramento!")
-                                    st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
+                                    log_event(user_id, "keyword_saved", {"keyword": kw})
+                                    _user_domain = get_user_domain(st.session_state.user.email)
+                                    if _user_domain and not has_any_rankings(user_id):
+                                        _all_kws = get_tracked_keywords_list(user_id)
+                                        st.session_state._ranking_kws = [r["keyword"] for r in _all_kws]
+                                        st.session_state.ranking_in_progress = True
+                                        st.session_state.ranking_done = False
+                                    else:
+                                        st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
                                     st.rerun()
                                 else:
                                     st.error(msg)
@@ -1024,10 +1176,19 @@ else:
                                 )
                             else:
                                 st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
-                                if st.button("+ Rastrear", key=f"track_idea_{ikw}"):
+                                if st.button("+ Rastrear", key=f"track_idea_{ikw}",
+                                             disabled=st.session_state.ranking_in_progress):
                                     ok, msg = add_tracking(ikw, user_id)
                                     if ok:
-                                        st.success(f"✅ '{ikw}' adicionado ao monitoramento!")
+                                        log_event(user_id, "keyword_saved", {"keyword": ikw})
+                                        _user_domain = get_user_domain(st.session_state.user.email)
+                                        if _user_domain and not has_any_rankings(user_id):
+                                            _all_kws = get_tracked_keywords_list(user_id)
+                                            st.session_state._ranking_kws = [r["keyword"] for r in _all_kws]
+                                            st.session_state.ranking_in_progress = True
+                                            st.session_state.ranking_done = False
+                                        else:
+                                            st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
                                         st.rerun()
                                     else:
                                         st.error(msg)
@@ -1037,6 +1198,9 @@ else:
         with tab2:
             user_email = st.session_state.user.email
             domain = get_user_domain(user_email)
+            if not st.session_state.get("_ranking_viewed_logged"):
+                log_event(user_id, "ranking_viewed")
+                st.session_state._ranking_viewed_logged = True
 
             # --- Domän-input ---
             if not domain:
