@@ -294,6 +294,123 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
     return results
 
 
+# ── IN-APP ONBOARDING ────────────────────────────────────────────────────────
+
+def get_user_events(user_id, event_names):
+    """Retorna conjunto de eventos que já ocorreram para este usuário."""
+    try:
+        res = supabase.table("user_events") \
+            .select("event") \
+            .eq("user_id", str(user_id)) \
+            .in_("event", list(event_names)) \
+            .execute()
+        return {r["event"] for r in (res.data or [])}
+    except Exception:
+        return set()
+
+
+def get_onboarding_status(user_id, domain, ranking_in_progress=False):
+    """Calcula o status dos 3 passos de onboarding."""
+    step1 = bool(domain)
+    step2 = False
+    step3 = False
+    ranking_completed_not_viewed = False
+
+    if step1:
+        try:
+            res = supabase.table("tracked_keywords") \
+                .select("id", count="exact") \
+                .eq("user_id", str(user_id)) \
+                .eq("is_active", True) \
+                .limit(1).execute()
+            step2 = (res.count or 0) > 0
+        except Exception:
+            step2 = False
+
+    if step2:
+        events = get_user_events(
+            user_id, ["initial_ranking_completed", "ranking_viewed"]
+        )
+        has_completed = "initial_ranking_completed" in events
+        has_viewed = "ranking_viewed" in events
+        has_ranks = has_any_rankings(user_id)
+        step3 = has_completed and has_ranks and has_viewed
+        ranking_completed_not_viewed = has_completed and has_ranks and not has_viewed
+
+    return {
+        "step1": step1,
+        "step2": step2,
+        "step3": step3,
+        "ranking_running": ranking_in_progress,
+        "ranking_completed_not_viewed": ranking_completed_not_viewed,
+    }
+
+
+def render_onboarding_progress(status):
+    """Renderiza a barra de progresso de onboarding (some quando tudo está completo)."""
+    s = status
+
+    # Tudo pronto → não mostrar nada
+    if s["step1"] and s["step2"] and s["step3"]:
+        return
+
+    def _step_html(label, done, is_next, is_running=False):
+        if done:
+            bg, border, icon, color, weight = "#0d2b1a", "#2ecc71", "✓", "#2ecc71", "500"
+        elif is_running:
+            bg, border, icon, color, weight = "rgba(245,158,11,0.1)", "#f59e0b", "⏳", "#f59e0b", "600"
+        elif is_next:
+            bg, border, icon, color, weight = "rgba(26,109,224,0.12)", "#1a6de0", "→", "#4d9fff", "600"
+        else:
+            bg, border, icon, color, weight = "#1a1a1a", "#374151", "○", "#6B7280", "400"
+        return (
+            f"<div style='flex:1;text-align:center;padding:6px 10px;border-radius:6px;"
+            f"background:{bg};border:1px solid {border}'>"
+            f"<span style='color:{color};font-size:12px;font-weight:{weight}'>"
+            f"{icon} {label}</span></div>"
+        )
+
+    is_s1_next = not s["step1"]
+    is_s2_next = s["step1"] and not s["step2"]
+    is_s3_running = s["step2"] and s["ranking_running"]
+    is_s3_next = s["step2"] and not s["step3"] and not s["ranking_running"]
+
+    s1_html = _step_html("Adicione seu site",           s["step1"], is_s1_next)
+    s2_html = _step_html("Escolha suas palavras-chave", s["step2"], is_s2_next)
+    s3_html = _step_html("Veja sua posição no Google",  s["step3"], is_s3_next, is_s3_running)
+
+    if is_s1_next:
+        hint = "Próximo: Vá até <b>Meu Monitoramento</b> e adicione o endereço do seu site."
+    elif is_s2_next:
+        hint = "Próximo: Pesquise uma palavra-chave acima e clique em <b>+ Rastrear</b>."
+    elif is_s3_running:
+        hint = "Estamos verificando suas posições no Google..."
+    elif s["ranking_completed_not_viewed"]:
+        hint = "Próximo: Clique em <b>Meu Monitoramento</b> para ver seu ranking."
+    elif is_s3_next:
+        hint = "Próximo: Pesquise uma palavra-chave e clique em <b>+ Rastrear</b> para verificar sua posição."
+    else:
+        hint = ""
+
+    st.markdown(f"""
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:10px;
+                padding:0.75rem 1rem;margin-bottom:0.75rem">
+        <div style="font-size:0.72rem;color:#6B7280;margin-bottom:0.55rem;
+                    font-weight:600;letter-spacing:0.06em;text-transform:uppercase">
+            Comece em 3 passos
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+            {s1_html}
+            <span style="color:#374151;font-size:14px">›</span>
+            {s2_html}
+            <span style="color:#374151;font-size:14px">›</span>
+            {s3_html}
+        </div>
+        {"<div style='margin-top:0.45rem;font-size:0.8rem;color:#9CA3AF'>" + hint + "</div>" if hint else ""}
+    </div>
+    """, unsafe_allow_html=True)
+
+
 # --- Global CSS ---
 st.markdown("""
     <style>
@@ -963,6 +1080,12 @@ else:
                         st.success("✅ Site salvo!")
                         st.rerun()
             st.divider()
+
+        # ── ONBOARDING PROGRESS ───────────────────────────
+        _ob_status = get_onboarding_status(
+            user_id, _ob_domain, st.session_state.ranking_in_progress
+        )
+        render_onboarding_progress(_ob_status)
 
         tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
 
