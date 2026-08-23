@@ -36,19 +36,23 @@ from supabase import create_client
 # ── Configuração ──────────────────────────────────────────────────────────────
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]  # service role key — endast server-side
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 APP_URL = "https://seobrasil.app"
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
 TRIAL_DAYS = 14
 UNSUBSCRIBE_EMAIL = "oi@seobrasil.app"
 
-# Edge Function URL byggs från SUPABASE_URL (samma env var som redan finns)
-# Exempel: "https://abcxyz.supabase.co" → "https://abcxyz.supabase.co/functions/v1/unsubscribe"
+# Edge Function URL byggs från SUPABASE_URL + SUPABASE_ANON_KEY (publik/publishable key).
+# SUPABASE_ANON_KEY är den publika anon-nyckeln — aldrig service role key.
+# Struktur: .../unsubscribe?apikey=<ANON_KEY>&token=<TOKEN>
+# apikey krävs av Supabase gateway (även med --no-verify-jwt).
+# Anon-nyckeln är identisk för alla användare — den enda användarspecifika hemligheten är token.
 _SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-UNSUB_BASE_URL = f"{_SUPABASE_URL}/functions/v1/unsubscribe"
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+UNSUB_BASE_URL = f"{_SUPABASE_URL}/functions/v1/unsubscribe?apikey={SUPABASE_ANON_KEY}"
 
 # OBS: oi@seobrasil.app kräver DNS-verifiering i Resend innan produktion.
 # Verifiera domänen på resend.com/domains innan FROM_EMAIL ändras.
@@ -585,7 +589,7 @@ def run():
 
         # ── Unsubscribe-URL (unik per användare) ──────────────────
         token = get_or_create_unsub_token(user_id)
-        unsub_url = f"{UNSUB_BASE_URL}?token={token}" if token else None
+        unsub_url = f"{UNSUB_BASE_URL}&token={token}" if token else None
 
         # Lokal flagga — max ett email per användare per körning
         email_sent_this_run = False

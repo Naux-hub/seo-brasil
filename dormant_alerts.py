@@ -10,9 +10,9 @@ from supabase import create_client
 
 # --- Anslutningar ---
 SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]  # service role key — endast server-side
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 FROM_EMAIL = "SEO Brasil <onboarding@resend.dev>"
 APP_URL = "https://seobrasil.app"

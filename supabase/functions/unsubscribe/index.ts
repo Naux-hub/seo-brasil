@@ -87,10 +87,10 @@ function pageError(message: string): string {
 }
 
 function htmlResponse(status: number, body: string): Response {
-  return new Response(body, {
-    status,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  // Blob sätter Content-Type från typen snarare än headers,
+  // vilket är mer robust mot gateway-manipulation.
+  const blob = new Blob([body], { type: "text/html; charset=utf-8" });
+  return new Response(blob, { status });
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
