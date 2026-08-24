@@ -831,15 +831,14 @@ if st.session_state.user is None:
     st.markdown(f"""
     <div class="hero">
         <h1>Descubra o que o Brasil<br>está buscando no Google</h1>
-        <p>Pesquise palavras-chave para o mercado brasileiro,
-        encontre oportunidades e cresça no digital.</p>
+        <p>Pesquise palavras-chave, encontre oportunidades e acompanhe as posições do seu site no Google.</p>
         <div class="social-proof-bar">
             <span>🔍 <strong>+{kw_count:,}</strong> palavras-chave analisadas</span>
             <span>📈 Dados atualizados toda semana</span>
             <span>🇧🇷 Focado no mercado brasileiro</span>
         </div>
-        <a class="cta-btn" href="{HOTMART_URL}">Assinar agora — R$197/mês →</a>
-        <div class="garantia">✅ Acesso imediato • Relatórios toda segunda-feira • Cancele quando quiser</div>
+        <a class="cta-btn" href="javascript:void(0)" onclick="(function(){{var el=document.getElementById('comecar');if(el)el.scrollIntoView({{behavior:'smooth'}});else window.scrollTo({{top:999,behavior:'smooth'}});}})();">Comece grátis por 14 dias →</a>
+        <div class="garantia">Sem cartão de crédito • Cancele quando quiser</div>
         <div style="margin-top:1.2rem;font-size:0.9rem;opacity:0.65">
             Já tem uma conta?
             <a href="javascript:void(0)"
@@ -850,9 +849,10 @@ if st.session_state.user is None:
     """, unsafe_allow_html=True)
 
     # --- Trial grátis self-service (sem precisar de convite manual) ---
+    st.markdown('<div id="comecar"></div>', unsafe_allow_html=True)
     _left, _mid, _right = st.columns([1, 2, 1])
     with _mid:
-        with st.expander("🎁 Quer testar antes? Comece grátis por 14 dias — sem cartão de crédito"):
+        with st.expander("🎁 Comece grátis por 14 dias — sem cartão de crédito", expanded=True):
             st.caption("Crie sua conta agora e use o SEO Brasil por 14 dias, sem compromisso.")
             with st.form("public_trial_form"):
                 pt_email = st.text_input("E-mail", key="pt_email")
@@ -885,9 +885,9 @@ if st.session_state.user is None:
             <p>Volume de busca, CPC e competição focados no mercado brasileiro.</p>
         </div>
         <div class="feature-card">
-            <div class="icon">⚡</div>
-            <h3>Resultados em segundos</h3>
-            <p>Busca rápida com cache inteligente — sem esperar.</p>
+            <div class="icon">📈</div>
+            <h3>Monitoramento de posições</h3>
+            <p>Acompanhe a posição do seu site no Google para as palavras-chave que você escolher.</p>
         </div>
         <div class="feature-card">
             <div class="icon">📊</div>
@@ -910,18 +910,23 @@ if st.session_state.user is None:
     <div class="steps">
         <div class="step">
             <div class="num">1</div>
-            <h4>Assine</h4>
-            <p>R$197/mês, sem contrato. Cancele quando quiser.</p>
+            <h4>Adicione seu site</h4>
+            <p>Informe o endereço do seu domínio — é assim que o sistema sabe qual site está monitorando no Google.</p>
         </div>
         <div class="step">
             <div class="num">2</div>
-            <h4>Pesquise</h4>
-            <p>Digite até 10 palavras-chave e clique em Buscar.</p>
+            <h4>Pesquise e rastreie palavras-chave</h4>
+            <p>Use a ferramenta de pesquisa para ver volume, CPC e competição de qualquer termo. Clique em + Rastrear nos que quer monitorar.</p>
         </div>
         <div class="step">
             <div class="num">3</div>
-            <h4>Analise e exporte</h4>
-            <p>Veja volume, CPC e competição. Exporte para CSV.</p>
+            <h4>Monitoramos sua posição automaticamente</h4>
+            <p>Toda semana o sistema consulta o Google e registra em que posição seu site aparece para cada palavra-chave rastreada.</p>
+        </div>
+        <div class="step">
+            <div class="num">4</div>
+            <h4>Você recebe seu relatório</h4>
+            <p>Toda segunda-feira: um e-mail com a evolução das posições — o que subiu, o que caiu e o que ficou estável.</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -936,6 +941,7 @@ if st.session_state.user is None:
         <div class="per">por mês</div>
         <ul>
             <li>✅ Pesquisa ilimitada de palavras-chave</li>
+            <li>✅ Monitoramento de até 20 palavras-chave</li>
             <li>✅ Dados do mercado brasileiro</li>
             <li>✅ Exportação CSV</li>
             <li>✅ Relatórios semanais no seu e-mail</li>
