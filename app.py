@@ -124,6 +124,8 @@ def create_trial_account(email, senha):
             cookie.set("sb_refresh_token", _login.session.refresh_token, max_age=COOKIE_MAX_AGE)
         except Exception:
             pass
+        _acq = {k: v for k, v in st.session_state.get("acquisition", {}).items() if v}
+        log_event(_uid, "signup_completed", _acq if _acq else None)
         return True, None
     except Exception as e:
         _err_str = str(e).lower()
@@ -134,6 +136,31 @@ def create_trial_account(email, senha):
 def save_user_domain(email, domain):
     domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
     supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
+
+
+def log_event(user_id, event, metadata=None):
+    """Inserts a user event into user_events. Silent on error — never blocks the main flow."""
+    try:
+        row = {
+            "user_id": str(user_id),
+            "event": event,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if metadata:
+            row["metadata"] = metadata
+        supabase.table("user_events").insert(row).execute()
+    except Exception:
+        pass
+
+
+def has_event(user_id, event):
+    """Returns True if this event has already been logged for this user. Silent on error."""
+    try:
+        res = supabase.table("user_events").select("id").eq("user_id", str(user_id)).eq("event", event).limit(1).execute()
+        return bool(res.data)
+    except Exception:
+        return False
+
 
 def get_rank_data_for_keyword(user_id, keyword, domain):
     if not domain:
@@ -591,6 +618,18 @@ if "access_token" not in st.session_state:
 if "refresh_token" not in st.session_state:
     st.session_state.refresh_token = None
 
+# Capture acquisition params from URL once per session (set by worker.js JS snippet)
+if "acquisition" not in st.session_state:
+    _aqp = st.query_params
+    st.session_state.acquisition = {
+        "utm_source":   _aqp.get("utm_source", ""),
+        "utm_medium":   _aqp.get("utm_medium", ""),
+        "utm_campaign": _aqp.get("utm_campaign", ""),
+        "ref":          _aqp.get("ref", ""),
+        "device":       _aqp.get("device", ""),
+        "anon_session": _aqp.get("anon_session", ""),
+    }
+
 # Sätt JWT på supabase-klienten vid varje rerun
 if st.session_state.access_token:
     try:
@@ -701,6 +740,9 @@ if st.session_state.user is not None:
     _trial_status = get_trial_status(_trial_email)
 
     if _trial_status == "TRIAL_EXPIRED":
+        if "trial_expired_event_logged" not in st.session_state:
+            log_event(st.session_state.user.id, "trial_expired_shown")
+            st.session_state.trial_expired_event_logged = True
         st.markdown("<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
         st.markdown("""
         <div style='text-align:center;padding:2rem 1rem;'>
@@ -983,6 +1025,7 @@ if st.session_state.user is None:
                 cookie.set("sb_refresh_token", res.session.refresh_token, max_age=COOKIE_MAX_AGE)
             except Exception:
                 pass
+            log_event(res.user.id, "user_login")
             st.rerun()
         except Exception:
             st.error("E-mail ou senha incorretos.")
@@ -1014,6 +1057,15 @@ if st.session_state.user is None:
 else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
+
+    # Log subscription_activated once when account is 'active' — catches webhook/manual activations
+    try:
+        _sub_row = supabase.table("subscribers").select("subscription_status").eq("email", st.session_state.user.email).execute()
+        if _sub_row.data and _sub_row.data[0].get("subscription_status") == "active":
+            if not has_event(user_id, "subscription_activated"):
+                log_event(user_id, "subscription_activated")
+    except Exception:
+        pass
 
     # --- Scrolla till toppen ---
     st.markdown("""<script>
@@ -1083,6 +1135,7 @@ else:
                 if st.button("Salvar site", key="onboard_save_btn"):
                     if ob_domain_val.strip():
                         save_user_domain(_ob_email, ob_domain_val)
+                        log_event(user_id, "domain_added")
                         st.success("✅ Site salvo!")
                         st.rerun()
             st.divider()
@@ -1146,6 +1199,7 @@ else:
                         try:
                             items = get_keyword_data(sokordslista, supabase, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD)
                             st.session_state.search_results = items
+                            log_event(user_id, "keyword_searched", {"count": len(sokordslista)})
                         except Exception:
                             st.error("Erro ao buscar dados. Verifique sua conexão e tente novamente.")
                             st.session_state.search_results = None
@@ -1341,6 +1395,7 @@ else:
                     if st.button("Salvar site", key="save_domain"):
                         if new_domain.strip():
                             save_user_domain(user_email, new_domain)
+                            log_event(user_id, "domain_added")
                             st.success("✅ Site salvo!")
                             st.rerun()
             else:
@@ -1355,6 +1410,15 @@ else:
             st.divider()
 
             tracked_list = get_tracked_keywords_list(user_id)
+
+            # ranking_viewed: loggas en gång — kräver domän, trackade keywords och faktisk ranking-data
+            if domain and tracked_list and not has_event(user_id, "ranking_viewed"):
+                try:
+                    _has_rankings = supabase.table("keyword_rankings").select("id").eq("user_id", str(user_id)).limit(1).execute()
+                    if _has_rankings.data:
+                        log_event(user_id, "ranking_viewed")
+                except Exception:
+                    pass
 
             if domain:
                 st.caption("📌 Para receber seu relatório semanal, pesquise palavras-chave e clique em '+ Rastrear' nas que deseja monitorar.")

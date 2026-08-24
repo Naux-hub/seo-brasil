@@ -30,6 +30,31 @@ LANGUAGE_CODE = "pt"
 DEPTH = 100            # Top 100 räcker och är billigare än fler
 
 
+def log_event(user_id, event, metadata=None):
+    """Inserts a user event. Silent on error."""
+    try:
+        row = {
+            "user_id": str(user_id),
+            "event": event,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if metadata:
+            row["metadata"] = metadata
+        supabase.table("user_events").insert(row).execute()
+    except Exception:
+        pass
+
+
+def has_event(user_id, event):
+    """Returns True if the event has already been logged for this user."""
+    try:
+        res = supabase.table("user_events").select("id").eq("user_id", str(user_id)).eq("event", event).limit(1).execute()
+        return bool(res.data)
+    except Exception:
+        return False
+
+
+
 def get_active_subscribers():
     """Hämtar alla aktiva prenumeranter med e-post och domän."""
     res = supabase.table("subscribers").select("email, domain").execute()
@@ -221,6 +246,11 @@ def run():
         results = fetch_serp_positions(keywords, domain)
         save_keyword_rankings(user_id, domain, results, existing)
         print(f"  ✓ Sparat {len(results)} rankingar")
+
+        # Log initial_ranking_completed first time this user gets rankings
+        if not has_event(user_id, "initial_ranking_completed"):
+            log_event(user_id, "initial_ranking_completed", {"keywords_count": len(results)})
+            print(f"  ✓ Loggade initial_ranking_completed")
 
     print("\n=== Rank Tracker klar ===")
 
