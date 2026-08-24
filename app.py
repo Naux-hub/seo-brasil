@@ -138,20 +138,6 @@ def save_user_domain(email, domain):
     supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
 
 
-def log_event(user_id, event, metadata=None):
-    """Inserts a user event into user_events. Silent on error — never blocks the main flow."""
-    try:
-        row = {
-            "user_id": str(user_id),
-            "event": event,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        if metadata:
-            row["metadata"] = metadata
-        supabase.table("user_events").insert(row).execute()
-    except Exception:
-        pass
-
 
 def has_event(user_id, event):
     """Returns True if this event has already been logged for this user. Silent on error."""
@@ -1266,6 +1252,8 @@ else:
                                 ok, msg = add_tracking(kw, user_id)
                                 if ok:
                                     log_event(user_id, "keyword_saved", {"keyword": kw})
+                                    if not has_event(user_id, "keyword_tracked"):
+                                        log_event(user_id, "keyword_tracked", {"keyword": kw})
                                     _user_domain = get_user_domain(st.session_state.user.email)
                                     if _user_domain and not has_any_rankings(user_id):
                                         _all_kws = get_tracked_keywords_list(user_id)
@@ -1364,6 +1352,8 @@ else:
                                     ok, msg = add_tracking(ikw, user_id)
                                     if ok:
                                         log_event(user_id, "keyword_saved", {"keyword": ikw})
+                                        if not has_event(user_id, "keyword_tracked"):
+                                            log_event(user_id, "keyword_tracked", {"keyword": ikw})
                                         _user_domain = get_user_domain(st.session_state.user.email)
                                         if _user_domain and not has_any_rankings(user_id):
                                             _all_kws = get_tracked_keywords_list(user_id)
