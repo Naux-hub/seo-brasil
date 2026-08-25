@@ -15,7 +15,7 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 RESEND_API_KEY = os.environ["RESEND_API_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-FROM_EMAIL = "SEO Brasil <onboarding@resend.dev>"
+FROM_EMAIL = "SEO Brasil <oi@seobrasil.app>"
 APP_URL = "https://seobrasil.app"
 
 
