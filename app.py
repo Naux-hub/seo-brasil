@@ -932,7 +932,7 @@ if st.session_state.user is None:
 
     st.divider()
 
-    # --- Como funciona ---
+    # --- Video demo ---     st.markdown('<div class="section-title">Veja o SEO Brasil em ação</div>', unsafe_allow_html=True)     st.video("comparacao.mp4")      st.divider()      # --- Como funciona ---
     st.markdown('<div class="section-title">Como funciona</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="steps">
