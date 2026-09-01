@@ -1035,7 +1035,7 @@ if st.session_state.user is None:
                 try:
                     supabase.auth.reset_password_for_email(
                         email_reset,
-                        options={"redirect_to": "https://seobrasil.app"}
+                        options={"redirect_to": "https://app.seobrasil.app"}
                     )
                     st.success("Link enviado! Verifique sua caixa de entrada.")
                 except Exception:
