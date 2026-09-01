@@ -494,6 +494,7 @@ st.markdown("""
         margin-bottom: 0.6rem;
     }
     .cta-btn:hover { background: #1558b8; }
+    html { scroll-behavior: smooth; }
     .garantia {
         font-size: 0.85rem;
         opacity: 0.6;
@@ -865,12 +866,11 @@ if st.session_state.user is None:
             <span>📈 Dados atualizados toda semana</span>
             <span>🇧🇷 Focado no mercado brasileiro</span>
         </div>
-        <a class="cta-btn" href="javascript:void(0)" onclick="(function(){{var el=document.getElementById('comecar');if(el)el.scrollIntoView({{behavior:'smooth'}});else window.scrollTo({{top:999,behavior:'smooth'}});}})();">Comece grátis por 14 dias →</a>
+        <a class="cta-btn" href="#comecar">Comece grátis por 14 dias →</a>
         <div class="garantia">Sem cartão de crédito • Cancele quando quiser</div>
         <div style="margin-top:1.2rem;font-size:0.9rem;opacity:0.65">
             Já tem uma conta?
-            <a href="javascript:void(0)"
-               onclick="(function(){{var el=document.getElementById('login-section');if(el)el.scrollIntoView({{behavior:'smooth'}});else window.scrollTo({{top:9999,behavior:'smooth'}});}})();"
+            <a href="#login-section"
                style="color:#4d9fff;text-decoration:none;font-weight:600">Entrar aqui ↓</a>
         </div>
     </div>
