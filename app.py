@@ -934,8 +934,6 @@ if st.session_state.user is None:
     st.divider()
 
     # --- Video demo ---
-    st.markdown('<div class="section-title">Veja o SEO Brasil em ação</div>', unsafe_allow_html=True)
-    st.video("comparacao.mp4")
 
     st.divider()
 
