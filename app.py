@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
+import os
 from supabase import create_client
 from keyword_cache import get_keyword_data, get_keyword_ideas
 from datetime import datetime, timedelta, timezone
@@ -9,9 +10,9 @@ from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
 from urllib.parse import quote as urlquote
 
-DATAFORSEO_LOGIN = st.secrets["DATAFORSEO_LOGIN"]
-DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
-supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+DATAFORSEO_LOGIN = os.environ["DATAFORSEO_LOGIN"]
+DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
+supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
 COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 dagar i sekunder
@@ -93,10 +94,10 @@ def create_trial_account(email, senha):
     try:
         import requests as _req
         _adm_resp = _req.post(
-            f"{st.secrets['SUPABASE_URL']}/auth/v1/admin/users",
+            f"{os.environ['SUPABASE_URL']}/auth/v1/admin/users",
             headers={
-                "apikey": st.secrets["SUPABASE_KEY"],
-                "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
+                "apikey": os.environ["SUPABASE_KEY"],
+                "Authorization": f"Bearer {os.environ['SUPABASE_KEY']}",
                 "Content-Type": "application/json",
             },
             json={"email": email, "password": senha, "email_confirm": True},
