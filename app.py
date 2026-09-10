@@ -504,22 +504,25 @@ st.markdown("""
     .social-proof-bar {
         display: flex;
         justify-content: center;
-        gap: 2rem;
+        gap: 1.2rem;
         flex-wrap: wrap;
-        background: rgba(26,109,224,0.08);
-        border: 1px solid rgba(26,109,224,0.2);
+        background: #1e293b;
+        border: 1px solid #334155;
         border-radius: 10px;
-        padding: 0.9rem 1.5rem;
+        padding: 0.85rem 1.5rem;
         margin: 0 auto 1.5rem auto;
-        max-width: 640px;
-        font-size: 0.95rem;
+        max-width: 660px;
+        font-size: 0.88rem;
     }
     .social-proof-bar span {
-        color: #e0e0e0;
-        opacity: 0.9;
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
     }
     .social-proof-bar strong {
-        color: #4d9fff;
+        color: #93c5fd;
+        font-weight: 700;
     }
     .features {
         display: flex;
@@ -564,17 +567,38 @@ st.markdown("""
     .step p { font-size: 0.82rem; opacity: 0.7; margin: 0; }
     .price-box {
         text-align: center;
-        background: rgba(26,109,224,0.1);
-        border: 1px solid rgba(26,109,224,0.3);
-        border-radius: 14px;
-        padding: 2rem 1.5rem;
-        max-width: 340px;
+        background: rgba(26,109,224,0.08);
+        border: 2px solid rgba(26,109,224,0.35);
+        border-radius: 16px;
+        padding: 2.2rem 2rem;
+        max-width: 380px;
         margin: 0 auto 2rem auto;
     }
-    .price-box .price { font-size: 2.2rem; font-weight: 800; }
-    .price-box .per { font-size: 0.9rem; opacity: 0.6; margin-bottom: 1.2rem; }
-    .price-box ul { list-style: none; padding: 0; margin: 0 0 1.4rem 0; text-align: left; }
-    .price-box ul li { padding: 0.3rem 0; font-size: 0.92rem; }
+    .price-box .trial-pill {
+        display: inline-block;
+        background: rgba(74,222,128,0.12);
+        color: #4ade80;
+        font-size: 0.78rem;
+        font-weight: 700;
+        padding: 0.25rem 0.8rem;
+        border-radius: 999px;
+        margin-bottom: 0.9rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+    }
+    .price-box .price { font-size: 2.6rem; font-weight: 800; color: #93c5fd; line-height: 1; }
+    .price-box .per { font-size: 0.85rem; opacity: 0.55; margin-bottom: 1.4rem; margin-top: 0.2rem; }
+    .price-box ul { list-style: none; padding: 0; margin: 0 0 1.6rem 0; text-align: left; }
+    .price-box ul li {
+        padding: 0.5rem 0;
+        font-size: 0.9rem;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+    .price-box ul li:last-child { border-bottom: none; }
+    .price-box .no-cc { font-size: 0.78rem; opacity: 0.5; margin-top: 0.75rem; }
     .section-title {
         text-align: center;
         font-size: 1.5rem;
@@ -933,10 +957,6 @@ if st.session_state.user is None:
 
     st.divider()
 
-    # --- Video demo ---
-
-    st.divider()
-
     # --- Como funciona ---
     st.markdown('<div class="section-title">Como funciona</div>', unsafe_allow_html=True)
     st.markdown("""
@@ -967,20 +987,23 @@ if st.session_state.user is None:
     st.divider()
 
     # --- Preço ---
-    st.markdown('<div class="section-title">Plano único</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Plano único, sem surpresas</div>', unsafe_allow_html=True)
     st.markdown(f"""
     <div class="price-box">
+        <div class="trial-pill">14 dias grátis para testar</div>
         <div class="price">R$197</div>
-        <div class="per">por mês</div>
+        <div class="per">por mês • sem fidelidade</div>
         <ul>
-            <li>✅ Pesquisa ilimitada de palavras-chave</li>
+            <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
             <li>✅ Monitoramento de até 20 palavras-chave</li>
-            <li>✅ Dados do mercado brasileiro</li>
-            <li>✅ Exportação CSV</li>
-            <li>✅ Relatórios semanais no seu e-mail</li>
-            <li>✅ Cancele quando quiser</li>
+            <li>📈 Monitoramento de ranking — até 20 palavras-chave</li>
+            <li>📬 Relatório automático toda segunda-feira</li>
+            <li>🇧🇷 Dados focados no mercado brasileiro</li>
+            <li>📊 Exportação CSV dos resultados</li>
+            <li>✉️ Suporte por e-mail</li>
         </ul>
-        <a class="cta-btn" href="{HOTMART_URL}">Assinar agora →</a>
+        <a class="cta-btn" href="{HOTMART_URL}">Começar grátis por 14 dias →</a>
+        <div class="no-cc">Sem cartão de crédito no período de teste</div>
     </div>
     """, unsafe_allow_html=True)
 
