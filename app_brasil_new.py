@@ -506,7 +506,8 @@ st.markdown("""
         justify-content: center;
         gap: 2rem;
         flex-wrap: wrap;
-        background: rgba(26,109,224,0.08);
+        background: #1e293b;
+        border: 1px solid #334155;
         border: 1px solid rgba(26,109,224,0.2);
         border-radius: 10px;
         padding: 0.9rem 1.5rem;
@@ -515,11 +516,10 @@ st.markdown("""
         font-size: 0.95rem;
     }
     .social-proof-bar span {
-        color: #e0e0e0;
-        opacity: 0.9;
+        color: #e2e8f0;
     }
     .social-proof-bar strong {
-        color: #4d9fff;
+        color: #60a5fa;
     }
     .features {
         display: flex;
