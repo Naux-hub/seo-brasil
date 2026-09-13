@@ -127,6 +127,7 @@ def create_trial_account(email, senha):
             pass
         _acq = {k: v for k, v in st.session_state.get("acquisition", {}).items() if v}
         log_event(_uid, "signup_completed", _acq if _acq else None)
+        st.session_state['_gads_conv'] = True
         return True, None
     except Exception as e:
         _err_str = str(e).lower()
@@ -434,6 +435,21 @@ st.html("""
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'AW-18394590355');
+</script>
+""", unsafe_allow_javascript=True)
+
+# --- Google Ads Conversion Event (Registrering) ---
+if st.session_state.get('_gads_conv'):
+    st.session_state['_gads_conv'] = False
+    st.html("""
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('event', 'conversion', {
+    'send_to': 'AW-18394590355/nCq3CIzc1vYcEJPZnMNE',
+    'value': 1.0,
+    'currency': 'SEK'
+  });
 </script>
 """, unsafe_allow_javascript=True)
 
