@@ -443,13 +443,13 @@ if st.session_state.get('_gads_conv'):
     st.session_state['_gads_conv'] = False
     st.html("""
 <script>
-  if (typeof gtag === 'function') {
-    gtag('event', 'conversion', {
-      'send_to': 'AW-18394590355/nCq3CIzc1vYcEJPZnMNE',
-      'value': 1.0,
-      'currency': 'SEK'
-    });
-  }
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('event', 'conversion', {
+    'send_to': 'AW-18394590355/nCq3CIzc1vYcEJPZnMNE',
+    'value': 1.0,
+    'currency': 'SEK'
+  });
 </script>
 """, unsafe_allow_javascript=True)
 
