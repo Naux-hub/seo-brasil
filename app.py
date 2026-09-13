@@ -425,6 +425,18 @@ def render_onboarding_progress(status):
     """, unsafe_allow_html=True)
 
 
+# --- Google Ads Tag (AW-18394590355) ---
+st.html("""
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18394590355"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18394590355');
+</script>
+""", unsafe_allow_javascript=True)
+
 # --- Global CSS ---
 st.markdown("""
     <style>
