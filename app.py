@@ -426,7 +426,7 @@ def render_onboarding_progress(status):
 
 
 # --- Google Ads Tag (AW-18394590355) ---
-st.markdown("""
+st.html("""
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18394590355"></script>
 <script>
@@ -435,7 +435,7 @@ st.markdown("""
   gtag('js', new Date());
   gtag('config', 'AW-18394590355');
 </script>
-""", unsafe_allow_html=True)
+""", unsafe_allow_javascript=True)
 
 # --- Global CSS ---
 st.markdown("""
