@@ -1,0 +1,60 @@
+{
+  "candidate_name": "NP Digital Brasil",
+  "knocked_out": true,
+  "knockout_reason": "Uppenbar och oacceptabel intressekonflikt — Neil Patel äger och marknadsför Ubersuggest, en direkt konkurrent till SEO Brasil. NP Digital Brasil är en etablerad byrå med egen SEO-verktygslinje, vilket gör affiliate-rekommendation av SEO Brasil mycket osannolikt. Dessutom är målgruppen primärt stora företag, inte SMB:er eller SEO-professionella som köper SaaS-verktyg på denna prisnivå.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant. (Kandidatdata visar att NP Digital Brasil serverar stora globala varumärken, inte SMB:er eller oberoende SEO-konsulter som är huvudköpare av SEO Brasil.)"
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten knockas ut — score inte relevant."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knockout — Omöjlig intressekonflikt",
+  "why_interesting": "N/A — Kandidaten är utslagen på grund av direkt intressekonflikt. Neil Patel äger Ubersuggest och NP Digital Brasil är en konkurrencefarbyrå som inte motiveras att rekommendera SEO Brasil till sina kunder eller sin publik.",
+  "outreach_angle": "Kontakt inte rekommenderad. Intressekonflikt omöjliggör samarbete."
+}

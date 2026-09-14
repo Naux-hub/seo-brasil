@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Busca Orgânica",
+  "knocked_out": true,
+  "knockout_reason": "Konkurrent/intressekonflikt: Busca Orgânica är en SEO-byrå med egen proprietär plattform för Google-positionering. De är därmed en direkt konkurrent till SEO Brasil snarare än en potentiell affiliate. Deras kunder använder redan Busca Orgânicas egna verktyg och plattform — vilket minskar möjligheten för dem att rekommendera en tredjepartsverktyg som SEO Brasil. KNOCKOUT-KRITERIUM uppfyllt: 'Konkurrent eller uppenbar intressekonflikt'.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut före scoring."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "KNOCKOUT — Konkurrent",
+  "why_interesting": "Busca Orgânica är en etablerad brasiliansk SEO-byrå med egen proprietär plattform för Google-positionering. Även om de når rätt målgrupp (SEO-proffs och företag som söker SEO), är de själva en konkurrent till SEO Brasil snarare än en affiliate-partner, vilket gör samarbetet opraktiskt.",
+  "outreach_angle": "Ej relevant — kandidaten är utslagen på grund av konkurrenskonflikt. Busca Orgânicas egna plattform positionerar dem som en direkt rival på samma marknad, inte som en potential affiliate-partner."
+}

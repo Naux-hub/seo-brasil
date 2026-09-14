@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Rafael Simões",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 25,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Rafael når tydligt brasilianska SEO-professionaler och -konsulter via LinkedIn (11.250 följare) och newsletter. Innehållet fokuserar på SEO-strategi, Core Updates, indexering och projekthantering — klassiska SEO-professionella ämnen. Kommentarerna visar att följarna är SEO-experter och -praktiker. Dock inget tydligt underlag att han nå byråägare eller större konsultföretag specifikt — verkar snarare nå enskilda SEO-professionaler och mindre team. Mycket stark match men något bredare än 'ideal': SEO-professionaler snarare än agencybeslutfattare."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är helt klart kärnans kärna för Rafael. Profilen säger explicit 'Ajudo sua empresa a melhorar seus resultados com SEO' och innehållet täcker AI Overviews, Core Updates, indexering, content pruning, rastreamento — klassisk SEO-fokusfält. Newsletter/podcast är helt dedikerad till SEO-nyheter och strategi. Inget tvivel här."
+    },
+    "purchase_influence": {
+      "score": 5,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerbar evidence på verktygsrekommendationer eller tool reviews i de analyserade posterna. Kandidatdata noterar att 'newsletter fokuserar på nyheter och strategi, inte på recensioner av verktyg'. Ingen verifierad affiliate-aktivitet eller verktygspresentationer observerade. Märkt som insufficient_evidence per regel — jobbtitel 'CEO av SEO Happy Hour' och professionell verksamhet är inte tillräckligt utan observerad tool-recommendation-aktivitet."
+    },
+    "reach_quality": {
+      "score": 9,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "11.250 LinkedIn-följare är en stark räckvidd för brasiliansk SEO-marknad. Daglig publicering indikerar aktiv engagement. Kommentarerna visar att följarna är faktiska SEO-professionaler (inte bot-följare eller generisk publik). Audience-kvaliteten är uppenbar hög — relevanta, professionella, engagerade. Dock en punto låga poäng snarare än perfekt: ingen explicit data om engagement-rate eller newsletter-öppningshastighet."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Rafael kör 'SEO Happy Hour' som en media/community-play, inte som en klassisk byrå. Ingen dokumenterad kundbas eller anställda är uppgiven. Kandidatdata säger 'operates mainly via newsletter/podcast, no public client data'. AGENCY_FLOOR gäller inte här — det är ingen etablerad 5+-person byrå. Potentialen finns (11K engagerade followers kan generera några affiliates) men är svag och spekulativ. Markerad insufficient_evidence per regel — max 4/10."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Helt brasiliansk profil. Innehåll på portugisiska, baserad i Curitiba, Paraná. Fokus på brasiliansk SEO-marknad och lokala uppdateringar. Ingen internationell eller LATAM-mängning. Perfekt brasiliansk fit."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerbar affiliate-aktivitet eller verktygssponsring noterad. Kandidatdata säger 'Insufficient evidence — não observado nos posts analisados'. Newsletter/podcast kan ha sponsorer men det är inte verifierbart. Rafael verkar fokuserad på content/community snarare än på kommersiell promotion. Neutral signal — professionell och seriös men ingen tydlig affiliatehistorik eller -erfarenhet observerad. Märkt insufficient_evidence."
+    },
+    "content_traffic_potential": {
+      "score": 4,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Blandad profil. LinkedIn-posts är flyktiga (social media) men dagliga och mycket engagerade. Newsletter på Substack är evergreen och kan generera passiv trafik över tid, men ingen data på prenumeranter eller öppningshastighet. Podcast är också evergreen men trafik-potentialen är svårare att bedöma utan lyssnarsiffror. Aktivt innehållsskapande men ingen YouTube-kanal eller blog med mätbar trafik synlig. Bra nu men något osäker långsiktig potential."
+    }
+  },
+  "total_score": 75,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Rafael når en mycket engagerad brasiliansk SEO-professionell-publik med 11K LinkedIn-följare och en etablerad newsletter/podcast. SEO är helt central för hans verksamhet och målgruppen är exakt rätt — SEO-praktiker och -konsulter som är potentiella köpare. Dock saknar vi konkret evidence på verktygsrekommendations-erfarenhet och klientvolym, vilket håller honom i B-klassen snarare än A.",
+  "outreach_angle": "Oi Rafael! Vemos que você cria conteúdo incrível sobre SEO para profissionais brasileiros. Queremos conversar sobre uma parceria: SEO Brasil é um rank tracker feito para agências e consultores — exatamente seu público. Poderia gerar leads relevantes para sua audiência, com commission recorrente de 30%. Topa uma conversa?"
+}

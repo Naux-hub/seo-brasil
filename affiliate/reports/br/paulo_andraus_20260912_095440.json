@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Paulo Andraus",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 15,
+      "max": 30,
+      "insufficient_evidence": true,
+      "evidence": "Paulo är en senior SEO-specialist med 14+ års erfarenhet, vilket skulle kunna nå SEO-professionella. Dock är hans primära fokus på enterprise/large-scale sites (Aylo — underhållningswebbplatser) snarare än på brasilianska SEO-konsulter, byråer eller SME-marknaden. SEO Game Show är kreativt men producerat på engelska/tvåspråkigt för internationell publik. Ingen observerbar brasiliansk publik eller lokal SEO-fokus dokumenterad. Målgruppen är svår att fastställa — sannolikt andra enterprise SEO-specialister, inte brasilianska marknadsförare eller småbyråer som köper verktyg."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är absolutt kärnan i Paulos karriär och innehål. Spetskompetenser: SEO-teknik, internationell SEO, process-automering och SEO-teamledning. SEO Game Show är dedikerat interaktivt SEO-innehål. LinkedIn-profil framhäver 'organisk strategi' och 'ledarskap för stora webbplatser'. Ingen tvivel — SEO är huvudfokus."
+    },
+    "purchase_influence": {
+      "score": 5,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerbar evidence på verktygsrekommendationer, affiliate-program eller publicerade verktygsgranskning. Kandidatdata anger uttryckligen 'Insufficient evidence' för tool_recommendations. Yrkesroll som SEO Team Lead vid stora företag indikerar potentiell inflytande, men utan dokumenterad kundbas, produktrekommendationer eller case studies räcker detta inte för scoring ovan 5/15 enligt reglerna. Insufficient evidence → max 5/15."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Följarantal är inte bekräftad för någon plattform (LinkedIn, Instagram, YouTube alla null). Webbplats pandraus.com existerar men ingen trafik/månad angiven. Podcast om SEO är discontinuerad. SEO Game Show är kreativ men räckvidd är okänd. Utan mätbara data på följare, engagemang eller relevanta kommentarer kan inte högre poäng motiveras. Svagt underlag → 4/10."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Paulo arbetar för Aylo (enterprise-klient) men ingen explicit kundbas för egen konsultverksamhet eller utbildning är dokumenterad. Inga kursdeltagare, community-storlek, eller independent customer-siffror nämns. Profilen indikerar högt anseende men inte dokumenterad egen affärsverksamhet eller capacity att generera kunder. AGENCY_FLOOR tillämpas INTE då Aylo är an employment, inte egen byrå. Insufficient evidence → 4/10."
+    },
+    "brazil_fit": {
+      "score": 2,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Paulo är 'brasiliansk till sitt ursprung' (origen brasileira) men hans karriär och publik är international. Innehål primärt på engelska, SEO Game Show på två språk men målgrupp är global/international. Ingen dokumenterad brasiliansk audience, portugisiska som primärt innehålsspråk, eller brasilianska marknadsreferenser. Fit är svag — profilering pekar på internationell expert, inte brasiliansk community-builder."
+    },
+    "affiliate_fit": {
+      "score": 2,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen evidence på befintliga affiliate-länkar, sponsrade inlägg eller partnerskap. Kandidatdata anger 'Insufficient evidence' för affiliate_signals. Profilen tyder på en teknik-fokuserad senior expert snarare än en content creator/educator som aktivt rekommenderar och promoverar verktyg. Inget indikerar öppenhet för affiliate-samarbeten."
+    },
+    "content_traffic_potential": {
+      "score": 2,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Postningsfrekvens är unknown. SEO Game Show är evergreen-relevant men räckvidd okänd. Podcast diskontinuerad. Pandraus.com existerar men ingen trafik-data. LinkedIn-närvaro men följarantal unknown. Innehål är högkvalitativt men kanaler saknar transparenta metriker eller konsistent uppdateringsfrekvens dokumenterad. Insufficient evidence → låg score."
+    }
+  },
+  "total_score": 54,
+  "grade": "Skip",
+  "grade_label": "Prioritera inte",
+  "why_interesting": "Paulo Andraus är en högkvalificerad SEO-specialist med 14+ års erfarenhet och kreativa innehåldsinitiativ (SEO Game Show). Hans tekniska expertis är obestridlig. Dock: hans huvudpublik är international/enterprise, inte brasiliansk SME/marknad; ingen observerbar verktygsrekommendations-historia; begränsad dokumenterad räckvidd; och arbetsgivaren (underhållningssajter för vuxna) skapar potentiell image-konflikt för en allmän SEO-produktmarknad.",
+  "outreach_angle": "Paulo, notamos tua carreira impressionante em SEO técnico internacional e o criativo SEO Game Show. SEO Brasil busca especialistas experientes que orientem profissionais brasileiros em growth SEO — seria relevante uma conversa sobre parcerias educacionais que tragam tua expertise técnica para a comunidade portuquesa?"
+}

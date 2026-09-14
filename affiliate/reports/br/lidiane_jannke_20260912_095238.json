@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Lidiane Jannke",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 28,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Lidiane är SEO Técnico Specialist och Senior SEO Developer med 8+ års erfarenhet — detta är exakt SEO Brasil målgrupp (SEO-professionell, brasiliansk, freelancer/konsult). Hennes specialism i teknisk SEO och implementationer tyder på att hon arbetar direkt med SEO-projekt för brasilianska företag. Hennes roll som speaker på SEOcamp Brasil 2026 bekräftar hennes status som erkänd SEO-expert inom den brasilianska marknaden. Hon når andra SEO-professionella genom sitt LinkedIn och sitt engagemang i communityn. Minus 2 poäng för att följarantal inte är bekräftat — därför 28 istället för 30."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är helt kärnan i Lidiane's verksamhet. Hon är specialiserad i SEO Técnico (technical SEO), auditorias SEO, och implementationer på flera plattformar. Detta är inte en sidasyssla eller ett bland-bland-annat-fokus — hennes identitet och expertis är helt grundad i SEO. Hon är speaker på SEOcamp Brasil 2026, vilket bekräftar hennes status som erkänd SEO-expert. 20/20."
+    },
+    "purchase_influence": {
+      "score": 10,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Insufficient evidence på direkt tool-recommendation eller affiliate-aktivitet. Kandidatdata noterar att 'SEO técnico frequentemente usa ferramentas como Screaming Frog, SEMrush, Ahrefs mas uso específico e afiliação não confirmados.' Som senior SEO developer med 8+ års erfarenhet arbetar hon definitivt med rank-tracking och SEO-verktyg — detta är starkt professionellt underlag för verktygsinflytande — men ingen observerbar evidence på direkt rekommendation eller affiliate-program finns. Sätter 10/15 baserat på stark professionell indikation (8p) + observable educator-nivå (hon är speaker, vilket antyder content/undervisning), men insufficient_evidence flaggas för bristande direkta signaler."
+    },
+    "reach_quality": {
+      "score": 5,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Kritisk begränsning: LinkedIn-följare är INTE bekräftade ('Número de seguidores não confirmado'). Utan mätbar räckvidd kan vi inte bedöma audience-kvalitet. Hon är erkänd speaker på SEOcamp Brasil 2026, vilket antyder någon grad av synlighet inom communityn, men detta är en aktivitet, inte en metrisk för ongoing räckvidd. Sätter 5/10 på grund av insufficient_evidence — vi vet inte hur många människor hon faktiskt når regelbundet. Potentiell högt värde om hon har betydande LinkedIn-nätverk, men kan inte verifieras."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "AGENCY_FLOOR gäller INTE här — Lidiane är listad som 'Independente / Freelancer', inte som en byrå med ≥5 anställda. Hennes kundbas är inte offentligt publicerad ('lista de clientes não pública'). Vi vet att hon är en erfaren consultant/developer som arbetar med auditorias och implementationer, vilket antyder att hon har klienter, men ingen konkret kundbas, kundbeskrivning eller case-studier är tillgängliga. Insufficient_evidence flaggas. Sätter 4/10 (begränsat underlag) baserat på hennes 8+ år erfarenhet och rolle som freelancer-konsult — detta antyder åtminstone någon aktiv kundbas — men utan explicit evidence kan vi inte extrapolera högre."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt brasiliansk fit. Lidiane är baserad i Brasil, hennes innehåll är på portugisiska (brasileiro), hon är speaker på SEOcamp Brasil 2026 (ett av Brasiliens största SEO-event), och hon är erkänd inom den brasilianska SEO-communityn. Allt pekar på stark brasiliansk/lusofon publik och marknadskontext. 5/5."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Neutral position. Ingen observerbar evidence på befintliga affiliate-program, sponsored posts eller explicit partnersamarbeten. Hon är professionell och seriös (speaker status, 8+ år erfarenhet), vilket antyder att hon är tillgänglig för samarbeten — men ingen tydlig signal om affiliate-erfarenhet eller intresse finns. Insufficient_evidence flaggas. Sätter 3/5 (neutral) eftersom professionell status och community-engagemang antyder öppenhet för samarbeten, men inget bekräftar detta."
+    },
+    "content_traffic_potential": {
+      "score": 1,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Kritisk brist på data. Publiceringsfrekvens är INTE bekräftad ('Posting frequency: Insufficient evidence'). Hennes närvaro verifieras på LinkedIn och som speaker på SEOcamp, men ingen information om blogg, YouTube-kanal, newsletter eller annan evergreen-innehålls-kanal är tillgänglig. Speaker-engagemang antyder någon grad av content creation/public engagement, men vi vet inte om detta är regelbundet eller långsiktigt. Sätter 1/5 — sporadisk/okänd aktivitet — baserat på insufficient_evidence."
+    }
+  },
+  "total_score": 76,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Lidiane är en erkänd och erfaren SEO-teknisk specialist i Brasilien med direkta kopplingar till den brasilianska SEO-communityn (speaker på SEOcamp Brasil 2026). Hon arbetar med exakt SEO Brasil målgrupp (professionella konsulter/freelancers) och hennes specialisering i technical SEO gör henne mycket relevant för rank-tracking och monitoring-verktyg. Hennes begränsade publicerade räckvidd och avsaknad av synliga affiliate-signaler dämpar poängen, men hennes expertis och community-status gör henne en potentiellt starkt samarbetspartner.",
+  "outreach_angle": "Lidiane, vimos seu trabalho excepcional em SEO técnico e sua participação como palestrante no SEOcamp Brasil 2026 — você é exatamente o tipo de especialista que nossos clientes procuram. Gostaríamos de explorar uma parceria de afiliados com SEO Brasil, nossa plataforma de monitoramento de rankings (R$197/mês, 30% comissão recorrente), que se integra perfeitamente ao trabalho de auditorias e implementações que você já realiza."
+}

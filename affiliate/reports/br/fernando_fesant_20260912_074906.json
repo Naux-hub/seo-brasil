@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Fernando Fesant",
+  "knocked_out": true,
+  "knockout_reason": "LOCAL_SEO_CAP: Kandidaten fokuserar primärt på Local SEO för små lokala företag (restauranger, tandläkare, hantverkare i Porto Alegre), inte på SEO-byråer, konsulter eller SEO-professionella. Hans kunder är lokala företag som söker Google-ranking för sin region — inte potentiella köpare av ett SEO-ranking-verktyg designat för professionella SEO-aktörer. SEO Brasil är ett verktyg för SEO-konsulter, byråer och freelancers att visa resultat för sina kunder. Fernando hjälper företag direkt att ranka — inte SEO-proffs att göra sitt jobb bättre.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat. Kandidatens profil säger tydligt: 'Ajudo Empresas Locais a Rankear no Google' (hjälper lokala företag att ranka). Detta är direkt Local SEO för småföretag, inte målgrupp för SEO Brasil. Hans kunder är inte SEO-professionella eller byråer — de är företag i Porto Alegre som behöver lokal synlighet. Dessa köper inte verktyg för SEO-ranking-tracking; de köper SEO-tjänster."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockout-filter applicerat — all scoring sättes till 0."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knockad ut — inte målgrupp för SEO Brasil",
+  "why_interesting": "Inte intressant för SEO Brasil. Fernando är en lokal SEO-konsult som arbetar direkt med småföretag (restauranger, tandläkare osv.) i Porto Alegre, inte med SEO-professionella eller byråer. Hans kunder behöver inte ett ranking-verktyg — de behöver SEO-tjänster.",
+  "outreach_angle": "Ej tillämpligt — kandidaten knockas ut på grund av missad målgrupp."
+}

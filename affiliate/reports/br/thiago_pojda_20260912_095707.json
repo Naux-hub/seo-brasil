@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Thiago Pojda",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 15,
+      "max": 30,
+      "insufficient_evidence": true,
+      "evidence": "Thiago är SEO Director på SIXT (enterprise/global) och co-founder av wesearch.media (agency). Hans primära fokus är enterprise SEO, internationell SEO och teknisk SEO på skala — inte direkt adressering av brasilianska SEO-konsulter, freelancers eller små/medelstora SEO-byråer som är SEO Brasil-kärnan. Profilen nämner 'community SEO brasileira' men audience är inte bekräftad som primär eller köpstark för ett verktyg på €197/mån. Orientering mot PME-level brasilianska SEO-professionaler är svag. LOCAL_SEO_CAP: wesearch.media kan arbeta med lokala brasilianska klienter, men ingen explicit evidence på detta — fokus verkar vara international/data-driven enterprise SEO."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är absolut kärnkompetensen. Thiago är SEO Director på SIXT (en av världens största mobilitetsföretag) och co-founder av en data-driven SEO-byrå (wesearch.media). Specialisering i teknisk SEO, internationell/flerspråkig SEO, SEO-produkt och Web Analytics visar djup SEO-expertis. Listas bland 'bästa SEO-specialister från Brasilien' av SEO Happy Hour. Inget tvivel — SEO är kärnan."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Stark professionell indikation: co-founder av SEO-byrå (wesearch.media) med dokumenterad klientverksamhet, plus director-roll på SIXT. Dock: INGEN observerad tool-rekommendation, affiliate-länk, eller dedikerad verktygsundervisning bekräftad. Profilen nämner att enterprise-SEO använder verktyg som Screaming Frog och BigQuery, men ingen aktiv rekommendation till audience observerad. Byrå-storlek för wesearch.media ej bekräftad (≥5 anställda?). Baserat på AGENCY_FLOOR-regel (co-founder av etablerad SEO-byrå) → minimum evidence för professionell verktygsinflytande, men utan observerad tool-rec → 8/15."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Följarantal, engagemangsgrad och audience-kvalitet är INTE bekräftade. Kandidatdatan noterar 'LinkedIn followers: null, Instagram: null, YouTube: null'. Även om Thiago är högt respekterad (nämnd av SEO Happy Hour), kan vi inte mäta faktisk räckvidd eller audience-komposition. Svårt att bedöma om publiken är köpstark för ett SMB-verktyg. Begränsad evidens → 4/10."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Applicering av AGENCY_FLOOR: Thiago är co-founder av wesearch.media, en etablerad SEO-byrå. Detta indikerar rimligtvis betalande klienter och därmed någon potentiell för kundinflytande. Dock: konkret kundbas är INTE publicerad ('lista inte offentlig'). Byrå-storlek okänd. Ingen explicit mentonering av klientantal. Baserat på AGENCY_FLOOR → minimum 4/10, men utan ytterligare konkreta signaler kan vi inte extrapolera högre."
+    },
+    "brazil_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Thiago har brasiliansk origin ('origem brasileira') och är nämnd i brasiliansk SEO-community (SEO Happy Hour). Innehål förekommer på portugisiska. MEN: han är baserad i Tyskland och hans primära fokus är internationell/enterprise-SEO (SIXT är globalt företag). Primär audience/marknadskontext är INTE bekräftad som brasiliansk. Portugisisk närvaro men inte tydligt brasiliansk-fokuserad → 3/5."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerad affiliate-erfarenhet, sponsrade inlägg eller affiliate-program. Fokus är på corporate/enterprise-arbete (SIXT) och byrå-förvaltning (wesearch.media). Profilen är professionell och seriös, men inget direkt indikerar vilja eller erfarenhet med affiliate-rekommendationer för verktyg. Neutral position → 3/5."
+    },
+    "content_traffic_potential": {
+      "score": 2,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Publiceringsfrekvens och content-typ är INTE bekräftat ('Posting frequency: Insufficient evidence'). Kandidatdatan nämner 'LinkedIn, wesearch.media' som kanaler, men ingen data på visningar, engagemang eller momentum. Svårt att bedöma passiv lead-genering eller långsiktig content-värde. Liten eller sporadisk signal → 2/5."
+    }
+  },
+  "total_score": 59,
+  "grade": "Skip",
+  "grade_label": "Prioritera inte",
+  "why_interesting": "Thiago är en mycket erfaren SEO-director med enterprise-bakgrund och co-founder av en data-driven SEO-byrå. Hans djupa tekniska expertis och brasiliansk koppling gör honom intressant LÅNGSIKTIGT, men hans primära fokus på internationell/enterprise-SEO och brist på bekräftad audience/affiliate-erfarenhet gör honom inte prioriterad för SEO Brasil (som målgrupp är brasilianska SMB:er och konsulter).",
+  "outreach_angle": "Olá Thiago! Vimos seu trabalho impressionante em SEO técnico e internacional na SIXT e wesearch.media. SEO Brasil é um rank tracker orientado por dados, perfeito para agências como a wesearch.media que trabalham com clientes brasileiros — gostaria de explorar uma parceria onde você recomenda a ferramenta aos seus clientes. Você teria interesse em conversar?"
+}

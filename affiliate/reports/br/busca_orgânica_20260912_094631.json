@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Busca Orgânica",
+  "knocked_out": true,
+  "knockout_reason": "Indirekt konkurrent — byrån har egen proprietär positioneringsplattform. Deras klienter använder redan sitt eget verktyg, inte tredjepartsverktyg som SEO Brasil. Detta skapar fundamental intressekonflikt och drastiskt minskar sannolikheten för genuin affiliate-rekommendation.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockout tillämpat — poäng nollställt."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Utslagen — konkurrent",
+  "why_interesting": "Busca Orgânica är en etablerad brasiliansk SEO-byrå med 11–50 anställda och tydlig marknadsposition i São Paulo. Dock — kritiskt — de erbjuder redan sin egen proprietära positioneringsplattform till sina klienter, vilket gör dem till en indirekt konkurrent till SEO Brasil snarare än en potentiell affiliate-partner.",
+  "outreach_angle": "Ej rekommenderat för outreach — intressekonflikt på grund av eget verktyg. Byrån har ingen incentive att rekommendera tredjepartsverktyg till sina klienter som redan använder sin egen plattform."
+}

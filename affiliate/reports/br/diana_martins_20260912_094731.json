@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Diana Martins",
+  "knocked_out": true,
+  "knockout_reason": "LOCAL_SEO_CAP violation + misaligned primary audience. Diana is a technical SEO specialist at a software development company (Cheesecake Labs) whose primary audience is developers and technical teams, NOT SEO professionals, consultants, or agencies who would purchase SEO Brasil. Her expertise is in technical SEO for digital products (React/Next.js applications, Core Web Vitals) — not in helping SEO practitioners or consultants rank their own services or clients. This is fundamentally misaligned with SEO Brasil's target customer (SEO consultants, freelancers, small agencies). Additionally, she reaches technical/developer audiences, not marketing/SEO professionals who buy SEO tools.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Diana's primary audience is software developers and technical teams at Cheesecake Labs, NOT SEO consultants, freelancers, or agencies. Her content focuses on technical SEO implementation for development teams (React/Next.js, Core Web Vitals, performance). SEO Brasil targets SEO professionals who manage rankings for clients — Diana reaches builders/developers who implement SEO, not buyers of SEO ranking tools. Audience mismatch is fundamental."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "While Diana has deep SEO expertise (technical SEO specialist), it is narrowly focused on developer-facing technical implementation, not on SEO tool usage, rank tracking, or optimization practices that SEO practitioners use. Technical SEO for developers ≠ SEO professional tool adoption. SEO Brasil's relevance requires an audience of people who manage SEO as a service/practice, not developers implementing SEO features."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "No observable evidence of tool recommendation, affiliate activity, or client-facing guidance on SEO tool selection. Role is technical implementation within Cheesecake Labs, not tool advisory. Tool influence data insufficient, but candidate is knocked out before this becomes relevant."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Personal audience size not verified (LinkedIn followers null, no YouTube/blog/newsletter metrics provided). Only confirmed platform: speaking slot at SEOcamp Brasil 2026. Audience composition unknown. Data insufficient, but candidate knocked out."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Works within Cheesecake Labs (software development company), not as independent consultant/educator with own customer base. No documented personal client list or community. Potential cannot be assessed independently of company role. Insufficient evidence and knocked out."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Diana is confirmed to be based in Brasil, profile in portugisiska, speaking at SEOcamp Brasil 2026. Brazil fit is confirmed, but candidate is knocked out on primary audience mismatch."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "No affiliate signals observed. No tool recommendations, sponsored content, or partnership history mentioned. Insufficient evidence, but candidate knocked out."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Content type limited to LinkedIn and speaking engagements. Posting frequency unknown. No blog, YouTube channel, or newsletter confirmed. Insufficient data, but candidate knocked out on core mismatch."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knocked out — audience mismatch",
+  "why_interesting": "Diana har stark teknisk SEO-kredibilitet (talare på SEOcamp Brasil 2026, expert på technical SEO för digitala produkter) och är brasiliansk. MEN hennes primära publik är utvecklare och tekniska team hos Cheesecake Labs, inte SEO-konsulter eller byråer som köper SEO-rankingverktyg. SEO Brasil riktar sig till SEO-proffs som behöver ranking-tracking tools; Diana hjälper utvecklare implementera SEO-funktioner. Målgruppen är fundamentalt felaktig.",
+  "outreach_angle": "Não recomendado para contato. Diana é especialista em SEO técnico para times de desenvolvimento, não em ferramentas de rastreamento de ranking para consultores SEO. Seu público-alvo (desenvolvedores) não alinha com o cliente ideal de SEO Brasil (agências e consultores independentes que precisam rankear clientes)."
+}

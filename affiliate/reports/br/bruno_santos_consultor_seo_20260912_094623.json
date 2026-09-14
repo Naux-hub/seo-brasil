@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Bruno Santos Consultor SEO",
+  "knocked_out": true,
+  "knockout_reason": "LOCAL_SEO_CAP triggered: Kandidaten är en Local SEO-konsult som primärt hjälper prestadores de serviço (lokala serviceföretag såsom tandläkare, restauranger, hantverkare) att få synlighet genom Local SEO. Målgruppen är INTE SEO-professionaler, konsulter, byråer eller andra som direkt använder SEO-verktyg för sina klienter — det är slutkunder (restauranger, tandläkare, etc.). Detta motsäger kärnmarknadsfelet för SEO Brasil, som är positionerad för SEO-professionella och byråer som behöver rankingverktyg för sina egna eller klienters kampanjer.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Profilbeskrivning: 'Ajudo prestadores de serviço a parar de depender de indicação usando SEO Local' — målgruppen är definitionsmässigt slutkunder (tandläkare, salonger, små serviceföretag), INTE SEO-byråer, konsulter eller professionella som köper rankingverktyg. LOCAL_SEO_CAP-regeln appliceras. Knockout-kriteriet uppfyllt."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är utslagen på knockout-nivå. Score sätts till 0."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knockout — ej relevant målgrupp",
+  "why_interesting": "Bruno är en kompetent Local SEO-konsult i Brasilien, men hans målgrupp (lokala serviceföretag) är fundamentalt inkompatibl med SEO Brasil, som är byggt för SEO-professionaler och byråer. Han säljer Local SEO-tjänster till slutkunder — han är INTE själv en potentiell köpare eller rekommendör av rankingverktyg.",
+  "outreach_angle": "Inte aktuell för outreach. Kandidaten är utslagen enligt LOCAL_SEO_CAP-regeln."
+}

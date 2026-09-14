@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Felipe Bazon",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 28,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Felipe är Chief SEO Officer på Hedgehog Digital Brasil — en etablerad SEO-byrå med dokumenterad kundbas av brasilianska medel- och storföretag samt e-commerce-aktörer. Hans innehål fokuserar på SEO teknisk/on-page, GEO och e-commerce SEO — alla områden som direkt intresserar SEO-byråer, konsulter och e-commerce-chefer. Han är premierad Top 3 SEO i Brasilien i 4 år, vilket indikerar stark påverkan inom SEO-proffs-communityn. Målgruppen är exakt: brasilianska SEO-professionaler, byråer och företag som köper SEO-tjänster. Liten poängminskning (28 istället för 30) p.g.a. viss osäkerhet kring exakt följarstor på LinkedIn."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är Felipe Bazons kärnverksamhet sedan 2006 (18+ års erfarenhet). CSO-titeln bekräftar det. Innehållsteman är helt fokuserade på SEO: teknisk SEO, on-page, GEO (Generative Engine Optimization — hans eget pionjärarbete), IA-påverkan på SEO, e-commerce SEO. Blogg på Hedgehog Digital Brasil behandlar dessa ämnen. Ingen tvekan — SEO är alltomfattande."
+    },
+    "purchase_influence": {
+      "score": 10,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Stark indikation: Felipe är CSO på etablerad SEO-byrå (Hedgehog Digital Brasil) med dokumenterad kundbas, vilket betyder han gör tool-val för klienter. Kandidatdatan nämner att blogginlägg refererar till verktyg som Screaming Frog och Ahrefs i agenturagentur-kontext. Dock: ingen observerad dedikerad tool-recommendation, affiliate-länk eller pedagogisk verktygsdemonstration är dokumenterad. Regelbaserat är detta 'dokumenterad professionell kund-/projektverksamhet utan direkt observerad tool-recommendation' → nivå 8–10. Sätt 10 (content/educator-evidence på lägre nivå, men CSO-rollen i byrå ger implicit stöd)."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "LinkedIn-följarantal är inte verifierat i kandidatdata. Dock: Felipe är Top 3 SEO i Brasilien enligt Digitalks (4 år i rad), speaker på internationella och brasilianska event (Fórum E-commerce Brasil, SEOcamp), och Chief SEO Officer på etablerad byrå. Detta indikerar stark professionell räckvidd och hög audience-kvalitet (SEO-proffs och e-commerce-beslutsfattare). Osäkerhet kring exakt följarantal förhindrar 10/10, men professionell status och tal-erfarenhet antyder kvalitativ räckvidd snarare än kvantitet."
+    },
+    "customer_volume_potential": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Hedgehog Digital Brasil är en etablerad SEO-byrå (UK-baserad med brasiliansk verksamhet) med dokumenterad kundbas av medel- till storföretag. Även om exakt kundantal inte är publicerat, är en byrå med denna status och operativ närvaro i Brasilien rimligtvis en organisation med 5+ anställda och aktiva klienter. AGENCY_FLOOR-regel triggeras: minimum 4/10. Felipe som CSO kan realistiskt influera 2–4 nya kunder eller mer genom sitt nätverk och speaker-aktiviteter. Satt 7/10 (gott underlag, tydlig byrå-struktur, men ingen explicit kundbas/antal publicerat)."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Felipe är baserad i Brasilien, är CSO på Hedgehog Digital Brasil, talar portugisiska, publicerar på portugisiska (blogg på br.hedgehogdigital.co.uk), är prisbelönad av brasilianska organisationer (Digitalks), och deltar i brasilianska event (Fórum E-commerce Brasil, SEOcamp). Målgruppen är explicit brasiliansk: e-commerce-chefer, marknadsförare och SEO-proffs i Brasilien. Fullt brasiliansk fit."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerad affiliate-aktivitet eller partnerskap är dokumenterat. Felipe är professionell, etablerad och seriös — ingen negativ signal. Dock: inget tydligt indikerar tidigare erfarehet med affiliate-program eller kommersiella verktygskampanjer. Neutral position: han är öppen för professionella samarbeten (CSO-roll, speaker-aktiviteter) men ingen explicit affiliate-signal."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Felipe har blogg på Hedgehog Digital Brasil (author: /blog/author/felipe-bazon/) och är speaker på återkommande event. Detta indikerar aktivt innehållsskapande men publiceringsfrekvens och trafik är okända. Blog är evergreen-format (bättre än enbart sociala medier), men ingen data om besöksantal eller engagementsgrad är tillgänglig. Presumtiv aktivitet men otillräcklig konkret evidence för högre poäng."
+    }
+  },
+  "total_score": 83,
+  "grade": "A",
+  "grade_label": "Mycket intressant — hög prioritet",
+  "why_interesting": "Felipe Bazon är en av Brasiliens mest premierade SEO-experter (Top 3 i 4 år), Chief SEO Officer på etablerad byrå och pionjär inom GEO. Hans nätverk, speaker-status och direkt påverkan på e-commerce- och SEO-proffs gör honom till en stark kandikat för att nå SEO-byråer, konsulter och företag som aktivt köper SEO-verktyg.",
+  "outreach_angle": "Felipe, seu pioneirismo em GEO e influência entre os top SEOs do Brasil o colocam em posição única para recomendar ferramentas especializadas. SEO Brasil seria um complemento natural para seus clientes em Hedgehog Digital — você poderia testar com alguns casos e potencialmente gerar receita recorrente via Hotmart."
+}

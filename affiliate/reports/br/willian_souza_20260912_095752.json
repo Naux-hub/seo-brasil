@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Willian Souza",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 25,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Willian är en oberoende SEO-konsult som direkt arbetar med brasilianska företag/kunder med fokus på resultat och ranking. Hans målgrupp är företag som söker SEO-resultat, vilket är en stark match för SEO Brasil. Innehållet behandlar SEO-strategi, dataintegration och praktiska SEO-implementeringar. Dock verifieras inte följarantal och offentlig räckvidd är begränsad — profilen är B2B-konsult snarare än thought leader med bred publik, vilket förklarar 25p istället för 30p."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är helt centralt för Williams verksamhet. Profilbeskrivningen lyder 'Consultor independente de SEO estratégico focado em resultados de negócio'. Alla innehållsämnen är direkt SEO-fokuserade: ranking, migrationer, Google Analytics 4-integration, Search Console, data-driven SEO. Ingen tvivel — 20/20."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Ingen direkt observerbar evidence på verktygsrekommendation eller affiliate-program. Willian är dock en etablerad oberoende SEO-konsult med dokumenterad kundbas (portföljresultat explicit nämnd: 'första página em 3 meses', '+65% performance'). Han använder avancerat tech stack (GA4, Search Console, BigQuery, N8N, Python, Zapier) vilket indikerar att han rekommenderar verktyg till kunder som del av konsultverksamheten. Enligt EVIDENCE REQUIRED-regeln och AGENCY_FLOOR är detta en solopreneur/1-person byrå med verifierad kundbas — minimum 4/10, men denna regel tillämpas för ≥5 anställda. Istället: dokumenterad konsultverksamhet + tydligt tool-användande stöder nivå 8 ('stark professionell indikation på verktygsinflytande, men ingen direkt observerad tool-recommendation'). insufficient_evidence: true eftersom ingen faktisk rekommendation är dokumenterad."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Räckvidd är begränsad och okänd: inga verifierade följarantal på LinkedIn, Instagram eller YouTube, och blogbesöksantal ej tillgängligt. Audience-kvalitet kan rimligtvis antas vara hög (professionell SEO-publik om den finns) men kan inte bedömas observerbart. Willian verkar arbeta primärt via direkt konsultverksamhet (B2B) snarare än via offentlig kanal. 4/10 = 'måttlig räckvidd och/eller tveksam audience-kvalitet' — insufficient_evidence: true."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Willian är en solopreneur (typ: 'Independente') utan verifierad antal anställda (AGENCY_FLOOR: ≥5 triggerar minimum 4/10, men gäller inte här). Han har tydlig kundbas indikerad genom portföljresultat, men inga konkreta kundantal nämns ('Clientes específicos não listados publicamente'). Enligt CUSTOMER_VOLUME_POTENTIAL-regeln: utan konkret underlag → insufficient_evidence: true, max 4/10. En solopreneur som konsult kan rimligtvis hantera 5–15 aktiva kunder, men vi har ingen dokumentation. 4/10 = 'Begränsat underlag. Potential finns men lite konkret att bedöma mot. Troligen 1–2 kunder om affiliaten är aktiv' — konservativ skattning givet att Willian redan har etablerad konsultverksamhet."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Willian är brasiliansk (location: 'Brasil'), domain är .dev.br, innehållet är på portugisiska, och profilen nämner brasilianska resultat och marknadskontext. 5/5 — tydligt brasiliansk profil."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerbar affiliate-historia, partnerprogram eller sponsrade inlägg identifierad. Willian verkar fungera som oberoende konsult utan offentlig affiliate-verksamhet. Profilen är professionell och seriös, men det finns ingen signal om intresse för affiliates eller tidigare samarbeten. 3/5 = neutral — inget direkt indikerar affiliate-erfarenhet, men heller inget tyder på motvilja. insufficient_evidence: true."
+    },
+    "content_traffic_potential": {
+      "score": 1,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Williams primär kanal är hans webbplats (williansouza.dev.br), men blogbesöksantal är ej tillgängligt. Ingen YouTube-kanal, newsletter eller regelbunden publik publicering verifierad. Innehållet verkar vara konsultfokuserat snarare än content-marketing-driven. Publiceringsfrekvens okänd. 1/5 = 'Sporadiskt innehåll eller kanal som tappat momentum' — vi kan inte bekräfta aktiv evergreen-strategi. insufficient_evidence: true."
+    }
+  },
+  "total_score": 70,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Willian är en brasiliansk SEO-konsult med tydlig teknisk excellens och dokumenterad kundbas. Han arbetar direkt med brasilianska företag och förstår deras behov, vilket gör honom relevant för SEO Brasil-användare. Även om hans offentliga räckvidd är begränsad, har han etablerad konsultverksamhet och använder avancerade verktyg som visar potentiell verktygsrekommendationsförmåga.",
+  "outreach_angle": "Willian, vemos que você trabalha com migrações de plataforma e análise de dados avançada — SEO Brasil poderia ser uma ferramenta estratégica para seus clientes gerenciarem rankings durante essas transições. Ofertamos 30% recurring commission via Hotmart e seria uma recomendação natural dentro seu pacote de consultoria."
+}

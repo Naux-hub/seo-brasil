@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Maudy Pedrão",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 20,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "Maudy är SEO-konsult som arbetar direkt med B2B-företag i São Paulo för att få organisk trafik och pipeline. Målgruppen är företag som vill ranka på Google, INTE SEO-byråer, konsulter eller SEO-professionella. Portfolio visar '16 operações com receita orgânica' — alltså direct-to-business-arbete. Detta triggerar LOCAL_SEO_CAP: Kandidaten hjälper lokala/regionala företag att ranka, inte SEO-proffs som köper ranking-verktyg för sina egna klienter. Därför sätt max 20/30 oavsett övriga signaler. Fit är bra för SMB men svag för SEO-byråer/konsulter som är kärnköpare av SEO Brasil."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är absolut kärnpunkten. Profilbeskrivning: 'Consultoria de SEO e GEO', 'SEO técnico', 'GEO para ser encontrada no Google'. Innehållsämnen omfattar SEO-teknik, Core Web Vitals, GEO, AI Overviews, arkitektur för B2B, E-E-A-T — alla klassiska SEO-fokusområden. Författare till 'SEO 360'-bok. Inget tvivel om att SEO är huvudfokus. 20/20."
+    },
+    "purchase_influence": {
+      "score": 13,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Tydlig observerbar evidence på verktygsinflytande: Kandidaten nämner specifika SEO-verktyg (Semrush, Ahrefs, Moz) i sitt innehåll på affili-sidan. Har en dedikerad 'link-de-afiliado'-sida på sin webbplats med 'guia completo sobre marketing de afiliados' — visar aktiv erfarenhet av att rekommendera verktyg till sin audience. Omnämner Hotmart explicit som pålitlig plattform. Detta är dokumenterad verktygsinflytande men INTE återkommande eller strukturerad direct-to-klienter-nivå som seria 15p. Nivå 13 är lämplig: tydlig observable evidence på verktygsrekommendation via innehåll och affiliate-fokus."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "8 000 LinkedIn-följare på en B2B-plattform där följare är relativt kvalificerade. Inte stor räckvidd men relevant för SEO-/digital-kontexten. Postningsfrekvens är daglig, vilket visar engagemang. Ingen explicit data om engagemangsgrad eller kommentarskvalitet, men LinkedIn-publiken för en SEO-konsult är troligt relevant (marknadsföringsproffs, företagsledare). Denna poängsättning: bra räckvidd för B2B-context men inte massiv — därför 7/10 (bra räckvidd ELLER hög kvalitet, men INTE båda starkt dokumenterade)."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Portfolio visar '16 operações com receita orgânica' — detta är kundarbete, MEN antalet är lågt och det är INTE känt om detta är aktiva eller historiska klienter. Ingen explicit kundbas storlek nämnd, ingen byrå-storlek, ingen anställdlista. Kandidaten arbetar via 'consultoria personalizada' och WhatsApp direkt — detta tyder på soloprenör eller mycket liten operation snarare än byrå med 5+ anställda. AGENCY_FLOOR triggeras INTE (ingen byrå med ≥5 anställda eller explicit nämnd aktiv kundbas). Insufficient_evidence: true. Minimal konkret underlag → max 4/10 enligt regel. 16 tidigare operationer är något men inte tillräckligt för att extrapolera till framtida affiliatekonverteringar."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Mycket tydligt brasiliansk publik. Placering: São Paulo, SP. Språk: Portugisiska. Innehålls-kontext: 'sua marca ser encontrada' (din märke ska bli funnen), refererar till Google och brasiliansk marknad. Professionell titel på portugisiska. Ingen internationell fokus explicit. Fullständig brasiliansk fit. 5/5."
+    },
+    "affiliate_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Stark signal: Kandidaten har en dedikerad 'link-de-afiliado'-sida på sin webbplats med fullständig guide om affiliate-marketing. Omnämner Hotmart explicit som platform. Visar redan erfarenhet av att arbeta med affiliate-program och känner till ekosystemet. Detta är tydligt underlag för att personen är öppen för och aktiv med affiliate-arbete. Ingen intressekonflikt uppenbar. 5/5."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten skapar blogg-artiklar (evergreen) och dagliga LinkedIn-posts. Blogg nämns men besöksantal är inte verifierbar. Evergreen-innehåll är gott (blogg) men LinkedIn-posts är mer flyktiga. Ingen YouTube-kanal eller newsletter omnämnd. Content är aktivt men övervägande socialt/LinkedIn-fokuserat snarare än långsiktig passiv lead-generation via blogg/SEO. 3/5 = aktivt innehållsskapande men mer flyktigt än optimal."
+    }
+  },
+  "total_score": 77,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Maudy är en väletablerad brasiliansk SEO-konsult med 20+ år erfarenhet, redan erfaren med affiliate-marketing och verktygsrekommendationer, och daglig content-produktion. Dock är hans primära publik direkt-till-SMB snarare än SEO-byråer, vilket limiterar målgruppsjustering för SEO Brasil — men han kan fortfarande introducera verktyget till sina klienter som ett redskap för deras egen SEO-arbete.",
+  "outreach_angle": "Maudy, sua experiência com affiliate-marketing e recomendação de ferramentas é clara. SEO Brasil pode ser uma adição natural ao seu arsenal — justamente para seus clientes B2B que querem monitorar e melhorar seus próprios rankings. Parceria com comissão recorrente via Hotmart, que você já conhece bem?"
+}

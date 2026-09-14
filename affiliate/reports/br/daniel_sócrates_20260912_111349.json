@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Daniel Sócrates",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 20,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "Daniel Sócrates är grundare av SEO Genome, en byrå i São Paulo med fokus på SEO local enligt hans profilbeskrivning. Han nämner 'Especialista em SEO local' som primär specialitet. Även om han är SEO-professional och konsult (vilket är målgruppen), riktar hans byrå sig primärt mot LOKALA FÖRETAG som behöver lokal SEO-ranking snarare än mot SEO-byråer eller SEO-konsulter som köper SaaS-verktyg för att servera egna klienter. Detta triggerar LOCAL_SEO_CAP-regeln: max 20/30 oavsett övriga signaler. Hans publik är relevant för SEO men inte den ideala målgruppen (lokala småföretag vs. SEO-proffs som köper rank-tracking-verktyg)."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är helt klart kärnan i Daniel Sócrates verksamhet. 25 års SEO-erfarenhet, startade karriär i oktober 2001 inom SEO. Rankad #1 i SEO i Brasilien och världen enligt Favikon 2026. Innehållsfokus: SEO local, semantik, data strukturerade, hastighet på webbplats, AI Search Optimization (skrev bok om det). CEOn för en hel SEO-byrå. SEO är unambigt hans primära expertisområde — ingen tvivel om relevans. 20/20 poäng."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Ingen direkt observerad evidence på specifika verktygsbeskrivningar, affiliate-länkar eller verktygsdemos i kandidatdatan. Dock: Daniel Sócrates är grundare/CEO av SEO Genome — en etablerad byrå i São Paulo med 25 års erfarenhet bakom sig. Detta indikerar stark professionell kund-/projektverksamhet, vilket stödjer nivå 8 enligt regeln ('dokumenterad professionell kund-/projektverksamhet som stöd'). En byrå med denna historia och denna autoritet rimligtvis arbetar med klienter och implementerar verktyg för dem. Utan observerad direktrekommendation kan vi inte gå högre, men byråstrukturen möjliggör 8/15."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Instagram 35,9K följare (primär plattform enligt noterna), LinkedIn 1,5K, TikTok 9,7K, YouTube 495. Räckvidden är god (vooral via Instagram) men inte spektakulär för en #1-rankad expert. Viktigt: regelväg säger 'relevans väger tyngre än absoluta siffror'. Daniel Sócrates är rankad #1 i SEO i Brasilien — hans följare på Instagram är sannolikt SEO-proffs och marknadsförare (inte generiski publik). Engagemantsignaler: han är aktivt på flera kanaler och har både en byrå och en book — detta tyder på engagerad publik av proffs. Dock är LinkedIn-följarna låga (1,5K) vilket skulle förväntas vara högre för denna auktoritet. Balans: bra relevans + måttlig räckvidd = 7/10."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Ingen explicit kundlista, studentantal eller community-storlek publicerad. Daniel Sócrates är CEO för SEO Genome-byrån — detta triggerar AGENCY_FLOOR-regeln ('Byrå med dokumenterade anställda ≥5 eller explicit aktiv kundbas → minimum 4/10'). En byrå med 25 års historia i São Paulo har rimligtvis betalande klienter. Vi kan inte spekulera på antal (skulle kräva explicit information), men minsta-tröskeln på 4/10 är motiverad av byråstrukturen. Potentiellt kunde Daniel bra förmedla till sina egna klienter, men vi har ingen data på volym."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Tydlig brasiliansk profil. Ligger i São Paulo, Brasilien. Innehål på portugisiska (bekräftad). Rankad #1 i SEO i Brasilien enligt Favikon 2026. Alla signaler indikerar brasiliansk marknad och publik. 5/5 poäng."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerad affiliate-länksamling, sponsored-inlägg eller explicit samarbetshistorik nämnd. Daniel Sócrates är en auktoritetsperson som skriver bok, driver byrå och undervisar — detta kan indikera en fokusering på 'thought leadership' snarare än kommersiell promovering. Dock: ingenting indikerar att han är MOTTAGLIG till affiliates (t.ex. kan man inte se att han 'uttalat sig negativt om affiliates'). Han är professionell och neutral. Ingen direkt signal åt något håll, därför neutral score på 3/5."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Daniel Sócrates är aktiv på Instagram, TikTok, LinkedIn, YouTube och ett blogg/site (seogenome.com). Han har skrivit bok 'AI Search Optimization' (evergreen). Dock: ingen data på publiceringsfrekvens, YouTube-views, bloggtrafik eller newsletter-abonnenter är tillgänglig. YouTube (495 prenumeranter) verkar litet. Instagram (35,9K) är primär kanal men är mer flyktigt socialt innehåll än evergreen SEO-innehål. Utan konkret evidence på traffickvolym eller publiceringsfrekvens kan vi inte ge högre poäng än 3/5 (aktivt innehåll men flyktigt + okänd traffic)."
+    }
+  },
+  "total_score": 70,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Daniel Sócrates är den högst rankade SEO-experten i Brasilien med 25 års erfarenhet och grundare av en etablerad byrå, vilket ger honom starkt trovärdighet och potentiell inflytande över en relevant SEO-professionell publik. Han har en engagerad Instagram-följare (35,9K) övervägande av brasilianska marknadsförare och SEO-proffs, och hans fokus på SEO local, semantik och AI-driven search optimization är direkt relevant för SEO Brasil-användare.",
+  "outreach_angle": "Daniel, admiramos sua autoridade em SEO no Brasil (ranking #1 2026) e a qualidade do conteúdo em IA e Search Optimization. SEO Brasil (rank-tracking tool, R$197/mês, 30% comissão recorrente via Hotmart) seria uma boa recomendação para suas agências e clientes que precisam de tracking preciso de rankings — gostaríamos de explorar uma parceria de afiliado com você."
+}

@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Fernando Fesant",
+  "knocked_out": true,
+  "knockout_reason": "LOCAL_SEO_CAP — Kandidaten fokuserar primärt på Local SEO för små lokala företag (restauranger, tandläkare, hantverkare osv. i Porto Alegre), INTE på SEO-professionaler, byråer eller konsulter. Hans klienter är lokala företag som behöver Google-ranking lokalt — de är INTE typiska köpare av SEO Brasil (som är ett verktyg för SEO-proffs och byråer). Målgruppen passar därför inte produkten.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Profil säger explicit: 'Ajudo Empresas Locais a Rankear no Google' — hans målgrupp är lokala småföretag i Porto Alegre, inte SEO-konsulter eller byråer. LOCAL_SEO_CAP applicerad. SEO Brasil är ett verktyg för SEO-proffs; lokala småföretag är inte köpare av sådana verktyg."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — alla scores sätts till 0 per instruktion."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knockout — Target Audience Mismatch",
+  "why_interesting": "Fernando är en kompetent SEO-konsult i Brasilien, men hans affärsmodell fokuserar på att hjälpa små lokala företag att ranka lokalt — inte på att sälja SEO-verktyg till andra professionella. Hans klienter är inte köpare av SEO Brasil.",
+  "outreach_angle": "Kontakta INTE — målgruppen stämmer inte. Fernando arbetar med småföretag som behöver Local SEO, inte med SEO-professionaler eller byråer som är SEO Brasil-köpare."
+}

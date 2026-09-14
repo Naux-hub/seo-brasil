@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Diego Ivo",
+  "knocked_out": true,
+  "knockout_reason": "LOCAL_SEO_CAP + TARGET AUDIENCE MISMATCH: Diego Ivo är grundare av Conversion, Brasiliens största SEO-byrå, och hans primära målgrupp är C-level executives och stora företag (Bayer, Brastemp, Consul, Multishow, Staples, Serasa Experian). SEO Brasil är positionerat för brasilianska SEO-konsulter, byråer och freelancers — inte för företagsledare på stora multinationella bolag. Dessutom fokuserar Diego på strategisk SEO för stora märken, inte på PME-verktyg eller SMB-lösningar som SEO Brasil erbjuder. Målgruppen överlappar inte meningsfullt med SEO Brasils köparkund.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Diegos publik är C-level och stora företag, inte SMB:er, freelancers eller mindre byråer som är SEO Brasils målmarknad. Conversion fungerar med globala varumärken — det finns ingen observerbar evidens för att han når eller rekommenderar verktyg till småbyrå-ägare eller konsulter som skulle köpa SEO Brasil."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Även om Diego är en SEO-expert på högt nivå, är hans fokus strategisk och konceptuell (GEO, IA, data & analytics för stora varumärken), inte på praktiska verktyg som ranking trackers eller keyword research tools för SMB:er."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Ingen observerbar evidence på verktygsrekommendationer eller affiliateverksamhet. Diegos innehåll fokuserar på strategi, inte på tool selection för kunder eller audience."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Även om Diego har mycket högt inflytande (Influence Score 8.256, Top 1% i Brasilien), är hans publik inte relevant för SEO Brasil — det är enterprise-fokus, inte SMB-verktyg."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Conversion är en stor byrå med dokumenterad kundbas, men kunderna (stora multinationella bolag) är inte potentiella köpare av SEO Brasil."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Brasiliansk fit är stark (Diego är i São Paulo, talar portugisiska, är #1 SEO-auktoritet i Brasilien), men det löser inte det grundläggande problemet att hans målgrupp inte överlappar."
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Ingen observerbar affiliate-erfarenhet eller verktygsrekommendationer."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Knockad ut: Även om Diego producerar innehåll via LinkedIn, SEO Summit och Conversion Academy, adresseras det enterprise-level strategier, inte SMB-verktyg."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knockad ut — målgruppsmismatch",
+  "why_interesting": "Diego Ivo är Brasiliens mest auktoritativ SEO-expert och grundare av landets största SEO-byrå, men hans fokus på stora multinationella varumärken och strategisk SEO gör honom olämplig för SEO Brasil, som är designat för SMB:er och mindre byråer.",
+  "outreach_angle": "Ej rekommenderad outreach — målgruppsöverlappckling är för låg. Diego Ivos publik (enterprise C-level) köper inte SMB-rankingverktyg."
+}

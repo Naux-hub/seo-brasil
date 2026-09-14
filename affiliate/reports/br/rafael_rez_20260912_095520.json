@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Rafael Rez",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 20,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "Rafael Rez är grundare av Web Estratégica (SEO-byrå) och co-grundare av Nova Escola de Marketing. Han har tydlig SEO-relevans och arbetar med större varumärken (Magazine Luiza, Electrolux, Americanas). DOCK: Primär målgrupp är C-level och marknadsföringschefer på STORA företag (Ânima Educação, Netshoes), inte SEO-konsulter, -byråer eller -freelancers som är SEO Brasils kärnkunder. Nova Escola de Marketing kan nå marknadsförare på olika nivåer, men inget tyder på att fokus ligger på SME-SEO-proffs eller små byråer. LOCAL_SEO_CAP appliceras: kandidaten hjälper primärt stora företag med content-strategi och SEO, inte små lokala företag, men målgruppen är ändå inte SEO-professionella utan större organisationer → sätt 20/30."
+    },
+    "seo_relevance": {
+      "score": 15,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är en tydlig och återkommande del av Rafael Rez:s verksamhet. Innehållsteman inkluderar 'SEO na Era do ROI', 'SEO no contexto de inbound marketing' och han är erkänd expert inom området. Web Estratégica är märkt som 'agência de SEO e conteúdo'. DOCK: Fokus ligger i högre grad på Content Marketing som strategi än på specifik SEO-teknik (rank tracking, keyword research, on-page optimization). SEO presenteras ofta genom content marketing-linsen snarare än som isolerat ämne. Detta gör SEO till en 'tydlig och återkommande del' men inte kärnämnena → 15/20."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Ingen observerad direkt verktygsjämförelse, affiliate-länk eller dedikerad verktygsrekommendation i tillgänglig data. DOCK: Rafael Rez leder Web Estratégica (dokumenterad SEO-byrå med 15 år erfarenhet) och co-grundare av Nova Escola de Marketing med etablerad elev-/klientbas. Data bekräftar stora klienter (Magalu, Electrolux, Panvel). Detta är stark professionell indikation på verktygsinflytande för sina klienter och studenter, även om ingen direkt observerad tool-recommendation föreligger. AGENCY_FLOOR-regel: etablerad byrå med långkörning och namngivna stora klienter → minimum 4/10, men stark professionell roll höjer till 8/10."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Följarsiffror på LinkedIn, Instagram, YouTube och newsletter-prenumeranter är inte bekräftade ('número de seguidores não confirmado'). Ingen mätbar reach-data tillgänglig. DOCK: Rafael Rez är känd för 350+ föreläsningar i 18 brasilianska delstater samt Portugal och Uruguay, och är författare till best-seller. Dette indikerar potentiell stor räckvidd och hög audience-kvalitet (C-level, marknadsförare på stora företag). Utan konkreta siffror kan dock endast måttlig poäng ges → 4/10."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Ingen explicit kundantal eller studentantal rapporterat för Nova Escola de Marketing. DOCK: Web Estratégica är dokumenterad byrå med 15 år etablering och namngivna större klienter (Magazine Luiza, Electrolux, Americanas, Netshoes, Panvel, Leroy Merlin, Ânima Educação). AGENCY_FLOOR-regel: etablerad byrå med ≥5 anställda (implicit för 15-årigt företag med stora klienter) triggar minimum 4/10 oavsett saknad explicit kundbas-siffra. Potentiell volym begränsad av att hans primärpublik är stora företag, inte SMEs som köper SEO Brasil. Uppskattat 1–3 potentiella SEO Brasil-köpare från Nova Escola-studenterna → 4/10."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Tydligt brasiliansk profil. Baserad i Brasil, innehål på portugisiska (português brasileiro), webbplatser webestrategica.com.br och rafaelrez.com, föreläsningar i 18 brasilianska delstater plus Portugal och Uruguay. Klienter är brasilianska varumärken. Blog och professionell verksamhet helt brasiliansk-fokuserad. → 5/5."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Insufficient evidence på befintliga affiliate-program, sponsrad innehåll eller tool-promotion. Affärsmodell är primärt agency + education, inte content-driven affiliate-verksamhet. Ingen motsignal (ej konkurrerande eller uteslutande partnership observerad). Neutral position: professionell och öppen för samarbeten men ingen tydlig affiliate-erfarenhet eller -benägenhet dokumenterad → 3/5."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Postningsfrekvens och trafikdata inte bekräftad. Rafael Rez har aktiva kanaler (blog på webestrategica.com.br, rafaelrez.com, LinkedIn, Nova Escola-plattform) men ingen konkret data på besöksantal eller engagemangsgrad. Innehållet är strategisk och substantiell (marketing/SEO-fokuserad) men mer flyktigt social/speaker-baserat än evergreen-innehål. Begränsad evidence → 3/5."
+    }
+  },
+  "total_score": 62,
+  "grade": "C",
+  "grade_label": "Databasen — ingen prioritet initialt",
+  "why_interesting": "Rafael Rez är en av Brasiliens främsta auktoriteter inom content marketing och SEO med 29 års erfarenhet och etablerad byrå (Web Estratégica) med stora klienter. Han når marknadsförare och chefer genom sina 350+ föreläsningar och co-grundad marknadsföringsskola, men hans primära målgrupp är större företag snarare än SEO-professionella eller SMEs som är SEO Brasils kärnkunder. Potentialen ligger främst i Nova Escola-studenterna.",
+  "outreach_angle": "Rafael, sua autoridade em SEO e marketing de conteúdo é reconhecida globalmente. SEO Brasil é uma ferramenta que ajuda consultores e pequenas agências de SEO a ranquear melhor — seria natural integrar ao conteúdo da Nova Escola como recomendação para alunos que buscam ferramentas acessíveis de rank tracking. Podemos conversar sobre uma parceria?"
+}

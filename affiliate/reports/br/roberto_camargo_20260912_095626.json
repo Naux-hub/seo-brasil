@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Roberto Camargo",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 25,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Roberto når en mycket relevant målgrupp: e-commerce-entrepreneurer och YouTube-creators som vill ranka organiskt i Brasilien. Hans innehållsfokus på 'SEO för YouTube', 'SEO för e-commerce' och 'crescimento orgânico' adresserar direkt personers som köper SEO-verktyg. Han är inte en lokal SEO-byrå för restauranger (undviker LOCAL_SEO_CAP), utan riktad mot digital marketers och e-commerce-professionaler. 25p istället för 30p eftersom publiken är bred (e-commerce + content creators) snarare än snävt fokuserad på SEO-konsulter/byråer."
+    },
+    "seo_relevance": {
+      "score": 18,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är centralt men inte ensamt fokus. Innehållstopikerna listar 'SEO para criação de conteúdo', 'SEO para YouTube', 'E-commerce SEO' som huvudämnena, men också 'Marketing digital e empreendedorismo online' vilket indikerar bredare fokus. Google-certifiering och 25+ års interneterfaring förstärker SEO-kredibilitet. 18p eftersom SEO är en tydlig del men delas med e-commerce och entrepreneurship—inte ren SEO-fokus som motsvarar 20p."
+    },
+    "purchase_influence": {
+      "score": 10,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Observerbar content-evidence på educator-nivå: Roberto skapar kurser på Udemy, Trampos Academy, och YouTube specifikt om SEO. Dessa plattformar kräver typically tool-illustrationer. E-bok 'SEO para YouTube' på robertocamargo.biz visar att han säljer digitala produkter direkt. Dock: specifika verktygsrekommendationer, affiliate-länkar eller tool-comparisons är INTE explicita i kandidatdatan. Därför 10p (educator-level tool evidence) snarare än 13p—innehållet finns men inte detaljerade tool-recs bekräftade."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Kritisk brist: YouTube-subscriberantal, LinkedIn-följare, Udemy-studentantal och besökstal är INTE bekräftade ('Número de inscritos/alunos não confirmado'). Utan denna data kan vi inte bedöma räckvidd eller audience-engagemang. Kandidaten är en etablerad pedagog (25+ år, Google-certifierad, flera plattformar), vilket antyder en någonstans relevant publik, men konkreta siffror saknas helt. 4p för måttlig evidensvikt baserat på professionell kredibilitet snarare än mätbar räckvidd."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Insufficient concrete evidence. Roberto opererar som educator och konsult men antal aktiva studenter/klienter är inte public. Därför kan AGENCY_FLOOR inte tillämpas (ingen dokumenterad anställdstyrka ≥5, ingen explicit nämnd kundbas). Han säljer kurser på flera plattformar (Udemy, Trampos, egen site) vilket antyder ett system för kunddistribution, men exakta student/klientnummer är okänd. Minimum 4/10 enligt regel för begränsat underlag—potential finns men för lite konkret att bedöma mot."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt brasiliansk fit. Roberto är baserad i Brasil ('location: Brasil'), innehål är på portugisiska, profilen är på brasilianska plattformar (Udemy BR, Trampos Academy, eget domän .biz), och hans fokus är explicit på brasiliansk marknadskontext ('crescimento orgânico' för brasilianska e-commerce och content creators). Inga internationella signaler—rent brasiliansk publik."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Neutral signal. Roberto opererar genom modeller som är kompatibla med affiliates (Udemy, Hotmart, Trampos Academy—alla plattformar som support affiliate-links), och hans e-bok på robertocamargo.biz antyder erfarenhet av digital produktförsäljning. Dock: ingen explicit evidence på befintliga affiliate-partnerskap, sponsrad content eller 'Partners'-sida. Han verkar öppen för kommersiella kanaler (säljer redan produkter digitalt) men ingen direkt signal på affiliate-erfarenhet. 3p = neutral."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Roberto har evergreen-innehål (YouTube-kanal, Udemy-kurser, blogg på robertocamargo.biz) vilket är bra för långsiktig lead-generering. YouTube-kanalen bör generera konsistent traffic givet hans 25+ år-erfarenhet och Google-certifiering. Dock: publiceringsfrekvens, video-visningstal och bloggtrafik är INTE bekräftad ('Posting_frequency: Insufficient evidence'). Potentialen finns (evergreen platform) men konkreta traffic-bevis saknas. 3p för aktivt innehållsskapande på rätt kanaler men utan bekräftade siffror."
+    }
+  },
+  "total_score": 72,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Roberto Camargo är en etablerad brasiliansk SEO-pedagog (25+ år, Google-certifierad) med tydligt fokus på e-commerce och YouTube SEO—exakt arean där SEO Brasil:s kunder är aktiva. Han säljer redan digitala produkter via flera kanaler (Udemy, Hotmart, egen site), vilket visar kompetens inom affiliate-modeller och digital distribution.",
+  "outreach_angle": "Olá Roberto! Vi er desenvolvendo SEO Brasil, uma ferramenta de ranking que ajuda consultores e empreendedores de e-commerce a acompanhar suas posições no Google Brasil. Vimos seus cursos sobre SEO para YouTube e e-commerce—temos uma oportunidade de affiliate que pode gerar renda recorrente para seus alunos e audiência. Seria interessante conversar sobre como integrar SEO Brasil nas suas recomendações de ferramentas?"
+}

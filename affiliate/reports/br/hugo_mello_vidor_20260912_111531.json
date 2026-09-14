@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Hugo Mello Vidor",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 20,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "Hugo Mello Vidor är CEO för Agência GV8 som specialiserar sig på marketing digital för små och medelstora företag (PMEs). Hans 5.500+ klienter är huvudsakligen lokala små- och mediumföretag i alla brasilianska delstater — Detta är ett klassiskt LOCAL_SEO_CAP-fall. GV8 hjälper lokala företag att skapa webbplatser och online-närvaro, inte SEO-professionella eller konsulter som köper SEO-rankingverktyg. SEO Brasil är designad för SEO-konsulter, byråer och professionella som behöver track rankings för sina egna eller kunders webbplatser — inte för lokala småföretag. Även om GV8 gör SEO för PMEs kan de som målgrupp inte köpa ett $197/mån B2B SaaS-verktyg. Därför: LOCAL_SEO_CAP sätts till 20/30 maximum."
+    },
+    "seo_relevance": {
+      "score": 15,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är en tydlig och dokumenterad del av GV8:s tjänsteutbud — blogg.gv8.com.br producerar innehåll om 'SEO för små och medelstora företag' och 'guider om SEO-agenturer'. Innehållsämnena listar 'SEO för pequenas e médias empresas' explicit. Men GV8 är en fullservice digital marketing-byrå som också erbjuder Google Ads, webbplatsdesign och övergripande digital marknadsföring. SEO är en central del men inte kärnan. Score: 15/20."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "EVIDENCE REQUIRED-regel tillämpas. Ingen observerad evidence på aktiv tool-rekommendation, affiliate-länkar eller dedikerade verktygsreviews. DOCK: GV8 är en dokumenterad och etablerad byrå med 20+ års verksamhet, 5.500+ aktiva klienter och är members av ANAMID (Brazilian Digital Marketing Association). Detta uppfyller AGENCY_FLOOR-kriteriet: en byrå med denna kundbas och långlevnad har rimligtvis betalande klienter och därmed dokumenterad professionell verktygsinflytande — även om den inte är explicit observerad. Score: 8/15 (stark professionell indikation, dokumenterad byrå med kundbas, men ingen direkt observerad tool-recommendation)."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Hugo Mello Vidors personliga följarsiffror på LinkedIn, Instagram eller YouTube bekräftades inte. GV8:s webbplats och blogg existerar, men månadliga besökare och engagemangsgrad är inte dokumenterade. Följarsiffrorna på byrån är inte tillgängliga. Därmed: Begränsad data för att bedöma räckvidd eller audience-kvalitet. Det finns mycket svaga signaler om att byrån har digital närvaro, men ingen konkret evidens. Score: 4/10 (måttlig räckvidd och tveksam audience-kvalitet baserat på tillgänglig data)."
+    },
+    "customer_volume_potential": {
+      "score": 10,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "AGENCY_FLOOR-regel: GV8 är en dokumenterad byrå med 20+ år, 5.500+ bekräftade aktiva klienter och minst 5 anställda (implic. från denna skala). Hugo Mello Vidor är CEO med professionell bakgrund (administración, ANAMID-medlem). Potentiell kundvolym är EXTREM hög: om Hugo rekommenderar SEO Brasil till en liten andel av hans 5.500 klienter (t.ex. bara 1–2%), uppstår 55–110 potentiella kunder. För en affiliate är detta realistiskt generera 5+ betalande kunder eller fler. Score: 10/10 (starkt underlag, etablerad byrå med mycket stor och dokumenterad kundbas)."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Hugo Mello Vidor är CEO för brasiliansk byrå (GV8), baserad i Brasilien, med explicit närvaro i alla 27 brasilianska delstater ('todos os estados do Brasil'). Innehållet är på portugisiska. Medlem av ANAMID. Allt pekar på brasiliansk fokus. Score: 5/5."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerad evidence på befintliga affiliate-program, sponsrade inlägg eller tool-recommendations från Hugo Mello Vidor personligen. Modellen är byrå, inte educator eller content creator. Ingen 'Partners'-sida eller samarbetshistorik observerad. Dock: Professionell och seriös profil, inget tyder på motvilja mot samarbeten. Neutral position — varken för eller emot affiliates. Score: 3/5."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "GV8 har en aktiv blogg (blog.gv8.com.br) med SEO- och marketing-innehål. Detta är evergreen-innehål som bör generera långsiktig trafik — potentiellt bra för passive leads. DOCK: Ingen data tillgänglig på publiceringsfrekvens, månadliga besökare, eller YouTube-närvaro. Giv antagandet om att en etablerad byrå med 20+ år har en fungerande blog: Score 3/5 (aktivt innehållsskapande men ingen konkret data på momentum eller trafik)."
+    }
+  },
+  "total_score": 68,
+  "grade": "C",
+  "grade_label": "Databasen — ingen prioritet initialt",
+  "why_interesting": "Hugo Mello Vidor kontrollerar Brasils största PME-fokuserad digital marketing-byrå med 5.500+ bekräftade klienter över alla delstater. Om SEO Brasil kan positioneras som ett verktyg för hans byrå att erbjuda sina egna klienter (eller för hans team att använda internt), kan potentialen för customer acquisition vara mycket stor. Men hans primära målgrupp är lokala småföretag som inte själva köper B2B SaaS — vilket sätter en hard cap på direct fit.",
+  "outreach_angle": "Hugo, a GV8 atende 5.500+ pequenas e médias empresas no Brasil. Muitas delas precisam rastrear seus rankings de SEO — SEO Brasil é exatamente para agências como a GV8 oferecerem isso aos seus clientes como um serviço agregado, com comissão recorrente. Podemos estruturar uma parceria onde a GV8 se torna um revendedor para seus clientes interessados."
+}

@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Kildary Oliver",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 25,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": false,
+      "evidence": "Kildary undervisar SEO för blogmoneterering och affilate-marketing — direkt relevant för SEO-professionals och content creators som arbetar med organisk trafik i Brasilien. Målgruppen är inte enbart lokala småföretag utan digitala entreprenörer och bloggers som faktiskt behöver SEO-rankingverktyg för att övervaka sina resultat. 11.000+ studenter i kurser på Hotmart/Kiwify bekräftar en aktiv, relevant brasiliansk publik. Något under perfekt (30p) eftersom fokus ligger på blogmoneterering snarare än full SEO-konsultverksamhet, men mycket stark matchning för SEO Brasil-kunder."
+    },
+    "seo_relevance": {
+      "score": 18,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är kärnan i Kildary's undervisning: 'SEO för blogs och monetización', 'AdSense', 'marketing de afiliados + SEO', 'renda passiva pela internet'. Innehållslistan visar att SEO är det primära fokuset för att generera organisk trafik och inkomster. SEO är inte en sidofokus utan det centrala verktyget han lär ut. Dock inte helt specialiserad på teknisk SEO (keyword research, on-page, länkbygge i klassisk bemärkelse) utan fokuserat på blogmoneterering via SEO — därför 18p istället för 20p."
+    },
+    "purchase_influence": {
+      "score": 13,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Tydlig observerbar evidence på verktygsinflytande: Kildary undervisar aktivt om 'marketing de afiliados' och har ett helt affärsmodell byggt på att sälja kurser via affilate-plattformar (Hotmart, Kiwify). Han rekommenderar och implementerar verktyg för sina studenter. Profilen indikerar att han både använder och rekommenderar digitala verktyg inom sitt undervisningsekosystem. Dock saknas specifik dokumenterad evidence på att han redan rekommenderar specifika SEO-rankingverktyg (typ Ahrefs, SEMrush el. liknande) i sitt innehål — därför 13p istället för 15p. Hans affilatefokus och undervisningsformat tyder på högt köpinflytande."
+    },
+    "reach_quality": {
+      "score": 8,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "24.000 YouTube-prenumeranter + 11.000 verifierade studenter = betydande räckvidd. Audiensen är högkvalitativ: brasilianska bloggers, digitala entreprenörer och content creators som är intresserade av organisk trafik och monetisering. YouTube-kanalen är aktiv och fokuserad (specifikt PT-BR-innehål om SEO för Google Brasil). Engagemanget kan antas vara högt baserat på att eleverna faktiskt köper hans kurser. Inte helt 10p eftersom vi saknar konkret data på engagemangsgrad (likes, kommentarer per video) och vi kan inte verifiera antalet aktiva följare kontra köpta följare, men qualiteten av målgruppen är tydlig."
+    },
+    "customer_volume_potential": {
+      "score": 8,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "AGENCY_FLOOR inte tillämplig (ingen byrå), men Kildary har dokumenterad elevbas på 11.000+ aktiva studenter över flera plattformar (Udemy, Hotmart, Kiwify). Detta bekräftar en köpstark audience. 11.000 elever innebär realistisk potential att rekrytera 5–10+ betalande kunder för SEO Brasil om han integrerar verktyget i sitt kursinnehål eller rekommenderar det direkt. Baserat på elevers engagement och hans track record på Hotmart/Kiwify — konservativ bedömning sätts till 8p (dokumenterad elevbas stödjer 'begränsat men konkret underlag')."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Helt brasiliansk fit: innehål på portugisiska (PT-BR), explicit fokus på 'Google Brasil', plats brasiliansk, 11.000+ brasilianska studenter. Ingen tvekan om att målgruppen är brasiliansk. Maximal poäng."
+    },
+    "affiliate_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "MYCKET HÖGT: Kildary's helt affärsmodell bygger på affiliatemarketning och sälja kurser via affilaite-plattformar (Hotmart, Kiwify). Han undervisar sina studenter om 'marketing de afiliados' som en central strategi. Detta visar inte bara erfarenhet av affiliate-ekosystemet utan också öppenhet för att rekommendera och promota produkter för provision. Han är redan aktiv affilaite och kan förstå värdet av RECURRENCy-provision (30% per månad på R$197). Maximal poäng."
+    },
+    "content_traffic_potential": {
+      "score": 4,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Kildary producerar innehål på YouTube, kurser på Udemy/Hotmart/Kiwify — delvis evergreen (kurser) men delvis flyktigt (YouTube kan vara episodisk). Kanal är aktiv (24K prenumeranter) men vi saknar data på publiceringsfrekvens, videovisningar och organisk trafikpotential från YouTube SEO-perspektiv. Kurser på Hotmart/Kiwify är evergreen-assets men inte direkt trafikdrivande för SEO Brasil-affiliationen. 4p på grund av begränsad konkret evidence om hans passive lead-generation potential genom evergreen-innehål."
+    }
+  },
+  "total_score": 86,
+  "grade": "A",
+  "grade_label": "Mycket intressant — hög prioritet",
+  "why_interesting": "Kildary Oliver är en etablerad brasiliansk SEO-educator med 24K YouTube-prenumeranter och 11K verifierade studenter — en målgrupp som direkt behöver rankingövervakning för att mäta sina SEO-resultat. Han är djupt integrerad i affiliate-ekosystemet via Hotmart/Kiwify och lär ut affiliate-marknadsföring, vilket gör honom mottaglig för recurring-provisions. Hans fokus på blogmoneterering och organisk trafik passar perfekt för SEO Brasil's värdeproposition.",
+  "outreach_angle": "Oi Kildary! Vi notamos que você ensina SEO e monetização de blogs para milhares de alunos no Hotmart e Kiwify — e eles definitivamente precisam rastrear rankings no Google Brasil. SEO Brasil é exatamente a ferramenta que falta nos seus cursos: R$197/mês com 30% de comissão recorrente via Hotmart. Seus alunos ganhariam visibilidade real dos resultados, e você teria uma receita passiva bem alinhada com seu modelo de negócio."
+}

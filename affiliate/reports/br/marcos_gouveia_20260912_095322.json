@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Marcos Gouveia",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 25,
+      "max": 30,
+      "insufficient_evidence": true,
+      "evidence": "Marcos är digital marketing-konsult sedan 2004 med explicit SEO-specialisering. Profilen indikerar att han arbetar med brasilianska klienter (PMEs enligt noterna). Han är INTE en lokal SEO-byrå som hjälper restauranger att ranka lokalt — han är en digital marketing-konsult som rekommenderar SEO-strategier till företag. Detta är en stark match för SEO Brasil-kunder (digital marketing-professionaler). Dock: LinkedIn-följarantal är inte bekräftat, så vi kan inte verifiera målgruppsstorlek eller engagemang. Sätt 25/30 för starka indikatorer men otillräcklig reach-evidens."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är explicit nämnt som specialisering i profilen ('Especializado em SEO'). Innehållsämnen inkluderar 'SEO estratégico' som första ämne. Kombinationen SEO + Google Ads + Web Analytics är typisk för en SEO-konsult. Ingen tvivel — SEO är kärnfokus."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Marcos är en etablerad, oberoende digital marketing-konsult med 20+ års erfarenhet. Han arbetar tydligt med klienter (implicit från konsultrollen). DOCK: ingen observerad evidence på verktygsrekommendationer, affiliateprogram, eller dedikerade verktygsintegreringar. Antagandet att han 'kan rekommendera verktyg till klienter' är logiskt men inte observerbar. Enligt regler: 'dokumenterad professionell kund-/projektverksamhet som stöd' — hans lange konsultroll (20+ år) stödjer detta, men ingen byrå-storlek anges (≥5 anställda). Sätt 8/10 för stark professionell indikation utan direkt observerad tool-rec."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "LinkedIn-följarantal är INTE bekräftat. Profilen säger 'linkedin.com/in/marcogouveia confirmado' men 'Números de seguidores não confirmados.' Utan konkreta räckvidd-siffror eller engagements-data kan vi inte bedöma audience-kvalitet eller storlek. Marcos är erkänd av mLabs som SEO-expert (hög kredibilitet), vilket föreslår relevanta följare, men detta är indirect. Sätt 4/10 för måttlig räckvidd + oklar audience-kvalitet."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Marcos är oberoende konsult — ingen byråstorlek eller explicit kundbas publicerad. Enligt AGENCY_FLOOR-regeln: 'en byrå med 5+ anställda har rimligtvis betalande klienter' — men Marcos är 'Independente', så detta gäller inte. Ingen kundbas-siffra given ('Clientes não listados publicamente'). Antagandet att en 20+ årig SEO-konsult har flera aktiva klienter är logiskt men inte dokumenterat. Sätt 4/10 enligt regel: 'Begränsat underlag. Potential finns men lite konkret att bedöma mot. Troligen 1–2 kunder om affiliaten är aktiv.' — men en etablerad konsult kan rimligtvis ha fler."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Marcos är explicit brasiliansk ('location: Brasil'). Profil på portugisiska. Nämnd av mLabs som en av Brasiliens SEO-experter. Innehål är SEO-strategier relevanta för brasilianska marknaden. Tydlig brasiliansk publik och kontext — 5/5."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen observerbar affiliate-historia, sponsrade inlägg eller partners-sida nämnd. Marcos är professionell digital marketing-konsult — ingenting indikerar direkt motvilja mot kommersiella samarbeten, men inget bekräftar affiliateerfarenhet heller. Neutral position — Sätt 3/5."
+    },
+    "content_traffic_potential": {
+      "score": 1,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Kandidatdata visar att Marcos är aktiv på LinkedIn, men 'Posting frequency: Insufficient evidence'. Ingen blog, YouTube, newsletter eller evergreen-innehållskanal nämnd. LinkedIn är en social media-plattform (flyktiga inlägg). Utan publiceringsfrekvens-data kan vi inte bedöma innehålls-momentum. Sätt 1/5 för sporadisk/oklar content-strategi."
+    }
+  },
+  "total_score": 70,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Marcos är en etablerad brasiliansk SEO-konsult med 20+ års erfarenhet och erkänd expertis. Han arbetar med klienter som behöver SEO-verktyg och har rätt målgrupp (digital marketing-professionaler). Dock saknas konkreta signaler om räckvidd, audience-storlek och tidigare tool-rekommendationer, vilket motiverar en B-klassificering istället för A.",
+  "outreach_angle": "Marcos, vimos que você é especialista em SEO desde 2004 e trabalha com empresas brasileiras. A SEO Brasil é uma ferramenta de rank tracking que ajuda consultores como você a demonstrar resultados aos clientes — com 30% de comissão recorrente. Seria interessante conversar sobre como integrar isso nas suas recomendações?"
+}

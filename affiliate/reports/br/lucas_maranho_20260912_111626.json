@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Lucas Maranho",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 30,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Lucas Maranho är grundare av liveSEO, en av Brasiliens största SEO-byråer grundad 2017. Hans målgrupp är exakt SEO Brasil-kunden: brasilianska SEO-professionaler, byråledare, marknadsförare och företag som söker SEO-tjänster. Innehållet fokuserar på 'SEO de alta performance', teknisk SEO, e-commerce SEO och digital mognad — alla ämnen som skulle intressera SEO-verktygsanvändare. Publiken är inte lokala småföretag utan snarare medium-stora företag och SEO-proffs som redan köper avancerade verktyg."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är liveSEOs och Lucas Maranhos kärnverksamhet. Agenturens specialisering är 'SEO de alta performance'. Innehållet på bloggen (liveseo.com.br) omfattar teknisk SEO, innehållsstrategi för SEO, e-commerce SEO och annat rent SEO-fokuserat material. Lucas är inte marknadskonsult med SEO som biprodukt — hans hela karriär och byrå är byggd på SEO. Inget tvivel."
+    },
+    "purchase_influence": {
+      "score": 10,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Lucas är byrågrundarare med dokumenterad professionell kundverksamhet (liveSEO arbetar med medium-stora företag), men ingen direkt observerad tool-rekommendation eller affiliate-aktivitet är bekräftad. Bloggen refererar till professionella verktyg i utbildningssammanhang men ingen specifik affiliate-länk eller dedikerad verktygsrekommendation är verifierad. Han är educator på content-nivå genom YouTube och blogg, men utan explicit tool-comparison eller verktygsdemos. Score: 10p (content/educator-nivå, men otillräcklig direkt evidence för högre nivå)."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "liveSEO YouTube-kanal (@AgencialiveSEO) existerar och producerar utbildningsmaterial för SEO-proffs, vilket indikerar relevant publik. LinkedIn-sidan för liveSEO-företaget är aktiv. Personlig räckvidd för Lucas Maranho själv är oklar (följare inte bekräftade), men byrågrundarens autentiska anseende inom brasiliansk SEO-bransch väger tyngre än rent följarsiffror. Kvaliteten på publiken torde vara hög (SEO-professionaler, marknadsförare), men absoluta räckviddesiffror är dolda. Bedömning: bra kvalitet men begränsad transparent räckvidd → 7p."
+    },
+    "customer_volume_potential": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "liveSEO är en etablerad byrå med fokus på 'high performance' och medium-stora till stora kunder. Grunden för denna score är: (a) byrågrundarstatus med implicit kundverksamhet, (b) fokus på avancerad SEO talar för en kundbas som redan använder professionella verktyg och är öppen för nya lösningar, (c) YouTube-kanal når SEO-professionaler som potentiella affiliatekunder. Ingen explicit kundbas är publicerad, men en byrå av denna storlek (kallad 'en av Brasiliens största') har rimligtvis 10+ aktiva klienter. AGENCY_FLOOR: 4/10 minimum appliceras. Realistisk potential för 2–4 affiliatekunder bland klientbas eller YouTube-tittare → 7p."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Lucas Maranho är belägen i Maringá, Paraná, Brasilien. liveSEO är en brasiliansk byrå grundad i Spanien 2017 men nu fullt etablerad i Brasilien. Allt innehåll är på portugisiska. Fokus är på brasiliansk marknad — innehål om 'maturidade digital' och 'crescimento orgânico' för brasilianska företag. Tydligt brasiliansk publik och kontext → 5p."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen signal om befintliga affiliate-program, sponsrade inlägg eller partners-sida är observerad. Modellen för liveSEO är byrå-tjänster, inte direkt produkt-promotion. Emellertid finns ingen negativ signal heller — Lucas är professionell, credible och saknar uttalad motvilja mot samarbeten. Neutral position: ingen historik av affiliate-arbete observerad, men ingenting förbjuder det heller → 3p (neutral)."
+    },
+    "content_traffic_potential": {
+      "score": 4,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "liveSEO driver blog (liveseo.com.br) med SEO-innehål och YouTube-kanal (@AgencialiveSEO) med utbildningsvideoer. Detta är långsiktigt evergreen-innehål som kan generera leads passivt — karriktäristiskt för SEO-agentur-content. Dock är exakt publiceringsfrekvens, video-view-siffror och blogg-traffic okänd. Innehållet är substansrikt men transparensen över räckvidd/performance är låg. Score: 4p (starkt format men otillräcklig performance-data för högre score)."
+    }
+  },
+  "total_score": 86,
+  "grade": "A",
+  "grade_label": "Mycket intressant — hög prioritet",
+  "why_interesting": "Lucas Maranho är grundare av en av Brasiliens största SEO-byråer med etablerad publik av SEO-proffs och marknadsförare via YouTube och blog. Hans byrå arbetar redan med avancerade kunder som använder professionella verktyg, vilket öppnar vägen för naturliga verktygsrekommendationer. Hans credibilitet inom brasiliansk SEO-bransch är högsta nivå.",
+  "outreach_angle": "Lucas, como fundador da liveSEO e referência em SEO de alta performance no Brasil, reconhecemos seu impacto educacional no YouTube e blog. Gostaríamos de explorar uma parceria onde você pudesse apresentar SEO Brasil aos seus clientes e audiência como complemento às estratégias da sua agência — com comissão recorrente de 30% por indicação."
+}

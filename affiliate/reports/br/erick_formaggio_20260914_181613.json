@@ -1,0 +1,64 @@
+{
+  "candidate_name": "Erick Formaggio",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 28,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Erick är Diretor de Inteligência på Vitrio (digital agency) med ansvar för SEO, CRO och Business Intelligence. Han är författare till 3 böcker (2 om SEO) publicerade på português, Diretor de Educação för ABRAMARK, och aktiv talare på webinars/events. Hans målgrupp är explicit SEO-professionella, marknadsförare och företag som behöver SEO-verktyg. Vitrio serverar korporativa klienter som är potentiella SEO Brasil-köpare. Hans innehålls-fokus på 'SEO estratégico e técnico', 'Web Analytics', 'CRO' och 'IA aplicada a marketing digital' riktar sig direkt till SEO-professionella. Några poäng hålls tillbaka enbart för att följarantalet inte är preciserat offentligt (endast 500+ LinkedIn-conexões noterad)."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är absolut kärnan i Eriks profil. Han är 'Especialista em SEO e Web Analytics com 18+ anos de experiência', rankad bland Top 17 SEO-experter i Brasilien enligt Favikon (Authority Score 3.775 pts, 2026). Han har skrivit 2 böcker om SEO publicerade av DVS Editora. Innehållet inkluderar explicit 'SEO estratégico e técnico', 'Web Analytics e dados', 'CRO', 'IA aplicada a marketing digital'. Hans roll på Vitrio är direkt ansvarig för SEO. Inget tvivel — SEO är huvudfokus."
+    },
+    "purchase_influence": {
+      "score": 13,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Observerbar evidence på flera nivåer: (1) Författare av 3 böcker, varav 2 om SEO — indikerar att han producerar educational content på verktygnivå; (2) Diretor de Inteligência på Vitrio (digital agency) — dokumenterad professionell roll med teknisk beslutsfattande om tool-stack för klientprojekt; (3) Active speaker på webinars och events — plattform för tool-rekommendationer; (4) Fokus på 'Web Analytics e dados' och 'CRO' visar praktisk tillämpning av SEO-verktyg. Dock saknas direkt observerbar evidence på specifika verktygsrekommendationer eller affiliate-aktivitet i den publicerade profilen. Styrkan ligger i hans position som educator och byrå-ledare, inte på explicit verktygsrekommendation-content."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Kvalitet är tydligt hög — Favikon Top 17 ranking, 3 publicerade böcker, Diretor på digital agency, ABRAMARK education director — detta signalerar stark autoritär position. LinkedIn 500+ conexões är begränsat data, men kombinerat med böcker, webinars och Top 17-ranking indikerar en substantiell relevant publik. Dock är exakta räckviddsiffror (följare, engagementgrad, video-visningar) inte tillgängliga, vilket hindrar scoring på nivå 10. Räckvidd bedöms som moderat till god baserat på indirekta signaler, kvalitet är helt klar — därför 7/10 med insufficient_evidence markerad."
+    },
+    "customer_volume_potential": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "AGENCY_FLOOR appliceras: Vitrio är en etablerad digital agency. Även om specifikt antal anställda inte är publicerat, är Erick Diretor de Inteligência — en senior ledarroll — vilket starkt indikerar en organisation med flera team-medlemmar och etablerad kundbas. Vitrio serverar 'clientes corporativos' (corporate clients), vilket är höga-värde segment. Som education director för ABRAMARK har Erick tillgång till ett nätverk av marknadsförare. Hans 3 publicerade böcker och Top 17 Favikon-ranking indikerar en utbildningsbaserad audience. Potentiell kundvolym: byrå-kontakter (2–4 möjliga), corporate network (2–3), educational audience (1–2). Bedömt realistisk potential: 2–4 betalande kunder. Score 7/10."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt brasiliansk fit. Location: Brasil. Språk: Portugisiska (native). Böcker publicerade på português av brasiliansk förlag (DVS Editora). Vitrio är brasiliansk byrå. Diretor av ABRAMARK (Associação Brasileira de Marketing) — brasiliansk marknadsföringsförening. Favikon-ranking (Top 17 SEO no Brasil, 2026) — brasilianskt SEO-rankingsystem. Alla signaler pekar på tydligt brasiliansk professional och publik."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Neutral position. Ingen observerbar evidence på befintliga affiliate-program, sponsrade inlägg eller partners-sida identifierad i kandidatdata. Dock inga negativa signaler heller — Erick är professionell, seriös och etablerad, vilket indikerar öppenhet för väl strukturerade samarbeten. Som education director och book author är han van vid kommersiella arrangemang. Insufficient_evidence markerad eftersom ingen direkt affiliate-signal finns, men profil är neutral/positiv snarare än skeptisk."
+    },
+    "content_traffic_potential": {
+      "score": 4,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Blandad potential. Evergreen-innehål: 3 publicerade böcker (mycket evergreen), personlig webbplats (erickformaggio.com.br — presumably innehål-driven), 'Diário da Ciência de Dados' (möjligen blog eller newsletter). Flyktigt innehål: LinkedIn-posting (regelbunden) och webinars (periodiska). Traffic-siffror för webbplats eller book-försäljning är inte tillgängliga. Publishing-frekvens är 'regular' på LinkedIn men specifik data saknas. Potential finns men konkretisering är svår — score 4/10 med insufficient_evidence."
+    }
+  },
+  "total_score": 87,
+  "grade": "A",
+  "grade_label": "Mycket intressant — hög prioritet",
+  "why_interesting": "Erick är en av Brasiliens ledande SEO-experter (Top 17 Favikon-rankad) med 18+ års erfarenhet, författare till 3 böcker, och direktör på en etablerad digital agency (Vitrio). Hans position som educator, byrå-ledare och opinion leader ger honom direkt inflytande över köpbeslut bland både korporata klienter och SEO-professionella — vilket är exakt SEO Brasil-målgruppen.",
+  "outreach_angle": "Erick, vimos seu trabalho excepcional como especialista em SEO no Brasil e percebi que ferramentas de rank tracking eficazes são fundamentais para agências e consultores. SEO Brasil oferece exatamente isso com 30% de comissão recorrente via Hotmart — e seu posicionamento como educator e Diretor na Vitrio a torna perfeita para recomendar soluções confiáveis aos seus clientes e comunidade.",
+  "product_test_potential": "VERY HIGH",
+  "product_test_evidence": "Erick är 'Especialista em SEO e Web Analytics com 18+ anos'; Diretor de Inteligência på Vitrio (digital agency) med korporata klienter; författare av 2 böcker om SEO publicerade på português; Diretor de Educação för ABRAMARK; talare på webinars; fokus på 'SEO estratégico e técnico', 'Web Analytics e dados', 'CRO' och 'IA aplicada a marketing digital'; personlig webbplats (erickformaggio.com.br); regular LinkedIn-närvaro; Top 17 SEO-expert i Brasilien enligt Favikon.",
+  "product_test_reason": "Erick är en etablerad SEO-expert med en tydligt seo-fokuserad publik (agency, corporates, educators, marketing professionals). Hans roll på byrå med corporate-klienter, books om SEO, och education position indikerar att han regelbundet evaluerar och rekommenderar verktyg. SEO Brasil är direkt relevant för hans arbete — både för eget bruk på Vitrio och för att rekommendera till sin educationa audience.",
+  "recommended_action": "Skicka personlig outreach på portugisiska via LinkedIn med fokus på hans byrå-verksamhet (Vitrio klienter behöver rank tracking) och hans education role (ABRAMARK-nätverk). Erbjud testlicens med fokus på integration med hans befintliga analytics-workflow. Follow-up efter 2 veckor om ingen svar."
+}

@@ -6,13 +6,13 @@ Calibration MVP: AI-powered scoring of affiliate candidates.
 
 Usage:
     # Score a single candidate file:
-    python scorer.py candidates/joao_silva.json
+    python scorer.py prospects/br/joao_silva.json
 
-    # Score all candidates in the candidates/ directory:
+    # Score all candidates in the prospects/br/ directory:
     python scorer.py --all
 
     # Print report to stdout instead of saving:
-    python scorer.py candidates/joao_silva.json --print
+    python scorer.py prospects/br/joao_silva.json --print
 
 Requirements:
     pip install anthropic python-dotenv --break-system-packages
@@ -64,8 +64,8 @@ from score_model import SCORE_MODEL, get_classification
 # CONSTANTS
 # ---------------------------------------------------------------------------
 
-CANDIDATES_DIR = Path(__file__).parent / "candidates"
-REPORTS_DIR = Path(__file__).parent / "reports"
+CANDIDATES_DIR = Path(__file__).parent / "prospects" / "br"
+REPORTS_DIR = Path(__file__).parent / "reports" / "br"
 MODEL = "claude-haiku-4-5-20251001"  # Fast + cheap for calibration; swap to sonnet for production
 
 # ---------------------------------------------------------------------------

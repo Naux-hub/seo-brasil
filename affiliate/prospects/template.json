@@ -1,0 +1,42 @@
+{
+  "_instructions": "Kopiera den här filen, ge den ett beskrivande namn (t.ex. joao_silva.json) och fyll i fälten. Ta bort _instructions-fältet. Alla fält är valfria utom 'name' — fyll i det du vet, lämna tomt det du inte hittar. Mer data = bättre scoring.",
+
+  "name": "Förnamn Efternamn / Byrånamn",
+  "type": "SEO-konsult | SEO-byrå | Marketing freelancer | SEO-utbildare | SEO YouTuber | Bloggare | Newsletter | Community",
+  "platform": "LinkedIn | YouTube | Instagram | Blog | Podcast | Multiple",
+  "url": "https://...",
+  "company": "Byrånamn eller eget bolag (om känt)",
+  "location": "São Paulo | Rio de Janeiro | Brasília | Brasil (allmänt) | ...",
+
+  "profile_description": "Kopiera profilbeskrivning från LinkedIn/Instagram/YouTube/hemsida. Citera exakt.",
+
+  "audience_size": {
+    "linkedin_followers": null,
+    "instagram_followers": null,
+    "youtube_subscribers": null,
+    "blog_monthly_visitors": null,
+    "newsletter_subscribers": null,
+    "note": "Lämna null om okänt — scorer markerar då insufficient_evidence"
+  },
+
+  "known_clients_or_students": "T.ex. 'arbetar med 30+ brasilianska SMB-kunder' eller 'kurs med 1200 elever' — ange source om möjligt",
+
+  "content_topics": [
+    "Lista de senaste 5–10 innehållsämnena, t.ex.:",
+    "Keyword research för e-handel",
+    "Google Search Console guide",
+    "Hur man väljer SEO-verktyg"
+  ],
+
+  "tool_recommendations": "Nämner personen specifika SEO-verktyg? Vilka? T.ex. 'rekommenderar Semrush och Ahrefs i kursmaterial'",
+
+  "affiliate_signals": "Finns affiliate-länkar, sponsrade inlägg, eller 'parceiros'-sida? T.ex. 'promoverar Hotmart-produkter via go.hotmart.com-länkar'",
+
+  "content_language": "Portugisiska | Spanska | Engelska | Blandat",
+
+  "posting_frequency": "Dagligen | Veckovis | Månadsvis | Sporadiskt | Okänt",
+
+  "content_type": "Bloggartiklar (evergreen) | YouTube-videor | Instagram-inlägg | LinkedIn-posts | Stories | Newsletter | Podcast",
+
+  "additional_notes": "Annat relevant: tidigare verktygsbyten, uttalanden om konkurrenter, kända samarbeten, relevanta certifieringar etc."
+}

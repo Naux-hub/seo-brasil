@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Bruno Santos Consultor SEO",
+  "knocked_out": true,
+  "knockout_reason": "LOCAL_SEO_CAP triggered: Kandidaten fokuserar primärt på Local SEO för prestadores de serviço (lokala tjänsteleverantörer som frisörer, tandläkare, konstnärer). Målgruppen är klienter finais (slutkunder), inte SEO-professionella, byråer eller konsulter som köper SEO-rankingverktyg. SEO Brasil är designat för B2B-försäljning till SEO-proffs — ikke till en konsult som säljer Local SEO-tjänster direkt till småföretag.",
+  "categories": {
+    "target_audience_fit": {
+      "score": 0,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "Profilbeskrivning: 'Ajudo prestadores de serviço a parar de depender de indicação usando SEO Local'. Bruno arbetar med slutkunder (tandläkare, frisörer, restauranger i Salvador) — inte med SEO-konsulter, byråer eller andra SEO-professionella som skulle köpa SEO Brasil. Detta är klassisk Local SEO-konsultering för små lokala företag, inte B2B-verktygsförsäljning. Knockout regel appliceras: LOCAL_SEO_CAP satt till max 20/30, men kombinerat med knockout-filter → 0p."
+    },
+    "seo_relevance": {
+      "score": 0,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad — ej applicerbar. Profilen visar SEO Local-fokus, men detta är irrelevant eftersom målgruppen är fel."
+    },
+    "purchase_influence": {
+      "score": 0,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Kandidaten är knockad. Ingen observable evidence på tool recommendations eller affiliate-verksamhet rapporterad."
+    },
+    "reach_quality": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad. Räckvidd är dessutom minimal: 116 LinkedIn-följare, vilket är mycket litet även för en lokal konsult."
+    },
+    "customer_volume_potential": {
+      "score": 0,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Kandidaten är knockad. Ingen explicit kundbas dokumenterad. Potentiella kunder är lokala prestadores, inte SEO-verktygsköpare."
+    },
+    "brazil_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Kandidaten är knockad. (Men notering: brasiliansk fit är faktisk — Salvador, Bahia, portugisiska.)"
+    },
+    "affiliate_fit": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Kandidaten är knockad. Ingen signal på affiliate-erfarenhet eller verktygsrekommendation."
+    },
+    "content_traffic_potential": {
+      "score": 0,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Kandidaten är knockad. Postningsfrekvens okänd, endast LinkedIn-presence dokumenterad (116 följare)."
+    }
+  },
+  "total_score": 0,
+  "grade": "Skip",
+  "grade_label": "Knockad — inte relevant målgrupp",
+  "why_interesting": "Bruno är en dedikerad SEO Local-konsult i Brasilien med autentisk marknadskompetens, men hans affärsmodell är B2C (directed till små lokala tjänsteleverantörer) — inte B2B-verktygsförsäljning. SEO Brasil är designat för att säljas till SEO-professionella och byråer, inte till konsulter som redan erbjuder tjänster direkt.",
+  "outreach_angle": "Ej applicerbar — kandidaten är knockad på grund av att målgruppen inte passar SEO Brasil's tänkta köparkretsar."
+}

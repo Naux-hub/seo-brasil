@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Rayanne Batista",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 28,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Rayanne är grundare av Hera SEO, en brasiliansk SEO-byrå fokuserad på strategisk SEO och leadgenerering. Hon når direkt SEO-professionella och potentiella SEO-konsulter genom sin byrå och sin roll som talare på brasilianska SEO-event. Hennes fokus på 'SEO estratégico para geração de leads' är direkt relevant för små företag och agenturer som är målkunder för SEO Brasil. Profilering som 'Ex-coordenadora de SEO na SEO Happy Hour' visar etablerad position inom SEO-communityn. Publikens köpkraft är stark — byrå-grundare och SEO-professionella är premiumköpare av SEO-verktyg. -2p för att följarantal inte är bekräftat och publik inte fullt kartlagd."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är helt centralt för Rayanne. Hennes innehålls- och arbetsområden är ren SEO: 'SEO estratégico', 'Planejamento de conteúdo SEO', 'Auditoria técnica', 'Análise de dados em SEO'. Hon är grundare av en SEO-byrå (Hera SEO) med 8+ års erfarenhet. Hon är talare på brasilianska SEO-event. Allt i hennes profil pekar på att SEO är kärnverksamheten — inget tvivel."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Stark professionell indikation: Rayanne är byrå-grundare (Hera SEO) och antas ha dokumenterad klientbas som byrå för att operera i 8+ år. Dock saknas observerbar evidence på direkt verktygsrekommendation (inga bloggartiklar om verktyg, no verifierade affiliate-länkar, inga dedikerade verktygssamtal synliga i kandidatdata). AGENCY_FLOOR tillämpas: en etablerad brasiliansk SEO-byrå med 8+ års erfarenhet har rimligtvis betalande klienter och därmed potentiellt verktygsinfluence — detta motsvarar nivå 8. Ingen högre poäng utan observerbar direkt verktygsrekommendation."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Kritisk begränsning: följarantal på LinkedIn, Instagram, YouTube eller andra kanaler är INTE bekräftat ('Número de seguidores não confirmado'). Endast bekräftad data är hennes roll som talare på brasilianska SEO-event och participering i 'Latinas en SEO'-communityn. Utan mätbar räckvidd kan vi inte bedöma quality eller volym objektivt. Lågt värde satt för försiktighet — hon är tydligt relevant för sin nisch men räckviddsdata saknas helt."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "AGENCY_FLOOR tillämpas: Rayanne är grundare av Hera SEO (byrå) med 8+ års erfarenhet. Detta antyder minst 1–2 fast anställda eller regelbundna kontrakt för att hålla verksamhet i gång så länge. Dock är ingen explicit kundbas, antal anställda eller student-/community-siffror bekräftad. Kandidatdata säger 'Hera SEO atende clientes em SEO estratégico mas lista não pública.' AGENCY_FLOOR: minimum 4/10 på grund av etablerad byrå-status. Ingen högre poäng utan explicit kundantal eller anställda-bekräftelse."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt brasiliansk fit. Rayanne är baserad i Curitiba, Paraná, Brasil. Hennes arbetsinnehål är på portugisiska och fokuserad på brasiliansk SEO-marknad. Hon är medlem i 'Latinas en SEO' (internationell men med brasiliansk fokus) och talare på brasilianska SEO-event. Ex-roll på SEO Happy Hour (Rafael Simões — också brasiliansk context). Allt tyder på brasiliansk/lusofon publik och relevans."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Neutral position. Inga observerbara signaler om befintliga affiliate-program, sponsrade inlägg eller samarbetshistorik. Kandidatdata säger 'Insufficient evidence' på affiliate_signals. Hon verkar vara seriös SEO-professionell och byrå-grundare, vilket antyder öppen inställning till relevanta partnerskap, men ingen direkt evidence. Satt till 3p — varken positiv eller negativ indikation."
+    },
+    "content_traffic_potential": {
+      "score": 1,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Mycket begränsad data. Kandidatprofilen nämner att Rayanne är 'Talare i SEO-event Brasil' och aktiv i 'Latinas en SEO', men ingen information om publikeringsfrekvens, blogg, YouTube-kanal, newsletter eller andra evergreen-innehållskanaler. Endast synlig content-typ är 'LinkedIn, Speaker (SEO events Brasil)' — både flyktiga kanaler eller event-baserade. Ingen information om konsistenta eller passiva content-generering. Låg poäng för avsaknad av demonstrerad content/traffic-potential."
+    }
+  },
+  "total_score": 73,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Rayanne är en etablerad brasiliansk SEO-byrå-grundare med 8+ års erfarenhet och stark närvaro i den lokala SEO-communityn. Hon når direkt relevanta köpare (SEO-professionella, andra konsulter) genom sin byrå Hera SEO och sin roll som talare på brasilianska SEO-event. Hennes fokus på strategisk SEO och leadgenerering passar väl med små företag och agenturer som är idealiska SEO Brasil-kunder.",
+  "outreach_angle": "Rayanne, vejo que a Hera SEO está focada em SEO estratégico e geração de leads para PMEs — exatamente o público que mais se beneficia de ferramentas como SEO Brasil. Gostaríamos de explorar uma parceria onde você pudesse recomendar nosso rank tracker aos seus clientes e comunidade, com 30% de comissão recorrente. Você teria interesse em conversar?"
+}

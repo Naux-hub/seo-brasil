@@ -1,0 +1,64 @@
+{
+  "candidate_name": "Amanda Noronha Araujo",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 30,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt match. Amanda når exakt SEO Brasil-målgruppen: (1) CEO för SEO 360° — egen SEO-konsultverksamhet; (2) co-fundator av 'SEO de Pijama' — veckovecklig YouTube/podcast för SEO-professionaler om teknisk SEO; (3) lärare på Impacta Tecnologia (E-commerce Professional-kurs) — utbildar SEO-studenter och -praktikanter; (4) aktiv i Women in Tech SEO-initiativ; (5) talar på WordCamp och industri-events. Publikationen är explicit brasiliansk och består av SEO-konsulter, SEO-byråer, marknadsförare och nybörjare inom SEO — alla potentiella köpare av SEO Brasil."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är kärnan i Amandas verksamhet. Profilen visar: (1) 13+ års erfarenhet i digital marknadsföring med fokus på SEO; (2) innehållsteman: 'SEO técnico', 'E-commerce SEO', 'WordPress e SEO', 'Mercado de trabalho em SEO'; (3) co-host av 'SEO de Pijama' — veckovecklig diskussion av teknisk SEO med andra industri-experter; (4) undervisning av SEO på Impacta; (5) Favikon Authority Score 3.811 pts (Top 15 SEO i Brasilien, 2026). Inget tvivel — SEO är helt central."
+    },
+    "purchase_influence": {
+      "score": 10,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Observerbar content/educator-nivå evidence: (1) Undervisar SEO på Impacta Tecnologia (E-commerce Professional-kurs) — demonstrerar verktygsvalsundervisning; (2) 'SEO de Pijama' — veckovecklig podcast/YouTube-kanal som diskuterar industri-praktiker och troligen verktyg med andra SEO-experter. Dock: ingen direkt observerbar evidence på specifika SEO-verktygsrekommendationer, affiliate-länkar eller dedicated tool-reviews i kandidatdata. Score på 10 baseras på educator-nivå content potential, men insufficient_evidence: true på grund av avsaknad av direkt verifierad verktygsrekommendation. Byrå-storlek på SEO 360° är okänd."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Bra kvalitet men begränsad tillgänglig räckviddsdata. Observerbara signaler: (1) Favikon Authority Score 3.811 pts (Top 15 SEO i Brasilien 2026) — indikerar stark online-auktoritet och relevant följarskara; (2) 'SEO de Pijama' är tillgänglig på Amazon Music och andra podcast-plattformar — veckovecklig distribution till engagerad SEO-publik; (3) Undervisare på Impacta (en av Brasilien största teknikskolor) — åtkomst till utbildnings-community; (4) Taler på WordCamp och Women in Tech SEO-events — indikerar aktivitet i relevanta forum. Dock: LinkedIn-följare, YouTube-subscribers, blog-visitors ej offentligjorda. Score på 7 = bra kvalitet på publik (demonstrerad auktoritet, tech-fokus, SEO-professionell community) men insufficient_evidence på absoluta räckviddsiffror."
+    },
+    "customer_volume_potential": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Gott underlag med försiktighet: (1) Eget företag (SEO 360°) — CEO-roll indikerar aktiv konsultverksamhet med potentiella kunder, men kundbas-storlek ej explicit nämnd; (2) Impacta Tecnologia-elever — undervisning på etablerad skola indikerar access till utbildnings-community (potentiella framtida kunder); (3) 'SEO de Pijama' veckovecklig distribution till relevant publik. Dock: ingen explicit nämnd antal kunder, kurspdeltagare eller community-medlemmar i kandidatdata. AGENCY_FLOOR gäller INTE här eftersom anställd-antal för SEO 360° är okänt. Score på 7 baseras på 'gott underlag' (konsultverksamhet + utbildningsaccess) men insufficient_evidence på konkreta kundantal."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt brasiliansk fit. Alla signaler pekar på brasiliansk publik och kontext: (1) Plats: Brasil; (2) Språk: portugisiska (profil-beskrivning, innehållsteman på portugisiska); (3) Innehåll på brasilianska plattformar: LinkedIn, YouTube 'SEO de Pijama' (Amazon Music + lokala podcast-appar); (4) Brasiliansk arbetskontext: Impacta Tecnologia (stor brasiliansk teknikskola), WordCamp, Women in Tech SEO; (5) Favikon Authority Score — brasiliansk ranking-system. Audiensen är explicit brasiliansk."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Neutral. Kandidatdata visar: (1) Ingen observerbar affiliate-länkhistorik eller affiliate-program i kandidatprofilen; (2) Ingen explicit sponsorering eller kommersiell samarbete synligt; (3) Professionell och seriös — inget som indikerar motvilja mot kommersiella partnerskap, men heller ingen tydlig signal om affiliate-erfarenhet; (4) Focus på undervisning och innehållsskapande tyder på öppenhet för samarbeten, men ingen direkt evidence. Score på 3 = neutral — ingen signal åt något håll. Insufficient_evidence: true på grund av avsaknad av observerbar affiliate-aktivitet."
+    },
+    "content_traffic_potential": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Starkt evergreen-innehål-potential: (1) 'SEO de Pijama' — veckovecklig podcast/YouTube-kanal med teknisk SEO-diskussion (evergreen SEO-innehål, passive lead-generering över tid); (2) Undervisning på Impacta Tecnologia (E-commerce Professional-kurs) — långsiktigt trafik och elevaccess; (3) Aktiv på LinkedIn med regelbundna inlägg om SEO; (4) Favikon Authority Score indikerar etablerad online-auktoritet som genererar organisk trafik. Innehållet är primärt evergreen (podcast, utbildning) snarare än flyktigt (stories). Potentiell för passiv lead-generering."
+    }
+  },
+  "total_score": 87,
+  "grade": "A",
+  "grade_label": "Mycket intressant — hög prioritet",
+  "why_interesting": "Amanda är en top-15 SEO-expert i Brasilien med egen konsultverksamhet (SEO 360°), co-host av en veckovecklig SEO-podcast/YouTube-kanal, och utbildare på en av Brasilien största teknikskolor. Hon når exakt SEO Brasil-målgruppen — SEO-professionaler, konsulter och studenter — och har demonstrerad auktoritet inom teknisk SEO och e-commerce. Hennes content-produktion (podcast, undervisning, LinkedIn) genererar konsistent engagemang från relevant, brasiliansk publik.",
+  "outreach_angle": "Amanda — sabemos que você é referência em SEO técnico no Brasil e alcança profissionais SEO, consultores e estudantes via 'SEO de Pijama', Impacta e sua consultoria. SEO Brasil é exatamente para esse público: um ranking tracker/suite SEO que ajuda consultores brasileiros a monitorar e melhorar rankings. Acreditamos que seria um complemento natural para seus alunos e audiência, e gostaríamos de explorar uma parceria de afiliados (30% comissão recorrente).",
+  "product_test_potential": "VERY HIGH",
+  "product_test_evidence": "Observerbara fakta från kandidatdatan: (1) CEO för SEO 360° — egen SEO-konsultverksamhet; (2) Co-host av 'SEO de Pijama' — veckovecklig YouTube/podcast-kanal dedikerad till teknisk SEO-diskussion med andra experter; (3) Undervisare på Impacta Tecnologia E-commerce Professional-kurs; (4) Content-teman: 'SEO técnico', 'E-commerce SEO', 'WordPress e SEO'; (5) Favikon Authority Score 3.811 pts (Top 15 SEO i Brasilien, 2026); (6) Aktiv på LinkedIn, YouTube, podcast-plattformar; (7) 13+ års erfarenhet i digital marknadsföring; (8) Talar på WordCamp och Women in Tech SEO-events.",
+  "product_test_reason": "VERY HIGH baseras på: (1) Stark SEO-publik — explicit SEO-byrå-/konsultverksamhet (SEO 360°) + veckovecklig podcast/YouTube om teknisk SEO; (2) Aktiv online-närvaro — LinkedIn, YouTube, podcast, Impacta; (3) Skapar innehåll om SEO-verktyg och -praktiker — podcast-format med expert-diskussioner; (4) Tydlig SEO-fokuserad målgrupp — konsulter, byråer, studenter. Amanda är inte bara en SEO-professionell; hon undervisar, caster innehåll och har eget företag — alla kanaler där SEO Brasil skulle vara relevant och testbar.",
+  "recommended_action": "Skicka testlicens direkt. Amanda är en top-tier prospect: hennes publik (SEO-professionaler, konsulter, elever) är exakt SEO Brasil-målgruppen, och hennes multiple content-kanaler (podcast, YouTube, undervisning, LinkedIn) ger henne möjlighet att ge produktfeedback och potentiellt rekommendera verktyget. Föreslå en personlig 1:1-presentation av SEO Brasil-features med fokus på ranking-tracking för små/medelstora brasilianska SEO-byråer. Höga chanser för både produkt-fit och affiliate-engagemang efter testning."
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Rafael Simões",
+  "type": "Newsletter",
+  "platform": "LinkedIn",
+  "url": "https://br.linkedin.com/in/cwbrafael/en",
+  "company": "SEO Happy Hour",
+  "location": "Curitiba, Paraná, Brasil",
+
+  "profile_description": "Ajudo sua empresa a melhorar seus resultados com SEO. CEO da SEO Happy Hour, criador da Newsletter e Podcast de mesmo nome.",
+
+  "audience_size": {
+    "linkedin_followers": 11250,
+    "instagram_followers": null,
+    "youtube_subscribers": null,
+    "blog_monthly_visitors": null,
+    "newsletter_subscribers": null,
+    "note": "11.250 LinkedIn followers confirmado. Newsletter no Substack - número de assinantes não verificável."
+  },
+
+  "known_clients_or_students": "Insufficient evidence — opera principalmente via newsletter/podcast, sem dados públicos de clientes. CEO de SEO Happy Hour como media/community play, não agência.",
+
+  "content_topics": [
+    "Notícias semanais de SEO (Resumão SEO Happy Hour)",
+    "Conteúdo evergreen: estratégia e atualização",
+    "AI Overviews e impacto no CTR",
+    "Core updates do Google",
+    "Erros de gestão em projetos SEO",
+    "Indexação e rastreamento",
+    "Content pruning e auditoria"
+  ],
+
+  "tool_recommendations": "Insufficient evidence — newsletter foca em notícias e estratégia, não em reviews de ferramentas observados nos posts analisados.",
+
+  "affiliate_signals": "Insufficient evidence — não observado nos posts analisados. Newsletter/podcast pode ter sponsors mas não verificável.",
+
+  "content_language": "Portugisiska",
+
+  "posting_frequency": "Dagligen",
+
+  "content_type": "LinkedIn-posts, Newsletter (Substack), Podcast",
+
+  "additional_notes": "Muito ativo no LinkedIn com posts diários sobre SEO. Publica newsletter SEO Happy Hour semanalmente. Audiência é claramente composta por profissionais de SEO (posts têm comentários de profissionais). Curitiba, não SP/RJ, mas relevante para todo o Brasil via digital."
+}

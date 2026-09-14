@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Bruno Miranda",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 25,
+      "max": 30,
+      "insufficient_evidence": false,
+      "evidence": "Bruno är SEO Senior Strategist på ZP Digital med explicit fokus på SEO/GEO, vilket indikerar att han arbetar direkt med SEO-professionella och troligen konsulter/byråer. LinkedIn-profilen visar relevans för brasilianska SEO-proffs. Innehållet (Core Web Vitals, redirects, GA4, tools) adresserar SEO-professionella, inte lokala småföretag. Mycket stark match, men räckvidd på LinkedIn är begränsad (500+ connections) vilket förhindrar full 30p."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är helt klart kärnan i Brunos verksamhet. Profiltitel: 'SEO/GEO Senior Strategist'. Innehållet fokuserar på: rank tracking extensions, Ahrefs/Moz/Semrush-verktyg, Core Web Vitals, technical SEO, redirects. Inga orelaterade ämnen synliga. SEO dominerar hans LinkedIn-närvaro."
+    },
+    "purchase_influence": {
+      "score": 13,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Tydlig observerbar evidence på tool recommendation-nivå: dedicerat LinkedIn-inlägg om SEO Chrome extensions som explicit nämner och rekommenderar Ahrefs, Moz, Semrush, Keywords Everywhere, Wappalyzer och Redirect Path. Detta visar att Bruno aktivt rekommenderar verktyg till sin audience. Han använder dessa verktyg professionellt (som Senior Strategist på byrå) och delar sin kunskap. Ingen direkt observed affiliate-länk eller recurring promotion, men content-evidence på educator/recommender-nivå är klar."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Räckvidd är begränsad och svår att bedöma. LinkedIn-följarantal inte tillgängligt; endast 500+ connections rapporterat. En analyserad post fick 37 reactions, vilket tyder på måttlig engagemang. Qualitet indikeras genom att han är Senior Strategist (professionell signal) och fokuserar på SEO (relevant audience), men absolut räckvidd är låg jämfört med större influencers. Insufficient evidence för högre score — konservativ bedömning."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "AGENCY_FLOOR tillämpas inte här eftersom antal anställda på ZP Digital inte är verifierat och byrån inte är explicit dokumenterad med ≥5 anställda. Kundbas nämns inte. Kandidatdata säger 'trabalha na ZP Digital mas tamanho da carteira não é verificável.' Utan konkret kundbas-information eller byrå-storlek kan inte högre score ges. Möjlig potentiell customer base genom byrå-arbete, men otillräckligt verifierat för scores över 4."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Perfekt brasiliansk fit. Baserad i Itajubá, Minas Gerais, Brasil. Innehåll på portugisiska. Arbetar på brasiliansk byrå (ZP Digital). Allt indikerar en helt brasiliansk SEO-professional med lokala kunder."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Neutral signal. Ingen uppenbar affiliate-erfarenhet eller program synligt. Inlägget om SEO-verktyg innehåller directa links till Chrome Web Store (inte affiliate-links enligt data). Ingen partner-sida eller sponsrade inlägg omnämnd. Professionell och seriös profil, men ingen direkt indikation på vilja att ingå affiliate-samarbeten. Ingen negativ signal heller — neutralt är mest korrekt bedömning."
+    },
+    "content_traffic_potential": {
+      "score": 1,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Begränsad potential. Innehållet är LinkedIn-posts (socialt medier, flyktigt) med månadsvis publiceringsfrekvens — inte högt. Ingen blog, YouTube-kanal eller newsletter omnämnd. LinkedIn-räckvidd är begränsad. Sporadisk publicering och flyktiga format (posts) genererar inte långsiktig passiv lead-generation. Låg score för content/traffic potential."
+    }
+  },
+  "total_score": 75,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "Bruno är en brasiliansk SEO Senior Strategist med klar fokusering på SEO-verktyg och tekniker, och han demonstrerar redan aktiv rekommendation av konkurrande verktyg (Ahrefs, Semrush, Moz) till en relevant professionell publik. Han arbetar på en byrå vilket indikerar etablerad klientbas, och hans Portugal-språkiga LinkedIn-närvaro nå direkt brasilianska SEO-professionella.",
+  "outreach_angle": "Bruno, vi notamos seu excelente conteúdo sobre ferramentas SEO no LinkedIn! SEO Brasil é um platform de ranking all-in-one com tracking, keyword research e análise competitiva — perfeita para consultores como você que já recomendam ferramentas aos seus clientes. Gostaríamos de conversar sobre uma parceria de afiliado com 30% de comissão recorrente via Hotmart. Você teria interesse em conhecer mais?"
+}

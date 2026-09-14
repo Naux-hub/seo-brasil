@@ -1,0 +1,61 @@
+{
+  "candidate_name": "Agência de SEO Publinet1",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 20,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "Publinet1 är en etablerad SEO-byrå (16 år, 11-50 anställda) fokuserad på 'posicionamento no Google' och 'estratégias de marketing'. Som byrå arbetar de med klienter, men ingen explicit evidence visar att de är specialiserade på att sälja SEO-tjänster till andra SEO-professionella, konsulter eller byråer — vilket är den primära målgruppen för SEO Brasil. Istället verkar de primärt assistera egna klienter (småföretag/lokala företag) att ranka. LOCAL_SEO_CAP applicerad: även om byrån är SEO-fokuserad, verkar deras affärsmodell vara lokal-/regional klientbyrå (sluta på värde för sina egna kunder, inte för att sälja SEO-tjänster vidare). Max 20/30."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "Publinet1 är explicit en SEO-byrå. Profilbeskrivningen nämner 'inteligência e performance para marketing digital' och profilering av 'posicionamento orgânico' och 'SEO e posicionamento orgânico'. SEO är kärnfokus, inte sekundärt tema. Fullt poäng."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Publinet1 är en etablerad byrå med 11-50 anställda och 16 år verksamhet — vilket triggerar AGENCY_FLOOR (minimum 4/10). Ingen direkt observerbar evidence på att de rekommenderar specifika SEO-verktyg till kunder eller via innehåll (insufficient_evidence: true för tool-recommendations). Dock: som operativ SEO-byrå med tydlig kundbas använder de rimligtvis interna verktyg och kan potentiellt rekommendera dem. Sätts till 8/15 baserat på documented professionell byrå-struktur utan direkt tool-recommendation-evidence."
+    },
+    "reach_quality": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "LinkedIn-följare: ~1.000. Detta är måttligt för en byrå. Ingen data på engagemangsgrad, kommentarskvalitet eller följarnas profesionella profiler. Utan visibility i kommentarer/interaktioner är det svårt att bedöma audience-kvalitet. Sätt till 4/10 — måttlig räckvidd, oklar kvalitet."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Publinet1 är en byrå med 11-50 anställda och 16 år verksamhet — triggerar AGENCY_FLOOR (minimum 4/10). En byrå av denna storlek har rimligtvis en etablerad kundbas, men ingen explicit kundantal publiceras. Insufficient evidence för högre score. Minimum 4/10 appliceras enligt AGENCY_FLOOR-regel."
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Publinet1 är brasiliansk byrå lokaliserad i Guarulhos, São Paulo. Profilen är på portugisiska, innehållet är brasilianskt-fokuserat ('Você na 1° página do google'). Fullt brasiliansk publik och kontext. 5/5 poäng."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Ingen direkt observerbar evidence på befintliga affiliate-program, sponsrade inlägg eller partners-initiativ. Publinet1 är en service-byrå, inte en content-creator eller educator med tydlig affiliate-historia. Neutral position — professionell och seriös, men ingen signal om affiliate-erfarenhet eller intresse. 3/5: neutral, potentiell men ej bekräftad."
+    },
+    "content_traffic_potential": {
+      "score": 1,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Endast LinkedIn-aktivitet dokumenterad (~1.000 följare). Ingen data på blogg, YouTube, newsletter eller annan evergreen-kanal. LinkedIn-posts är flyktigt innehål. Inget evidence på substantiellt innehållsskapande bortom LinkedIn-uppdateringar. 1/5: sporadiskt/okänt."
+    }
+  },
+  "total_score": 65,
+  "grade": "C",
+  "grade_label": "Databasen — ingen prioritet initialt",
+  "why_interesting": "Publinet1 är en etablerad brasiliansk SEO-byrå med 16 års erfarenhet och 11-50 anställda, vilket indikerar en operativ kundbas och tydlig SEO-fokus. Som byrå hade de potential att rekommendera SEO Brasil till sina klienter. Dock: local_seo_cap appliceras eftersom byrån verkar primärt tjäna lokala/SMB-klienter snarare än att sälja SEO-tjänster till andra proffs — vilket reducerar matchningen med SEO Brasils målgrupp (SEO-konsulter och byråer).",
+  "outreach_angle": "Olá Publinet1! Notamos que vocês têm uma agência consolidada com foco em posicionamento no Google. SEO Brasil é uma ferramenta de rank tracking com suporte em português que pode acelerar a análise de posicionamento para seus clientes — gerem relatórios melhores e mais rápidos. Seria interessante conversar como isso pode agregar valor ao seu portfólio de soluções?"
+}

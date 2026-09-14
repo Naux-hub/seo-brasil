@@ -1,0 +1,60 @@
+{
+  "candidate_name": "Gus Pelogia",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 15,
+      "max": 30,
+      "insufficient_evidence": true,
+      "evidence": "Gus är brasiliansk SEO-professionell med högsta auktoritet, men hans primära innehåll är på engelska och riktad mot internationala enterprise-SEO-professionaler och stora organisationer (Indeed.com, 350M+ besökare). Innehållet fokuserar på 'product-led SEO' och enterprise-skalning — inte den typiska målgruppen för SEO Brasil (SMEs, konsulter, mindre byråer). Även om han har brasiliansk bakgrund och viss exponering mot brasiliansk community via mentorskap och nätverk, är hans observerbara publik primärt internationell/engelskspråkig. LOCAL_SEO_CAP appliceras inte (han jobbar med enterprise, inte lokala småföretag), menTargetfit är begränsad till sekundär räckvidd snarare än primär."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är kärnan i Gus karriär: Senior SEO & AI Product Manager på Indeed sedan 2012, talare på världsledande SEO-konferenser (BrightonSEO, Semrush Spotlight, LondonSEOXL, Tech SEO Summit), jurado i EU Search Awards, author på Search Engine Land och Screaming Frog. Innehållstopiker är rent SEO-fokuserade: product SEO, enterprise SEO, technical SEO, A/B-testning i skala, AI för sökning, SEO-automering. Ingen tvivel om SEO-relevans."
+    },
+    "purchase_influence": {
+      "score": 8,
+      "max": 15,
+      "insufficient_evidence": true,
+      "evidence": "Stark professionell indikation: Senior Product Manager på världens största jobsajt med betydande SEO-inflytande. Skriver för auktoritativ SEO-publikationer (Search Engine Land, Screaming Frog) och mentorerar via GrowthMentor. DOCK: ingen direkt observerbar evidence på verktygsbesprekningar eller rekommendationer för publik/klienter. Affiliatebillor eller dedikerade verktygssamtalt inte observerat. Artiklar täcker SEO-verktyg i enterprise-kontext men utan specifika affiliatebillor. AGENCY_FLOOR appliceras inte (individuell konsult/produktmanager, inte byrå med ≥5 anställda). Poängen 8 baseras på dokumenterad professionell verktyg-inflytande via Indeed-roll, men utan direkt tool-rec-evidence."
+    },
+    "reach_quality": {
+      "score": 6,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "LinkedIn-följarantal inte bekräftat. Räckvidd kan antas måttlig till stark inom international SEO-community baserat på konferenspresenser och publikationer, men exakt siffror saknas. Audience-kvalitet är MYCKET hög: BrightonSEO-talare, Search Engine Land-contributor, EU Search Awards-jurado, GrowthMentor-mentor = starkt Signal på professionell, relevans-fokuserad publik. DOCK: mycket begränsad observerbar brasiliansk räckvidd. Engelskspråkig fokus + international community begränsar den potentiella effekten för SEO Brasil. Score 6 reflekterar högt audience-kvalitet men osäker/begränsad räckvidd på målmarknaden."
+    },
+    "customer_volume_potential": {
+      "score": 4,
+      "max": 10,
+      "insufficient_evidence": true,
+      "evidence": "Gus är produktmanager (anställd) på Indeed, inte oberoende konsult eller byrå-ägare med explicit kundbas. GrowthMentor-mentorskap är frivilligt och inte ett känt antal deltagare. Ingen explicit nämnd 'aktiv kundbas' eller community-storlek. AGENCY_FLOOR appliceras inte (inte byrå). Potentialen för att generera SEO Brasil-kunder är låg — hans primära inflytande ligger i hans anställning och publikationer, inte en direct-facing konsultverksamhet. Score 4 baserat på att han är en erkänd SEO-auktoritet som KUNDE vara aktiv affiliat om motivationen fanns, men ingen konkret grund för att bedöma realistisk kundvolym."
+    },
+    "brazil_fit": {
+      "score": 2,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Gus är brasileiro de origen men bor i Europa och hans primära innehåll är på engelska. Ingen observerbar brasiliansk community-engagement, portugisiska innehåll eller brasilianska referenser i publicerade kanaler. GrowthMentor-mentorskap kan inkludera brasilianska mentees, men inte dokumenterat eller observerbart. Innehål och plattformar (Search Engine Land, BrightonSEO, LinkedIn på engelska) är internationella. Score 2 reflekterar brasiliansk ursprung men mycket begränsad observerbar Brasilien-fit i praktiken. För SEO Brasil skulle detta kräva aktiv pivot till portugisiska-innehål och brasiliansk community-fokusering."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Neutral signal. Ingen tydlig evidence på affiliateerfarenhet, partnerskap eller kommersiella rekommendationsprogram. Fokus verkar ligga på utbildning, nätverk och thought leadership snarare än kommersiella samarbeten. Professionell och seriös, men ingen indikation på tidigare affiliate-arbete eller intresse. Bio/profil nämner inget om samarbeten eller partnerskap. Score 3 reflekterar professionell stabilitet men ingen tydlig affiliateberedskap."
+    },
+    "content_traffic_potential": {
+      "score": 4,
+      "max": 5,
+      "insufficient_evidence": true,
+      "evidence": "Gus producerar evergreen-innehål via Search Engine Land och Screaming Frog (blogg/artikel), vilket är positivt. Dock: publiceringsfrekvens okänd, och personlig blogg (guspelogia.com) är inte klassificerad för trafik/engagement. Konferenstalarpresenser är enstaka events, inte återkommande passive leads. YouTube-närvaro inte omnämnd. Potentialen för passive lead-generation via evergreen-innehål finns (via publiceringar), men ingen konkret evidence på traffic-siffror eller momentum. Score 4 reflekterar blandad signal: establerad publikationshistoria men begränsad synlighet på personlig/aktiv kanaltrafik."
+    }
+  },
+  "total_score": 62,
+  "grade": "C",
+  "grade_label": "Databasen — ingen prioritet initialt",
+  "why_interesting": "Gus Pelogia är en brasiliansk SEO-auktoritet med världsomfattande anseende (Indeed PM, BrightonSEO-talare, Search Engine Land-contributor) och djup teknisk kompetens. Hans potentiella värde ligger i långsiktig relation-building och möjligheten att engagera honom för brasiliansk-portugisisk innehål/community-aktivering. Hans nuvarande fokus på enterprise och engelska gör honom dock låg-prioritet för omedelbar SEO Brasil-akquisition.",
+  "outreach_angle": "Gus, vimos que você é uma autoridade em SEO enterprise e está contribuindo globalmente em Search Engine Land e conferências internacionais. SEO Brasil é uma ferramenta feita para consultores e pequenas agências brasileiras que querem ranking local — algo bem diferente do enterprise, mas onde sua expertise em automação e testes A/B poderia adicionar valor se você quisesse conectar com a comunidade brasileira. Seria um fit natural se você estivesse interessado em criar conteúdo em português ou mentoria para o mercado BR?"
+}

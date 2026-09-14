@@ -1,0 +1,61 @@
+{
+  "candidate_name": "João Silva",
+  "knocked_out": false,
+  "knockout_reason": null,
+  "categories": {
+    "target_audience_fit": {
+      "score": 20,
+      "max": 30,
+      "insufficient_evidence": false,
+      "local_seo_cap": true,
+      "evidence": "João är SEO-konsult som primärt arbetar med små och medelstora brasilianska företag (SMB) inom e-handel och lokala tjänster. Detta är en LOCAL_SEO_CAP-situation: hans målgrupp är inte SEO-professionaler eller byråer, utan lokala småföretag som behöver hjälp att ranka lokalt. Hans innehål (Google Meu Negócio, lokala ranking) bekräftar detta fokus. Därför appliceras LOCAL_SEO_CAP-regeln: max 20/30 oavsett övriga signaler. Dock är målgruppen brasiliansk och relevant för en SEO-tool, så inte noll poäng."
+    },
+    "seo_relevance": {
+      "score": 20,
+      "max": 20,
+      "insufficient_evidence": false,
+      "evidence": "SEO är kärnan i Joãos verksamhet. Samtliga listade content-topics är direkt SEO-fokuserade: nyckelordsanalys, SEO-verktyg, teknisk SEO, ranking-övervakning, lokalt SEO. Hans profilbeskrivning nämner specifikt 'palavras-chave, link building e otimização técnica'. 8 års erfarenhet som SEO-konsult bekräftar att SEO är huvudfokus, inte ett sidoämne. Ingen tvivel — detta är 20/20."
+    },
+    "purchase_influence": {
+      "score": 10,
+      "max": 15,
+      "insufficient_evidence": false,
+      "evidence": "Observerbar content-evidence på educator/tool-nivå: João har publicerat LinkedIn-inlägg om 'Ferramentas de SEO que uso com meus clientes' och frågade följare om verktygsrekommendationer. Han nämner Semrush och Search Console i inlägg. Detta är tydlig observerbar tool-content-evidence (nivå 10). Dock finns ingen verifierad affiliate-länk eller dedikerad verktygsrekommendationssida. Han nämner användning av verktyg 'med mina klienter' vilket indikerar att han rekommenderar dem, men detta är content-evidence snarare än stark recurring purchase-influence. 10 poäng (observerad tool/educator-nivå)."
+    },
+    "reach_quality": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "LinkedIn är primärkanal med 3 800 följare — måttlig räckvidd. Engagemantsignaler från kandidatdatan visar dock högt audience-kvalitet: kommentarer är från andra SEO-konsulter och marknadsförare (verifierat relevant segment), vilket tyder på en professionell, engagerad publik. Verkar seriös och etablerad enligt anteckningar. Kombinationen av måttlig räckvidd men högt relevans/kvalitet = 7/10 (bra kvalitet, inte maximal räckvidd)."
+    },
+    "customer_volume_potential": {
+      "score": 7,
+      "max": 10,
+      "insufficient_evidence": false,
+      "evidence": "João uppger explicit '+40 ativos clientes' i sin profil. Detta är dokumenterad, explicit nämnd aktiv kundbas — ett starkt underlag för kundpotential. Han är en etablerad SEO-konsult (8 år erfarenhet) med betalande SMB-klienter. Även om LinkedIn-följarna är 3 800 (måttliga), antalet faktiska kunder (40+) visar att han redan har en fungerande affärsmodell och därför redan har bevisad köpkraft och inflytande. Detta motsvarar nivå 7: 'Gott underlag. Konsult med tydlig aktiv kundbas. Kan realistiskt generera 2–4 nya kunder.'"
+    },
+    "brazil_fit": {
+      "score": 5,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Tydligt brasilianskt profil. Plats: São Paulo, Brasil. Profilbeskrivning och allt innehål på portugisiska. Explicit fokus på 'pequenas e médias empresas brasileiras'. Klientbas är brasilianska SMB. Brasiliansk marknadskontext genomgående (Google Meu Negócio, brasiliansk e-handel och lokala tjänster). Maximal Brasilien-fit — 5/5."
+    },
+    "affiliate_fit": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Neutral affiliate-fit. Ingen negativ signal, men heller ingen stark positiv. Inga synliga affiliate-länkar, ingen 'parceiros'-sida, ingen explicit affiliate-erfarenhet dokumenterad. Dock delar han 'regelbundet affiliate-vänligt innehåll' (verktygsguider) enligt noterna, vilket indikerar att han är öppen för att rekommendera verktyg. Verkar professionell och seriös. Ingen direkta hinder för ett samarbete, men ingen stark indikation på affiliate-vilja heller. 3/5 = neutral, men ej negativ."
+    },
+    "content_traffic_potential": {
+      "score": 3,
+      "max": 5,
+      "insufficient_evidence": false,
+      "evidence": "Aktivt innehållsskapande på LinkedIn med vecklig postfrekvens, men primärt social media-format (LinkedIn-posts), inte evergreen-innehåll. Ingen blog, YouTube-kanal, newsletter eller andra langlivade trafikkällor synliga. LinkedIn-posts är goda för omedelbar engagement men genererar inte långsiktigt passiv trafik. 3/5 = aktivt innehål men mer flyktigt format, bra nu men inte långsiktigt passiv lead-generation."
+    }
+  },
+  "total_score": 75,
+  "grade": "B",
+  "grade_label": "Bra kandidat — kontakta efter A-listan",
+  "why_interesting": "João är en etablerad brasiliansk SEO-konsult med 8 års erfarenhet och 40+ aktiva klienter, vilket visar bevisad affärsmodell och köpkraft. Han är aktivt engagerad i portugisiskspråkig innehållsskapning kring SEO-verktyg och har en relevant, högkvalitativ professionell publik på LinkedIn. Han passar väl med SEO Brasil men hans fokus på lokala SMB begränsar optimal målgruppsmatch jämfört med direkt B2B2C SEO-byrå-targeting.",
+  "outreach_angle": "Oi João! Vi que você trabalha com 40+ clientes em SEO e frequentemente recomenda ferramentas. SEO Brasil é uma solução de rank tracking perfeita para monitorar progresso de seus clientes — 30% de comissão recorrente via Hotmart. Seria interessante conversar como parceria?"
+}
