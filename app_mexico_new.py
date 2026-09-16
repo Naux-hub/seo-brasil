@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import requests
@@ -19,11 +20,11 @@ PRODUCT_NAME  = _cfg["product_name"]    # "SEO México"
 PRODUCT_URL   = _cfg["product_url"]     # "https://seomexico.app"
 
 # ── CREDENCIALES ──────────────────────────────────────────────────────────────
-DATAFORSEO_LOGIN    = st.secrets["DATAFORSEO_LOGIN"]
-DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
-supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+DATAFORSEO_LOGIN    = os.environ["DATAFORSEO_LOGIN"]
+DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
+supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-HOTMART_URL    = st.secrets.get("HOTMART_MX_URL", "")   # se configura al lanzar
+HOTMART_URL    = os.environ.get("HOTMART_MX_URL", "")   # se configura al lanzar
 COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 días en segundos
 
 cookie = CookieController()
@@ -141,9 +142,9 @@ def create_trial_account(email, contrasena):
     """
     try:
         import requests as _req
-        _svc_key = st.secrets.get("SUPABASE_SERVICE_KEY") or st.secrets["SUPABASE_KEY"]
+        _svc_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"]
         _adm_resp = _req.post(
-            f"{st.secrets['SUPABASE_URL']}/auth/v1/admin/users",
+            f"{os.environ['SUPABASE_URL']}/auth/v1/admin/users",
             headers={
                 "apikey": _svc_key,
                 "Authorization": f"Bearer {_svc_key}",
@@ -166,7 +167,7 @@ def create_trial_account(email, contrasena):
             print(f"[create_trial_account] subscribers.insert falló para {email}: {_sub_err}")
             try:
                 _req.delete(
-                    f"{st.secrets['SUPABASE_URL']}/auth/v1/admin/users/{_uid}",
+                    f"{os.environ['SUPABASE_URL']}/auth/v1/admin/users/{_uid}",
                     headers={"apikey": _svc_key, "Authorization": f"Bearer {_svc_key}"},
                 )
             except Exception as _del_err:
