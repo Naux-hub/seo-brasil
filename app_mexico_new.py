@@ -420,24 +420,6 @@ if st.session_state.user is None:
         pass
 
 
-# ── ENRUTAMIENTO ──────────────────────────────────────────────────────────────
-
-user = st.session_state.user
-logged_in = user is not None
-
-if not logged_in:
-    _show_landing()
-else:
-    email = user.email
-    status = get_trial_status(email)
-    if status == "TRIAL_EXPIRED":
-        _show_upgrade_wall()
-    elif status in ("TRIAL_ACTIVE", "ACTIVE"):
-        _show_dashboard(email, user, status)
-    else:
-        _show_landing()
-
-
 # ── LANDING PAGE ──────────────────────────────────────────────────────────────
 
 def _show_landing():
@@ -714,3 +696,21 @@ def _logout():
     st.session_state.access_token = None
     st.session_state.refresh_token = None
     st.rerun()
+
+
+# ── ENRUTAMIENTO ──────────────────────────────────────────────────────────────
+
+user = st.session_state.user
+logged_in = user is not None
+
+if not logged_in:
+    _show_landing()
+else:
+    email = user.email
+    status = get_trial_status(email)
+    if status == "TRIAL_EXPIRED":
+        _show_upgrade_wall()
+    elif status in ("TRIAL_ACTIVE", "ACTIVE"):
+        _show_dashboard(email, user, status)
+    else:
+        _show_landing()
