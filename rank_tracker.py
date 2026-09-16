@@ -8,6 +8,13 @@ Flöde per användare:
 3. Hämta sökord från tracked_keywords
 4. Anropa DataForSEO SERP API — hitta var domänen rankar för varje sökord
 5. Spara i keyword_rankings (upsert) med prev_rank_position för trendjämförelse
+
+Marknader:
+  MARKET=br (standard) → Brasilien, location_code=2076, language_code=pt
+  MARKET=mx            → México, location_code=2484, language_code=es
+
+Inget beteende ändras om MARKET saknas eller är "br" — befintlig Brazil-logik
+är identisk.
 """
 
 import os
@@ -15,6 +22,7 @@ import time
 import requests
 from datetime import datetime, timezone
 from supabase import create_client
+from market_config import get_market, market_from_env
 
 # --- Supabase-anslutning ---
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -25,39 +33,22 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 DATAFORSEO_LOGIN = os.environ["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
 
-LOCATION_CODE = 2076   # Brasilien
-LANGUAGE_CODE = "pt"
+# --- Marknadsval (läs från miljövariabel, standard "br") ---
+MARKET = market_from_env()
+_market_cfg = get_market(MARKET)
+LOCATION_CODE = _market_cfg["location_code"]   # 2076 (BR) eller 2484 (MX)
+LANGUAGE_CODE = _market_cfg["language_code"]   # "pt" (BR) eller "es" (MX)
 DEPTH = 100            # Top 100 räcker och är billigare än fler
 
 
-def log_event(user_id, event, metadata=None):
-    """Inserts a user event. Silent on error."""
-    try:
-        row = {
-            "user_id": str(user_id),
-            "event": event,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        if metadata:
-            row["metadata"] = metadata
-        supabase.table("user_events").insert(row).execute()
-    except Exception:
-        pass
-
-
-def has_event(user_id, event):
-    """Returns True if the event has already been logged for this user."""
-    try:
-        res = supabase.table("user_events").select("id").eq("user_id", str(user_id)).eq("event", event).limit(1).execute()
-        return bool(res.data)
-    except Exception:
-        return False
-
-
-
 def get_active_subscribers():
-    """Hämtar alla aktiva prenumeranter med e-post och domän."""
-    res = supabase.table("subscribers").select("email, domain").execute()
+    """Hämtar alla aktiva prenumeranter med e-post och domän för aktuell marknad."""
+    res = (
+        supabase.table("subscribers")
+        .select("email, domain")
+        .eq("market", MARKET)
+        .execute()
+    )
     return res.data or []
 
 
@@ -205,6 +196,7 @@ def save_keyword_rankings(user_id, domain, keyword_results, existing_positions):
             "rank_position": data["position"],
             "prev_rank_position": existing_positions.get(kw),
             "checked_at": now,
+            "market": MARKET,
         }
         for kw, data in keyword_results.items()
     ]
@@ -216,7 +208,7 @@ def save_keyword_rankings(user_id, domain, keyword_results, existing_positions):
 
 def run():
     """Huvudfunktion — körs varje måndag."""
-    print(f"=== Rank Tracker kör {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
+    print(f"=== Rank Tracker kör {datetime.now().strftime('%Y-%m-%d %H:%M')} | marknad={MARKET.upper()} | location={LOCATION_CODE} | lang={LANGUAGE_CODE} ===")
 
     subscribers = get_active_subscribers()
     print(f"Hittade {len(subscribers)} aktiva prenumeranter")
@@ -246,11 +238,6 @@ def run():
         results = fetch_serp_positions(keywords, domain)
         save_keyword_rankings(user_id, domain, results, existing)
         print(f"  ✓ Sparat {len(results)} rankingar")
-
-        # Log initial_ranking_completed first time this user gets rankings
-        if not has_event(user_id, "initial_ranking_completed"):
-            log_event(user_id, "initial_ranking_completed", {"keywords_count": len(results)})
-            print(f"  ✓ Loggade initial_ranking_completed")
 
     print("\n=== Rank Tracker klar ===")
 

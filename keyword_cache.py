@@ -2,7 +2,12 @@
 keyword_cache.py
 
 Kostnadseffektivt caching- och batch-system för sökordsdata (DataForSEO + Supabase).
-Marknad: Brasilien -> location_code=2076, language_code="pt" (hårdkodat).
+
+Marknad väljs via miljövariabel MARKET (standard: "br"):
+  MARKET=br → Brasilien, location_code=2076, language_code="pt"
+  MARKET=mx → México, location_code=2484, language_code="es"
+
+Om MARKET saknas eller är "br" är beteendet identiskt med tidigare version.
 
 Flöde i get_keyword_data():
     1. Slå upp alla sökord i Supabase keyword_cache-tabellen.
@@ -21,13 +26,17 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import requests
+from market_config import get_market, market_from_env
 
 # ------------------------------------------------------------------
 # Konfiguration
 # ------------------------------------------------------------------
 
-LOCATION_CODE = 2076        # Brasilien
-LANGUAGE_CODE = "pt"        # Portugisiska
+# Marknadsval: läs MARKET från miljövariabel, standard "br"
+_MARKET = market_from_env()
+_market_cfg = get_market(_MARKET)
+LOCATION_CODE = _market_cfg["location_code"]   # 2076 (BR) eller 2484 (MX)
+LANGUAGE_CODE = _market_cfg["language_code"]   # "pt" (BR) eller "es" (MX)
 CACHE_MAX_AGE_DAYS = 30     # Data äldre än detta hämtas om
 BATCH_SIZE = 10             # DataForSEO: max 10 sökord per task ($0.09/task)
 SLEEP_BETWEEN_BATCHES = 0.5 # sekunder, undviker rate-limits vid stora listor
