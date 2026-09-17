@@ -204,6 +204,42 @@ def has_any_rankings(user_id):
     except Exception:
         return False
 
+
+def get_keywords_without_rankings(user_id, domain):
+    """
+    Retorna os keywords ativos do usuário que ainda não têm dados de ranking
+    para o domínio especificado.
+
+    Usado para disparar o ranking on-demand apenas para keywords novos,
+    sem re-verificar keywords que já têm dados (V1 da initial ranking).
+    """
+    try:
+        # Todos os keywords ativos do usuário
+        all_res = supabase.table("tracked_keywords") \
+            .select("keyword") \
+            .eq("user_id", str(user_id)) \
+            .eq("is_active", True) \
+            .execute()
+        all_keywords = {r["keyword"] for r in (all_res.data or [])}
+
+        if not all_keywords or not domain:
+            return []
+
+        # Keywords que já têm pelo menos uma linha em keyword_rankings
+        ranked_res = supabase.table("keyword_rankings") \
+            .select("keyword") \
+            .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
+            .in_("keyword", list(all_keywords)) \
+            .execute()
+        ranked_keywords = {r["keyword"] for r in (ranked_res.data or [])}
+
+        # Retorna apenas os que ainda não têm dados
+        return list(all_keywords - ranked_keywords)
+    except Exception:
+        return []
+
+
 # ── ON-DEMAND RANKING ─────────────────────────────────────────────────────────
 
 def _fetch_single_rank(keyword, domain, login, password):
@@ -943,7 +979,7 @@ if st.session_state.user is None:
 
     st.divider()
 
-    st.divider()      # --- Como funciona ---
+    # --- Como funciona ---
     st.markdown('<div class="section-title">Como funciona</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="steps">
@@ -1249,13 +1285,12 @@ else:
                                 if ok:
                                     log_event(user_id, "keyword_tracked", {"keyword": kw})
                                     _user_domain = get_user_domain(st.session_state.user.email)
-                                    if _user_domain and not has_any_rankings(user_id):
-                                        _all_kws = get_tracked_keywords_list(user_id)
-                                        st.session_state._ranking_kws = [r["keyword"] for r in _all_kws]
-                                        st.session_state.ranking_in_progress = True
-                                        st.session_state.ranking_done = False
-                                    else:
-                                        st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
+                                    if _user_domain:
+                                        _new_kws = get_keywords_without_rankings(user_id, _user_domain)
+                                        if _new_kws:
+                                            st.session_state._ranking_kws = _new_kws
+                                            st.session_state.ranking_in_progress = True
+                                            st.session_state.ranking_done = False
                                     st.rerun()
                                 else:
                                     st.error(msg)
@@ -1347,13 +1382,12 @@ else:
                                     if ok:
                                         log_event(user_id, "keyword_tracked", {"keyword": ikw})
                                         _user_domain = get_user_domain(st.session_state.user.email)
-                                        if _user_domain and not has_any_rankings(user_id):
-                                            _all_kws = get_tracked_keywords_list(user_id)
-                                            st.session_state._ranking_kws = [r["keyword"] for r in _all_kws]
-                                            st.session_state.ranking_in_progress = True
-                                            st.session_state.ranking_done = False
-                                        else:
-                                            st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
+                                        if _user_domain:
+                                            _new_kws = get_keywords_without_rankings(user_id, _user_domain)
+                                            if _new_kws:
+                                                st.session_state._ranking_kws = _new_kws
+                                                st.session_state.ranking_in_progress = True
+                                                st.session_state.ranking_done = False
                                         st.rerun()
                                     else:
                                         st.error(msg)
