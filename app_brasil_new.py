@@ -303,7 +303,10 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
                           status_el, progress_bar):
     """
     Verifica posição no Google para todos os keywords com feedback visual.
-    Salva em keyword_rankings e retorna dict de resultados.
+    Salva em keyword_rankings e retorna (results, save_ok).
+
+    save_ok=True  → dados salvos com sucesso no Supabase
+    save_ok=False → dados buscados mas falha ao salvar (ver logs do Streamlit)
     """
     results = {}
     total = len(keywords)
@@ -322,6 +325,7 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
     status_el.empty()
 
     # Salvar no Supabase
+    save_ok = False
     now = datetime.now(timezone.utc).isoformat()
     rows = [
         {
@@ -331,6 +335,7 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             "rank_position": d["position"],
             "prev_rank_position": None,
             "checked_at": now,
+            "market": "br",
         }
         for kw, d in results.items()
     ]
@@ -339,10 +344,12 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             supabase.table("keyword_rankings").upsert(
                 rows, on_conflict="user_id,keyword,domain"
             ).execute()
-        except Exception:
-            pass
+            save_ok = True
+        except Exception as e:
+            import traceback
+            print(f"[on_demand_ranking] upsert error: {e}\n{traceback.format_exc()}")
 
-    return results
+    return results, save_ok
 
 
 # ── IN-APP ONBOARDING ────────────────────────────────────────────────────────
@@ -1127,6 +1134,8 @@ else:
             st.session_state.ranking_in_progress = False
         if "ranking_done" not in st.session_state:
             st.session_state.ranking_done = False
+        if "ranking_save_error" not in st.session_state:
+            st.session_state.ranking_save_error = False
         if "_ranking_kws" not in st.session_state:
             st.session_state._ranking_kws = []
         if "_ranking_viewed_logged" not in st.session_state:
@@ -1183,19 +1192,23 @@ else:
                     _status_el = st.empty()
                     _progress_bar = st.progress(0)
                     log_event(user_id, "initial_ranking_started", {"keyword_count": len(_rank_kws)})
-                    _ranking_results = run_on_demand_ranking(
+                    _ranking_results, _save_ok = run_on_demand_ranking(
                         user_id, _rank_domain, _rank_kws,
                         DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD,
                         _status_el, _progress_bar,
                     )
                     log_event(user_id, "initial_ranking_completed",
-                              {"results": {k: v["position"] for k, v in _ranking_results.items()}})
+                              {"results": {k: v["position"] for k, v in _ranking_results.items()},
+                               "save_ok": _save_ok})
                     st.session_state.ranking_in_progress = False
-                    st.session_state.ranking_done = True
+                    st.session_state.ranking_done = _save_ok
+                    st.session_state.ranking_save_error = not _save_ok
                     st.rerun()
 
             if st.session_state.ranking_done:
                 st.success("✅ Seu primeiro ranking está pronto! Veja os resultados em **Meu Monitoramento**.")
+            if st.session_state.get("ranking_save_error"):
+                st.error("⚠️ Não foi possível salvar seu ranking no momento. Por favor, tente adicionar a palavra-chave novamente em alguns instantes.")
 
             sokord_text = st.text_area(
                 "Digite as palavras-chave (uma por linha, máx 10):",
@@ -1291,6 +1304,7 @@ else:
                                             st.session_state._ranking_kws = _new_kws
                                             st.session_state.ranking_in_progress = True
                                             st.session_state.ranking_done = False
+                                            st.session_state.ranking_save_error = False
                                     st.rerun()
                                 else:
                                     st.error(msg)
@@ -1388,6 +1402,7 @@ else:
                                                 st.session_state._ranking_kws = _new_kws
                                                 st.session_state.ranking_in_progress = True
                                                 st.session_state.ranking_done = False
+                                                st.session_state.ranking_save_error = False
                                         st.rerun()
                                     else:
                                         st.error(msg)
