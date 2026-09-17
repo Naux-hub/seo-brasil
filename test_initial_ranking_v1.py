@@ -1,9 +1,10 @@
 """
 test_initial_ranking_v1.py
 ==========================
-Testar V1 av initial rankingkörning:
+Testar V1 + V1.1-fix av initial rankingkörning:
   get_keywords_without_rankings()
   Gate-logiken för on-demand ranking
+  run_on_demand_ranking() — market-fält, save_ok-flagga, undantagshantering
 
 Inga anrop till Supabase, DataForSEO eller extern tjänst.
 All Supabase-interaktion mockas via unittest.mock.
@@ -83,6 +84,7 @@ sys.modules.setdefault("streamlit", _make_streamlit_stub())
 for mod_name in [
     "pandas", "plotly", "plotly.express", "plotly.graph_objects",
     "keyword_cache", "market_config", "anthropic",
+    "streamlit_cookies_controller",
 ]:
     if mod_name not in sys.modules:
         sys.modules[mod_name] = MagicMock()
@@ -94,50 +96,12 @@ sys.modules["market_config"].get_market = MagicMock(
 sys.modules["market_config"].market_from_env = MagicMock(return_value="br")
 
 # ---------------------------------------------------------------------------
-# Importera funktionen vi ska testa direkt ur app_brasil_new
+# Kopiera implementationer ur app_brasil_new.py för isolerad testning
 # ---------------------------------------------------------------------------
-
-# Vi importerar inte hela modulen utan kapslar in funktionen manuellt
-# för att undvika Streamlit-sidoeffekter vid import.
-
-def _load_get_keywords_without_rankings():
-    """
-    Laddar get_keywords_without_rankings() ur app_brasil_new.py
-    utan att köra hela Streamlit-appen.
-    """
-    import importlib.util, os
-    spec = importlib.util.spec_from_file_location(
-        "app_brasil_new",
-        os.path.join(os.path.dirname(__file__), "app_brasil_new.py"),
-    )
-    # Kör inte modulen — läs bara källkoden och extrahera funktionen
-    import ast, textwrap
-
-    src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
-    with open(src_path, encoding="utf-8") as f:
-        source = f.read()
-
-    # Extrahera get_keywords_without_rankings och has_any_rankings
-    tree = ast.parse(source)
-    func_sources = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name in (
-            "get_keywords_without_rankings", "has_any_rankings"
-        ):
-            func_sources[node.name] = ast.get_source_segment(source, node)
-
-    return func_sources
-
-
-# ---------------------------------------------------------------------------
-# Direkt implementation att testa (isolerat från Streamlit-runtime)
-# ---------------------------------------------------------------------------
-
-# Vi testar get_keywords_without_rankings direkt med en mock-supabase.
 
 def get_keywords_without_rankings_impl(supabase_client, user_id, domain):
     """
-    Kopia av implementationen ur app_brasil_new.py för isolerad testning.
+    Kopia av get_keywords_without_rankings() ur app_brasil_new.py för isolerad testning.
     (Identisk logik, oberoende av Streamlit-import.)
     """
     try:
@@ -162,6 +126,43 @@ def get_keywords_without_rankings_impl(supabase_client, user_id, domain):
         return list(all_keywords - ranked_keywords)
     except Exception:
         return []
+
+
+def run_on_demand_ranking_impl(supabase_client, user_id, domain, keywords):
+    """
+    Isolerad testkopia av run_on_demand_ranking() — V1.1-semantik:
+      - rows inkluderar market='br'
+      - returnerar (results, save_ok)
+      - exception vid upsert → save_ok=False (ingen silent swallow)
+    """
+    results = {kw: {"position": None, "url": None} for kw in keywords}
+
+    now = "2026-09-17T12:00:00+00:00"
+    rows = [
+        {
+            "user_id": str(user_id),
+            "keyword": kw,
+            "domain": domain,
+            "rank_position": d["position"],
+            "prev_rank_position": None,
+            "checked_at": now,
+            "market": "br",
+        }
+        for kw, d in results.items()
+    ]
+
+    save_ok = False
+    if rows:
+        try:
+            supabase_client.table("keyword_rankings").upsert(
+                rows, on_conflict="user_id,keyword,domain"
+            ).execute()
+            save_ok = True
+        except Exception as e:
+            import traceback
+            print(f"[test] upsert error: {e}\n{traceback.format_exc()}")
+
+    return results, save_ok
 
 
 # ---------------------------------------------------------------------------
@@ -240,14 +241,15 @@ class TestGetKeywordsWithoutRankings(unittest.TestCase):
         self.assertEqual(sorted(result), ["kw-new-1", "kw-new-2"],
                          "TEST 4 FAIL: Båda nya keywords ska returneras")
 
-    def test_4b_all_keywords_already_ranked(self):
+    # TEST 7: Alla keywords redan rankade → tom lista (ingen on-demand-körning)
+    def test_7_all_keywords_already_ranked(self):
         """Alla keywords har rankingdata → tom lista returneras (inget att köra)."""
         tracked = ["kw-a", "kw-b"]
         ranked = ["kw-a", "kw-b"]
         client = self._make_client(tracked, ranked)
         result = get_keywords_without_rankings_impl(client, "user-5", "meusite.com.br")
         self.assertEqual(result, [],
-                         "TEST 4b FAIL: Tom lista när alla är rankade")
+                         "TEST 7 FAIL: Tom lista när alla är rankade — ingen on-demand ska triggas")
 
     def test_empty_tracked_keywords(self):
         """Inga spårade keywords → tom lista."""
@@ -268,9 +270,105 @@ class TestGetKeywordsWithoutRankings(unittest.TestCase):
         result = get_keywords_without_rankings_impl(client, "user-8", "meusite.com.br")
         self.assertEqual(result, [], "Exception ska fångas och returnera []")
 
+    # TEST 5 (nytt): Ny keyword körs fortfarande (V1-logik bevarad)
+    def test_5_new_keyword_triggers_on_demand(self):
+        """Ny keyword ska trigga on-demand (returneras av get_keywords_without_rankings)."""
+        tracked = ["bank", "banco", "fintech"]
+        ranked = ["bank", "fintech"]
+        client = self._make_client(tracked, ranked)
+        result = get_keywords_without_rankings_impl(client, "user-9", "meusite.com.br")
+        self.assertEqual(result, ["banco"],
+                         "TEST 5 FAIL: 'banco' är nytt och ska returneras för on-demand-körning")
+
+    # TEST 6 (nytt): Befintliga keywords med rankingdata körs inte igen
+    def test_6_existing_keywords_not_rerun(self):
+        """Keywords med rankingdata ska INTE inkluderas i on-demand-körningen."""
+        tracked = ["kw-old-1", "kw-old-2"]
+        ranked = ["kw-old-1", "kw-old-2"]
+        client = self._make_client(tracked, ranked)
+        result = get_keywords_without_rankings_impl(client, "user-10", "meusite.com.br")
+        self.assertNotIn("kw-old-1", result,
+                         "TEST 6 FAIL: kw-old-1 har rankingdata och ska inte köras igen")
+        self.assertNotIn("kw-old-2", result,
+                         "TEST 6 FAIL: kw-old-2 har rankingdata och ska inte köras igen")
+
+
+class TestRunOnDemandRankingV11(unittest.TestCase):
+    """TEST V1.1: run_on_demand_ranking() — market-fält, save_ok, undantag"""
+
+    def _make_upsert_client(self, should_fail=False, fail_exception=None):
+        """Skapar en mock-Supabase-klient för upsert-testning."""
+        client = MagicMock()
+        chain = MagicMock()
+
+        if should_fail:
+            exc = fail_exception or Exception("DB upsert error")
+            chain.execute.side_effect = exc
+        else:
+            chain.execute.return_value = MagicMock(data=[])
+
+        chain.upsert.return_value = chain
+        client.table.return_value = chain
+        return client
+
+    # TEST V1.1-1: Upsert inkluderar market="br"
+    def test_v11_upsert_includes_market_br(self):
+        """Upsert-raden ska alltid innehålla market='br'."""
+        client = self._make_upsert_client(should_fail=False)
+        results, save_ok = run_on_demand_ranking_impl(client, "user-1", "meusite.com.br", ["banco"])
+
+        # Hämta anropet till upsert
+        upsert_call = client.table.return_value.upsert.call_args
+        self.assertIsNotNone(upsert_call, "TEST V1.1-1 FAIL: upsert ska ha anropats")
+        rows_sent = upsert_call[0][0]  # första positionella argument = rows
+        self.assertIsInstance(rows_sent, list, "Rows ska vara en lista")
+        self.assertEqual(len(rows_sent), 1, "En rad för ett keyword")
+        self.assertEqual(rows_sent[0].get("market"), "br",
+                         "TEST V1.1-1 FAIL: market='br' saknas i upsert-raden")
+
+    # TEST V1.1-2: Lyckad upsert → save_ok=True
+    def test_v11_successful_upsert_returns_save_ok_true(self):
+        """Lyckad upsert ska returnera save_ok=True."""
+        client = self._make_upsert_client(should_fail=False)
+        results, save_ok = run_on_demand_ranking_impl(client, "user-1", "meusite.com.br", ["banco"])
+        self.assertTrue(save_ok,
+                        "TEST V1.1-2 FAIL: Lyckad upsert ska ge save_ok=True")
+
+    # TEST V1.1-3: Upsert exception → save_ok=False
+    def test_v11_upsert_exception_returns_save_ok_false(self):
+        """Upsert-exception ska returnera save_ok=False (inte svälja tyst)."""
+        client = self._make_upsert_client(should_fail=True)
+        results, save_ok = run_on_demand_ranking_impl(client, "user-1", "meusite.com.br", ["banco"])
+        self.assertFalse(save_ok,
+                         "TEST V1.1-3 FAIL: Upsert-exception ska ge save_ok=False")
+
+    # TEST V1.1-4: save_ok=False → "Seu primeiro ranking" ska INTE visas
+    def test_v11_save_failure_no_success_message(self):
+        """
+        Kontrollerar gate-logiken: ranking_done ska bara sättas till True
+        om save_ok=True. Simuleras via att kontrollera save_ok-returvärdet.
+        """
+        client = self._make_upsert_client(should_fail=True)
+        _, save_ok = run_on_demand_ranking_impl(client, "user-1", "meusite.com.br", ["banco"])
+
+        # ranking_done = save_ok i calling code
+        ranking_done = save_ok
+        self.assertFalse(ranking_done,
+                         "TEST V1.1-4 FAIL: ranking_done ska vara False vid save-fel — "
+                         "framgångsmeddelandet ska INTE visas")
+
+    # TEST V1.1-5: Resultat returneras även vid save-fel
+    def test_v11_results_returned_even_on_save_failure(self):
+        """Results-dict returneras alltid, oavsett save-resultat."""
+        client = self._make_upsert_client(should_fail=True)
+        results, save_ok = run_on_demand_ranking_impl(client, "user-1", "meusite.com.br", ["banco"])
+        self.assertIn("banco", results,
+                      "TEST V1.1-5 FAIL: results ska alltid returneras")
+        self.assertFalse(save_ok, "save_ok ska vara False vid upsert-fel")
+
 
 class TestNoDoubleRankings(unittest.TestCase):
-    """TEST 6: Upsert-logiken förhindrar dubbla rader."""
+    """TEST: Upsert-logiken förhindrar dubbla rader."""
 
     def test_upsert_conflict_key_is_set(self):
         """
@@ -286,12 +384,52 @@ class TestNoDoubleRankings(unittest.TestCase):
         self.assertIn(
             'on_conflict="user_id,keyword,domain"',
             source,
-            "TEST 6 FAIL: upsert måste använda on_conflict='user_id,keyword,domain'",
+            "FAIL: upsert måste använda on_conflict='user_id,keyword,domain'",
         )
+
+    def test_upsert_includes_market_br_in_source(self):
+        """
+        V1.1: run_on_demand_ranking ska inkludera market='br' i upsert-raden.
+        Läser källkoden direkt.
+        """
+        import os
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
+        with open(src_path, encoding="utf-8") as f:
+            source = f.read()
+
+        self.assertIn(
+            '"market": "br"',
+            source,
+            "TEST V1.1-1 FAIL: market='br' saknas i app_brasil_new.py upsert",
+        )
+
+    def test_no_silent_exception_swallow_in_source(self):
+        """
+        V1.1: except Exception: pass ska INTE förekomma i run_on_demand_ranking.
+        """
+        import os, ast
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
+        with open(src_path, encoding="utf-8") as f:
+            source = f.read()
+
+        # Hitta run_on_demand_ranking-funktionen och kontrollera att den inte
+        # har en tom except-handler
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "run_on_demand_ranking":
+                func_src = ast.get_source_segment(source, node)
+                # "except Exception:\n            pass" ska inte finnas
+                self.assertNotIn(
+                    "except Exception:\n            pass",
+                    func_src or "",
+                    "TEST V1.1-3 FAIL: silent 'except Exception: pass' finns kvar i run_on_demand_ranking",
+                )
+                return
+        self.fail("run_on_demand_ranking hittades inte i källkoden")
 
 
 class TestUnchangedFiles(unittest.TestCase):
-    """TEST 5: rank_tracker.py och weekly_seo_report.yml är oförändrade."""
+    """TEST 8-10: rank_tracker.py, weekly_seo_report.yml och app_mexico_new.py är oförändrade."""
 
     def test_rank_tracker_not_modified(self):
         """rank_tracker.py ska inte innehålla get_keywords_without_rankings."""
@@ -302,11 +440,14 @@ class TestUnchangedFiles(unittest.TestCase):
         self.assertNotIn(
             "get_keywords_without_rankings",
             content,
-            "TEST 5 FAIL: rank_tracker.py ska inte ha ändrats",
+            "TEST 8 FAIL: rank_tracker.py ska inte ha ändrats",
         )
         # Verifiera att rank_tracker fortfarande har run()-funktionen
         self.assertIn("def run():", content,
-                      "TEST 5 FAIL: run() saknas i rank_tracker.py")
+                      "TEST 8 FAIL: run() saknas i rank_tracker.py")
+        # Verifiera att rank_tracker inkluderar market
+        self.assertIn('"market": MARKET', content,
+                      "TEST 8 FAIL: rank_tracker.py ska fortfarande ha market-fältet")
 
     def test_weekly_yml_not_modified(self):
         """weekly_seo_report.yml ska fortfarande trigga måndag kl 07:00 UTC."""
@@ -315,13 +456,26 @@ class TestUnchangedFiles(unittest.TestCase):
         with open(path, encoding="utf-8") as f:
             content = f.read()
         self.assertIn("0 7 * * 1", content,
-                      "TEST 5 FAIL: weekly cron ska vara oförändrad (0 7 * * 1)")
+                      "TEST 9 FAIL: weekly cron ska vara oförändrad (0 7 * * 1)")
         self.assertIn("rank_tracker.py", content,
-                      "TEST 5 FAIL: weekly_seo_report.yml ska fortfarande köra rank_tracker.py")
+                      "TEST 9 FAIL: weekly_seo_report.yml ska fortfarande köra rank_tracker.py")
+
+    def test_mexico_app_not_modified(self):
+        """app_mexico_new.py ska inte innehålla get_keywords_without_rankings."""
+        import os
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_mexico_new.py")
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                content = f.read()
+            self.assertNotIn(
+                "get_keywords_without_rankings",
+                content,
+                "TEST 10 FAIL: app_mexico_new.py ska inte ha ändrats",
+            )
 
 
 class TestGateLogic(unittest.TestCase):
-    """TEST 7: Regression — verifiera att ny gate-logik finns i app_brasil_new.py."""
+    """TEST: Regression — verifiera att ny gate-logik finns i app_brasil_new.py."""
 
     def setUp(self):
         import os
@@ -334,23 +488,18 @@ class TestGateLogic(unittest.TestCase):
         self.assertIn(
             "get_keywords_without_rankings",
             self.source,
-            "TEST 7 FAIL: ny gate-funktion saknas i app_brasil_new.py",
+            "FAIL: ny gate-funktion saknas i app_brasil_new.py",
         )
 
     def test_old_gate_removed_from_buttons(self):
         """
         Den gamla gaten 'not has_any_rankings(user_id)' ska inte längre
         förekomma i + Rastrear-knapparna.
-        Kontroll: den gamla kombinationen ska inte finnas i koden.
         """
-        # Den gamla koden kombinerade has_any_rankings med _all_kws-listan
-        old_pattern = "not has_any_rankings(user_id):\n"
-        # Räkna förekomster — ska vara 0 i knappsektionerna
-        # (has_any_rankings används fortfarande i get_onboarding_status, det är OK)
         occurrences = self.source.count("if _user_domain and not has_any_rankings(user_id):")
         self.assertEqual(
             occurrences, 0,
-            "TEST 7 FAIL: gamla gaten if _user_domain and not has_any_rankings() ska vara borttagen",
+            "FAIL: gamla gaten if _user_domain and not has_any_rankings() ska vara borttagen",
         )
 
     def test_has_any_rankings_still_used_in_onboarding(self):
@@ -358,7 +507,7 @@ class TestGateLogic(unittest.TestCase):
         self.assertIn(
             "has_any_rankings(user_id)",
             self.source,
-            "TEST 7 FAIL: has_any_rankings() verkar ha tagits bort helt",
+            "FAIL: has_any_rankings() verkar ha tagits bort helt",
         )
 
     def test_function_defined(self):
@@ -366,21 +515,43 @@ class TestGateLogic(unittest.TestCase):
         self.assertIn(
             "def get_keywords_without_rankings(",
             self.source,
-            "TEST 7 FAIL: get_keywords_without_rankings() är inte definierad",
+            "FAIL: get_keywords_without_rankings() är inte definierad",
         )
 
-    def test_mexico_app_not_modified(self):
-        """app_mexico_new.py ska inte innehålla get_keywords_without_rankings."""
-        import os
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_mexico_new.py")
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as f:
-                content = f.read()
-            self.assertNotIn(
-                "get_keywords_without_rankings",
-                content,
-                "TEST 7 FAIL: app_mexico_new.py ska inte ha ändrats",
-            )
+    def test_ranking_save_error_state_initialized(self):
+        """V1.1: ranking_save_error ska initialiseras i session_state."""
+        self.assertIn(
+            '"ranking_save_error"',
+            self.source,
+            "FAIL: ranking_save_error saknas i session_state-initialisering",
+        )
+
+    def test_success_message_conditional_on_ranking_done(self):
+        """V1.1: framgångsmeddelandet ska bara visas när ranking_done är True."""
+        self.assertIn(
+            'st.session_state.ranking_done',
+            self.source,
+            "FAIL: ranking_done används inte för att styra framgångsmeddelandet",
+        )
+        # ranking_done ska sättas till _save_ok (inte alltid True)
+        self.assertIn(
+            "ranking_done = _save_ok",
+            self.source,
+            "FAIL: ranking_done ska sättas till _save_ok, inte alltid True",
+        )
+
+    def test_error_message_shown_on_save_failure(self):
+        """V1.1: portugisiskt felmeddelande ska visas vid save-fel."""
+        self.assertIn(
+            "ranking_save_error",
+            self.source,
+            "FAIL: ranking_save_error saknas i felmeddelande-logiken",
+        )
+        self.assertIn(
+            "Não foi possível salvar",
+            self.source,
+            "FAIL: portugisiskt felmeddelande saknas",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -393,6 +564,7 @@ if __name__ == "__main__":
 
     for cls in [
         TestGetKeywordsWithoutRankings,
+        TestRunOnDemandRankingV11,
         TestNoDoubleRankings,
         TestUnchangedFiles,
         TestGateLogic,
