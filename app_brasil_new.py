@@ -1,3 +1,4 @@
+import logging
 import streamlit as st
 import pandas as pd
 import requests
@@ -325,6 +326,11 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
     save_ok=True  → upsert executado E verificação confirmou todas as linhas gravadas
     save_ok=False → dados buscados mas falha ao salvar (ver logs do Streamlit)
     """
+    logging.info(
+        "[on_demand_ranking] start: user=%s domain=%s keywords=%s access_token_present=%s",
+        user_id, domain, sorted(keywords), bool(access_token),
+    )
+
     results = {}
     total = len(keywords)
 
@@ -337,9 +343,17 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
         progress_bar.progress(i / total)
         position, url = _fetch_single_rank(kw, domain, login, password)
         results[kw] = {"position": position, "url": url}
+        logging.info(
+            "[on_demand_ranking] fetched kw=%r position=%s", kw, position
+        )
 
     progress_bar.progress(1.0)
     status_el.empty()
+
+    logging.info(
+        "[on_demand_ranking] fetch done: results_count=%d keywords=%s",
+        len(results), sorted(results.keys()),
+    )
 
     # Salvar no Supabase
     save_ok = False
@@ -356,13 +370,34 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
         }
         for kw, d in results.items()
     ]
-    if rows:
+
+    logging.info(
+        "[on_demand_ranking] rows_count=%d row_keywords=%s",
+        len(rows), sorted(r["keyword"] for r in rows),
+    )
+
+    if not rows:
+        logging.warning(
+            "[on_demand_ranking] rows is empty — upsert skipped. "
+            "results was empty (no keywords fetched). "
+            "user=%s domain=%s", user_id, domain,
+        )
+    else:
         expected_kws = [r["keyword"] for r in rows]
         try:
             _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
-            _pg.from_("keyword_rankings").upsert(
+            logging.info(
+                "[on_demand_ranking] about to upsert keyword_rankings: "
+                "count=%d keywords=%s authenticated=%s",
+                len(rows), sorted(expected_kws), bool(access_token),
+            )
+            upsert_res = _pg.from_("keyword_rankings").upsert(
                 rows, on_conflict="user_id,keyword,domain"
             ).execute()
+            logging.info(
+                "[on_demand_ranking] upsert done: data_count=%s",
+                len(upsert_res.data) if upsert_res.data is not None else "None",
+            )
             # Verificar que as linhas foram realmente gravadas usando o mesmo token autenticado
             _pg_v = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
             _verify = (
@@ -375,15 +410,22 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             )
             found_kws = {r["keyword"] for r in (_verify.data or [])}
             save_ok = set(expected_kws) == found_kws
+            logging.info(
+                "[on_demand_ranking] verification: expected=%s found=%s save_ok=%s",
+                sorted(expected_kws), sorted(found_kws), save_ok,
+            )
             if not save_ok:
-                print(
-                    f"[on_demand_ranking] verificação falhou: "
-                    f"esperados={sorted(expected_kws)}, encontrados={sorted(found_kws)}",
-                    flush=True,
+                logging.warning(
+                    "[on_demand_ranking] verificação falhou: "
+                    "esperados=%s, encontrados=%s",
+                    sorted(expected_kws), sorted(found_kws),
                 )
-        except Exception as e:
-            import traceback
-            print(f"[on_demand_ranking] upsert error: {e}\n{traceback.format_exc()}", flush=True)
+        except Exception:
+            logging.exception(
+                "[on_demand_ranking] upsert/verification error: "
+                "user=%s domain=%s keywords=%s authenticated=%s",
+                user_id, domain, sorted(expected_kws), bool(access_token),
+            )
 
     return results, save_ok
 
