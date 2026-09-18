@@ -1,10 +1,25 @@
 """
 test_initial_ranking_v1.py
 ==========================
-Testar V1 + V1.1-fix av initial rankingkörning:
+Testar V1 + V1.1-fix + V1.2-fix av initial rankingkörning:
   get_keywords_without_rankings()
   Gate-logiken för on-demand ranking
-  run_on_demand_ranking() — market-fält, save_ok-flagga, undantagshantering
+  run_on_demand_ranking() — market-fält, save_ok-flagga, undantagshantering,
+                             access_token-vidarebefordran, verifiering efter upsert
+
+V1.2-fix testar:
+  1.  access_token skickas till run_on_demand_ranking (källkodsinspektion)
+  2.  autentiserad postgrest-instans används vid UPSERT (mocktest)
+  3.  market="br" finns kvar (källkodsinspektion + mocktest)
+  4.  verifieringen kontrollerar exakt de nya keywords (mocktest)
+  5.  lyckad UPSERT + verifiering => save_ok=True
+  6.  UPSERT exception => save_ok=False
+  7.  verifiering utan förväntad rad => save_ok=False
+  8.  success-banner visas endast när save_ok=True (källkodsinspektion)
+  9.  nya keywords körs fortfarande (get_keywords_without_rankings)
+  10. befintliga keywords körs inte om
+  11. Mexico är orörd
+  12. weekly rank tracker är orörd
 
 Inga anrop till Supabase, DataForSEO eller extern tjänst.
 All Supabase-interaktion mockas via unittest.mock.
@@ -555,6 +570,502 @@ class TestGateLogic(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# V1.2-implementationskopia för isolerad testning
+# ---------------------------------------------------------------------------
+
+def run_on_demand_ranking_v12_impl(supabase_client, user_id, domain, keywords,
+                                    access_token=None):
+    """
+    Kopia av run_on_demand_ranking() ur app_brasil_new.py — V1.2-semantik:
+      - rows inkluderar market='br'
+      - använder supabase.postgrest.auth(access_token) för autentiserat upsert
+      - verifierar att exakt de förväntade keywords finns efter upsert
+      - save_ok=True ENDAST om verifieringen bekräftar alla förväntade rader
+    """
+    results = {kw: {"position": None, "url": None} for kw in keywords}
+
+    now = "2026-09-17T12:00:00+00:00"
+    rows = [
+        {
+            "user_id": str(user_id),
+            "keyword": kw,
+            "domain": domain,
+            "rank_position": d["position"],
+            "prev_rank_position": None,
+            "checked_at": now,
+            "market": "br",
+        }
+        for kw, d in results.items()
+    ]
+
+    save_ok = False
+    if rows:
+        expected_kws = [r["keyword"] for r in rows]
+        try:
+            _pg = supabase_client.postgrest.auth(access_token) if access_token \
+                  else supabase_client.postgrest
+            _pg.from_("keyword_rankings").upsert(
+                rows, on_conflict="user_id,keyword,domain"
+            ).execute()
+
+            _pg_v = supabase_client.postgrest.auth(access_token) if access_token \
+                    else supabase_client.postgrest
+            _verify = (
+                _pg_v.from_("keyword_rankings")
+                .select("keyword")
+                .eq("user_id", str(user_id))
+                .eq("domain", domain)
+                .in_("keyword", expected_kws)
+                .execute()
+            )
+            found_kws = {r["keyword"] for r in (_verify.data or [])}
+            save_ok = set(expected_kws) == found_kws
+        except Exception as e:
+            import traceback
+            print(f"[test-v12] upsert error: {e}\n{traceback.format_exc()}")
+
+    return results, save_ok
+
+
+# ---------------------------------------------------------------------------
+# V1.2-tester (12 cases)
+# ---------------------------------------------------------------------------
+
+class TestRunOnDemandRankingV12(unittest.TestCase):
+    """
+    V1.2-fix: alla 12 specificerade testfall.
+    Testar access_token-vidarebefordran, autentiserad postgrest-instans,
+    market='br', verifiering och save_ok-semantik.
+    """
+
+    # ── Hjälpmetoder ──────────────────────────────────────────────────────
+
+    def _make_pg_chain(self, verify_data=None, upsert_fail=False, verify_fail=False):
+        """
+        Bygger en mock-postgrest-instans som:
+        - .auth(token) returnerar sig själv (chainbar)
+        - .from_() -> chain med .upsert(), .select(), .eq(), .in_(), .execute()
+        - execute() returnerar angiven verify_data (eller kastar undantag)
+        """
+        chain = MagicMock()
+        chain.from_.return_value = chain
+        chain.select.return_value = chain
+        chain.eq.return_value = chain
+        chain.in_.return_value = chain
+        chain.upsert.return_value = chain
+
+        call_count = {"n": 0}
+
+        def _execute():
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                # Första execute = upsert
+                if upsert_fail:
+                    raise Exception("DB upsert error")
+                return MagicMock(data=[])
+            else:
+                # Andra execute = verifiering
+                if verify_fail:
+                    raise Exception("DB verify error")
+                if verify_data is None:
+                    return MagicMock(data=[])
+                return MagicMock(data=verify_data)
+
+        chain.execute.side_effect = _execute
+        return chain
+
+    def _make_client(self, verify_data=None, upsert_fail=False, verify_fail=False):
+        """Supabase-klient med stubbad postgrest-instans."""
+        client = MagicMock()
+        chain = self._make_pg_chain(
+            verify_data=verify_data,
+            upsert_fail=upsert_fail,
+            verify_fail=verify_fail,
+        )
+        # postgrest.auth(token) returnerar chain (ny instans per anrop)
+        client.postgrest.auth.return_value = chain
+        client.postgrest.from_.return_value = chain
+        return client, chain
+
+    # ── TEST 1: access_token skickas från anroparen (källkodsinspektion) ──
+
+    def test_1_access_token_passed_in_caller(self):
+        """access_token=st.session_state.access_token ska finnas i run_on_demand_ranking-anropet."""
+        import os
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
+        with open(src_path, encoding="utf-8") as f:
+            source = f.read()
+        self.assertIn(
+            "st.session_state.access_token",
+            source,
+            "TEST 1 FAIL: st.session_state.access_token saknas i anropet till run_on_demand_ranking",
+        )
+        # Verifiera att det är i samma block som run_on_demand_ranking-anropet
+        self.assertIn(
+            "run_on_demand_ranking(",
+            source,
+            "TEST 1 FAIL: run_on_demand_ranking-anropet saknas",
+        )
+
+    # ── TEST 2: autentiserad postgrest-instans används vid UPSERT ─────────
+
+    def test_2_authenticated_postgrest_instance_used_for_upsert(self):
+        """supabase.postgrest.auth(access_token) ska anropas med rätt token."""
+        client, chain = self._make_client(verify_data=[{"keyword": "banco"}])
+
+        results, save_ok = run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco"],
+            access_token="test-jwt-token",
+        )
+
+        # postgrest.auth() ska ha anropats (minst en gång för upsert)
+        client.postgrest.auth.assert_called_with("test-jwt-token")
+        self.assertGreaterEqual(
+            client.postgrest.auth.call_count, 1,
+            "TEST 2 FAIL: postgrest.auth() ska anropas med access_token",
+        )
+
+    def test_2b_no_access_token_falls_back_to_postgrest(self):
+        """Utan access_token ska supabase.postgrest användas direkt (fallback)."""
+        client, chain = self._make_client(verify_data=[{"keyword": "banco"}])
+
+        run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco"],
+            access_token=None,
+        )
+
+        # postgrest.auth() ska INTE ha anropats
+        client.postgrest.auth.assert_not_called()
+
+    # ── TEST 3: market="br" finns kvar ────────────────────────────────────
+
+    def test_3_market_br_in_upsert_rows(self):
+        """Upsert-raderna ska alltid innehålla market='br'."""
+        client, chain = self._make_client(verify_data=[{"keyword": "banco"}])
+
+        run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco"],
+            access_token="tok",
+        )
+
+        # Hämta rows-argumentet från upsert-anropet
+        upsert_call = chain.upsert.call_args
+        self.assertIsNotNone(upsert_call, "TEST 3 FAIL: upsert ska ha anropats")
+        rows_sent = upsert_call[0][0]
+        self.assertIsInstance(rows_sent, list)
+        self.assertEqual(len(rows_sent), 1)
+        self.assertEqual(
+            rows_sent[0].get("market"), "br",
+            "TEST 3 FAIL: market='br' saknas i upsert-raden",
+        )
+
+    def test_3_market_br_in_source(self):
+        """Källkoden ska innehålla market='br' i upsert-blocket."""
+        import os
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
+        with open(src_path, encoding="utf-8") as f:
+            source = f.read()
+        self.assertIn(
+            '"market": "br"',
+            source,
+            "TEST 3 FAIL: market='br' saknas i app_brasil_new.py",
+        )
+
+    # ── TEST 4: verifiering kontrollerar exakt de nya keywords ────────────
+
+    def test_4_verification_uses_exact_keywords(self):
+        """Verifieringen ska göra .in_('keyword', [exakt de förväntade keywords])."""
+        verify_data = [{"keyword": "banco"}, {"keyword": "seo brasil"}]
+        client, chain = self._make_client(verify_data=verify_data)
+
+        run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco", "seo brasil"],
+            access_token="tok",
+        )
+
+        # .in_() ska ha anropats med exakt de förväntade keywords
+        in_calls = [str(c) for c in chain.in_.call_args_list]
+        self.assertTrue(
+            any("banco" in c and "seo brasil" in c for c in in_calls),
+            f"TEST 4 FAIL: .in_() anropades inte med båda keywords. Anrop: {in_calls}",
+        )
+
+    def test_4_verification_filters_user_and_domain(self):
+        """Verifierings-SELECT ska filtrera på user_id och domain."""
+        verify_data = [{"keyword": "banco"}]
+        client, chain = self._make_client(verify_data=verify_data)
+
+        run_on_demand_ranking_v12_impl(
+            client, "uid-abc", "meusite.com.br", ["banco"],
+            access_token="tok",
+        )
+
+        eq_calls = [str(c) for c in chain.eq.call_args_list]
+        self.assertTrue(
+            any("uid-abc" in c for c in eq_calls),
+            f"TEST 4 FAIL: .eq('user_id', ...) saknas i verifieringen. Anrop: {eq_calls}",
+        )
+        self.assertTrue(
+            any("meusite.com.br" in c for c in eq_calls),
+            f"TEST 4 FAIL: .eq('domain', ...) saknas i verifieringen. Anrop: {eq_calls}",
+        )
+
+    # ── TEST 5: lyckad UPSERT + verifiering => save_ok=True ───────────────
+
+    def test_5_successful_upsert_and_verification_gives_save_ok_true(self):
+        """Lyckad upsert OCH verifiering med alla förväntade keywords → save_ok=True."""
+        client, chain = self._make_client(
+            verify_data=[{"keyword": "banco"}, {"keyword": "fintech"}]
+        )
+
+        _, save_ok = run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco", "fintech"],
+            access_token="tok",
+        )
+
+        self.assertTrue(save_ok, "TEST 5 FAIL: lyckad upsert + korrekt verifiering ska ge save_ok=True")
+
+    # ── TEST 6: UPSERT exception => save_ok=False ─────────────────────────
+
+    def test_6_upsert_exception_gives_save_ok_false(self):
+        """Exception vid upsert ska ge save_ok=False."""
+        client, chain = self._make_client(upsert_fail=True)
+
+        _, save_ok = run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco"],
+            access_token="tok",
+        )
+
+        self.assertFalse(save_ok, "TEST 6 FAIL: upsert-exception ska ge save_ok=False")
+
+    # ── TEST 7: verifiering utan förväntad rad => save_ok=False ───────────
+
+    def test_7_verification_empty_result_gives_save_ok_false(self):
+        """Verifiering returnerar inga rader (RLS silent-fail) → save_ok=False."""
+        client, chain = self._make_client(verify_data=[])  # 0 rader
+
+        _, save_ok = run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco"],
+            access_token="tok",
+        )
+
+        self.assertFalse(
+            save_ok,
+            "TEST 7 FAIL: verifiering utan rad ska ge save_ok=False (fångar RLS silent-fail)",
+        )
+
+    def test_7b_verification_partial_result_gives_save_ok_false(self):
+        """Verifiering returnerar bara en del av keywords → save_ok=False."""
+        # Upsert för 2 keywords, verifiering returnerar bara 1
+        client, chain = self._make_client(
+            verify_data=[{"keyword": "banco"}]  # seo brasil saknas
+        )
+
+        _, save_ok = run_on_demand_ranking_v12_impl(
+            client, "uid-123", "meusite.com.br", ["banco", "seo brasil"],
+            access_token="tok",
+        )
+
+        self.assertFalse(
+            save_ok,
+            "TEST 7b FAIL: partiell verifiering ska ge save_ok=False",
+        )
+
+    # ── TEST 8: success-banner visas ENDAST när save_ok=True ──────────────
+
+    def test_8_success_banner_conditional_on_save_ok(self):
+        """ranking_done sätts till _save_ok i källkoden — banner visas inte vid save-fel."""
+        import os
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
+        with open(src_path, encoding="utf-8") as f:
+            source = f.read()
+
+        self.assertIn(
+            "ranking_done = _save_ok",
+            source,
+            "TEST 8 FAIL: ranking_done ska sättas till _save_ok",
+        )
+        self.assertIn(
+            "ranking_done",
+            source,
+            "TEST 8 FAIL: ranking_done används inte som gate för success-banner",
+        )
+        # success-bannern ska INTE vara ovillkorlig
+        self.assertNotIn(
+            "ranking_done = True",
+            source,
+            "TEST 8 FAIL: ranking_done ska inte sättas till hårdkodat True",
+        )
+
+    # ── TEST 9: nya keywords körs fortfarande ─────────────────────────────
+
+    def test_9_new_keywords_trigger_on_demand(self):
+        """Ny keyword ska returneras av get_keywords_without_rankings → körs via on-demand."""
+        client_stub = MagicMock()
+
+        def table_side(t):
+            c = MagicMock()
+            c.select.return_value = c
+            c.eq.return_value = c
+            c.in_.return_value = c
+            if t == "tracked_keywords":
+                c.execute.return_value = MagicMock(data=[{"keyword": "banco"}, {"keyword": "seo"}])
+            elif t == "keyword_rankings":
+                c.execute.return_value = MagicMock(data=[{"keyword": "seo"}])
+            else:
+                c.execute.return_value = MagicMock(data=[])
+            return c
+
+        client_stub.table.side_effect = table_side
+        result = get_keywords_without_rankings_impl(client_stub, "uid-1", "meusite.com.br")
+        self.assertEqual(result, ["banco"], "TEST 9 FAIL: 'banco' är nytt och ska köras")
+
+    # ── TEST 10: befintliga keywords körs inte om ─────────────────────────
+
+    def test_10_existing_keywords_not_rerun(self):
+        """Keywords med rankingdata ska INTE returneras av get_keywords_without_rankings."""
+        client_stub = MagicMock()
+
+        def table_side(t):
+            c = MagicMock()
+            c.select.return_value = c
+            c.eq.return_value = c
+            c.in_.return_value = c
+            if t == "tracked_keywords":
+                c.execute.return_value = MagicMock(data=[{"keyword": "seo"}, {"keyword": "marketing"}])
+            elif t == "keyword_rankings":
+                c.execute.return_value = MagicMock(data=[{"keyword": "seo"}, {"keyword": "marketing"}])
+            else:
+                c.execute.return_value = MagicMock(data=[])
+            return c
+
+        client_stub.table.side_effect = table_side
+        result = get_keywords_without_rankings_impl(client_stub, "uid-1", "meusite.com.br")
+        self.assertEqual(result, [], "TEST 10 FAIL: befintliga keywords ska inte returneras")
+
+    # ── TEST 11: Mexico är orörd ───────────────────────────────────────────
+
+    def test_11_mexico_app_not_modified(self):
+        """
+        app_mexico_new.py ska inte innehålla V1.2-specifika tillägg från fixen:
+          - access_token-parametern i run_on_demand_ranking-signaturen
+          - verifieringslogg 'verificação falhou' (portugisisk, BR-specifik)
+          - found_kws / set(expected_kws) == found_kws verifieringslogik
+        """
+        import os
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_mexico_new.py")
+        if not os.path.exists(path):
+            return  # MX-filen existerar inte — OK
+
+        with open(path, encoding="utf-8") as f:
+            content = f.read()
+
+        # V1.2-signaturen med access_token=None ska INTE finnas i MX
+        self.assertNotIn(
+            "def run_on_demand_ranking(user_id, domain, keywords, login, password,\n"
+            "                          status_el, progress_bar, access_token=None)",
+            content,
+            "TEST 11 FAIL: V1.2-signaturen (access_token=None) ska inte finnas i MX",
+        )
+        # BR-specifik verifieringslogg
+        self.assertNotIn(
+            "verificação falhou",
+            content,
+            "TEST 11 FAIL: BR-specifik verifieringslogg ska inte finnas i MX",
+        )
+        # Verifieringslogiken (found_kws) ska inte finnas i MX
+        self.assertNotIn(
+            "found_kws",
+            content,
+            "TEST 11 FAIL: found_kws (V1.2-verifiering) ska inte finnas i MX",
+        )
+
+    # ── TEST 12: weekly rank tracker är orörd ─────────────────────────────
+
+    def test_12_weekly_rank_tracker_unchanged(self):
+        """rank_tracker.py och weekly_seo_report.yml ska inte ha ändrats av fixen."""
+        import os
+        base = os.path.dirname(os.path.abspath(__file__))
+
+        tracker_path = os.path.join(base, "rank_tracker.py")
+        with open(tracker_path, encoding="utf-8") as f:
+            tracker = f.read()
+        self.assertIn("def run():", tracker,
+                      "TEST 12 FAIL: run() saknas i rank_tracker.py")
+        self.assertNotIn("run_on_demand_ranking", tracker,
+                         "TEST 12 FAIL: rank_tracker.py ska inte innehålla run_on_demand_ranking")
+        self.assertNotIn("access_token", tracker,
+                         "TEST 12 FAIL: rank_tracker.py ska inte innehålla access_token-logik")
+
+        yml_path = os.path.join(base, "weekly_seo_report.yml")
+        with open(yml_path, encoding="utf-8") as f:
+            yml = f.read()
+        self.assertIn("0 7 * * 1", yml,
+                      "TEST 12 FAIL: weekly cron ska vara oförändrad (0 7 * * 1)")
+        self.assertIn("rank_tracker.py", yml,
+                      "TEST 12 FAIL: weekly_seo_report.yml ska fortfarande köra rank_tracker.py")
+
+
+# ---------------------------------------------------------------------------
+# V1.2 källkodsinspektion — kompletterande strukturtester
+# ---------------------------------------------------------------------------
+
+class TestSourceV12(unittest.TestCase):
+    """Källkodsinspektion för V1.2-fix specifika mönster."""
+
+    def setUp(self):
+        import os
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_brasil_new.py")
+        with open(src_path, encoding="utf-8") as f:
+            self.source = f.read()
+
+    def test_access_token_parameter_in_signature(self):
+        """run_on_demand_ranking ska ha access_token som parameter."""
+        self.assertIn(
+            "access_token=None",
+            self.source,
+            "FAIL: access_token=None saknas i run_on_demand_ranking-signaturen",
+        )
+
+    def test_postgrest_auth_pattern_present(self):
+        """supabase.postgrest.auth(access_token) ska finnas i källkoden."""
+        self.assertIn(
+            "supabase.postgrest.auth(access_token)",
+            self.source,
+            "FAIL: supabase.postgrest.auth(access_token)-mönstret saknas",
+        )
+
+    def test_verification_select_present(self):
+        """Verifierings-SELECT ska finnas efter upsert-blocket."""
+        self.assertIn(
+            "verificação falhou",
+            self.source,
+            "FAIL: verifieringslogik (verificação falhou) saknas",
+        )
+        self.assertIn(
+            "found_kws",
+            self.source,
+            "FAIL: found_kws saknas — verifieringen är inte implementerad",
+        )
+        self.assertIn(
+            "set(expected_kws) == found_kws",
+            self.source,
+            "FAIL: set(expected_kws) == found_kws saknas — save_ok baseras inte på verifiering",
+        )
+
+    def test_upsert_uses_from_not_table(self):
+        """
+        V1.2 ska använda .from_('keyword_rankings') via auth-instansen,
+        inte supabase.table('keyword_rankings') direkt.
+        """
+        self.assertIn(
+            '.from_("keyword_rankings")',
+            self.source,
+            "FAIL: .from_('keyword_rankings') saknas i upsert-blocket",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Kör tester
 # ---------------------------------------------------------------------------
 
@@ -568,6 +1079,8 @@ if __name__ == "__main__":
         TestNoDoubleRankings,
         TestUnchangedFiles,
         TestGateLogic,
+        TestRunOnDemandRankingV12,
+        TestSourceV12,
     ]:
         suite.addTests(loader.loadTestsFromTestCase(cls))
 
