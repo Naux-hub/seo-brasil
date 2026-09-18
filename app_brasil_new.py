@@ -221,8 +221,10 @@ def get_keywords_without_rankings(user_id, domain):
             .eq("is_active", True) \
             .execute()
         all_keywords = {r["keyword"] for r in (all_res.data or [])}
+        print(f"[get_keywords_without_rankings] all_keywords ({len(all_keywords)}): {sorted(all_keywords)}", flush=True)
 
         if not all_keywords or not domain:
+            print(f"[get_keywords_without_rankings] retornando [] — all_keywords vazio ou domain vazio (domain={domain!r})", flush=True)
             return []
 
         # Keywords que já têm pelo menos uma linha em keyword_rankings
@@ -233,10 +235,17 @@ def get_keywords_without_rankings(user_id, domain):
             .in_("keyword", list(all_keywords)) \
             .execute()
         ranked_keywords = {r["keyword"] for r in (ranked_res.data or [])}
+        print(f"[get_keywords_without_rankings] ranked_keywords ({len(ranked_keywords)}): {sorted(ranked_keywords)}", flush=True)
 
         # Retorna apenas os que ainda não têm dados
-        return list(all_keywords - ranked_keywords)
-    except Exception:
+        unranked = list(all_keywords - ranked_keywords)
+        print(f"[get_keywords_without_rankings] unranked → retornando ({len(unranked)}): {sorted(unranked)}", flush=True)
+        if not unranked:
+            print("[get_keywords_without_rankings] AVISO: retornando [] — todos os keywords já têm ranking", flush=True)
+        return unranked
+    except Exception as exc:
+        import traceback as _tb
+        print(f"[get_keywords_without_rankings] ERRO: {exc}\n{_tb.format_exc()}", flush=True)
         return []
 
 
@@ -364,11 +373,12 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             if not save_ok:
                 print(
                     f"[on_demand_ranking] verificação falhou: "
-                    f"esperados={sorted(expected_kws)}, encontrados={sorted(found_kws)}"
+                    f"esperados={sorted(expected_kws)}, encontrados={sorted(found_kws)}",
+                    flush=True,
                 )
         except Exception as e:
             import traceback
-            print(f"[on_demand_ranking] upsert error: {e}\n{traceback.format_exc()}")
+            print(f"[on_demand_ranking] upsert error: {e}\n{traceback.format_exc()}", flush=True)
 
     return results, save_ok
 
@@ -1320,6 +1330,7 @@ else:
                                 if ok:
                                     log_event(user_id, "keyword_tracked", {"keyword": kw})
                                     _user_domain = get_user_domain(st.session_state.user.email)
+                                    print(f"[track_button] get_user_domain returned: {_user_domain!r}", flush=True)
                                     if _user_domain:
                                         _new_kws = get_keywords_without_rankings(user_id, _user_domain)
                                         if _new_kws:
