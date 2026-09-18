@@ -300,12 +300,15 @@ def _fetch_single_rank(keyword, domain, login, password):
 
 
 def run_on_demand_ranking(user_id, domain, keywords, login, password,
-                          status_el, progress_bar):
+                          status_el, progress_bar, access_token=None):
     """
     Verifica posição no Google para todos os keywords com feedback visual.
     Salva em keyword_rankings e retorna (results, save_ok).
 
-    save_ok=True  → dados salvos com sucesso no Supabase
+    access_token — JWT do usuário autenticado; necessário para o RLS
+                   da tabela keyword_rankings aceitar o upsert.
+
+    save_ok=True  → upsert executado E verificação confirmou todas as linhas gravadas
     save_ok=False → dados buscados mas falha ao salvar (ver logs do Streamlit)
     """
     results = {}
@@ -340,11 +343,29 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
         for kw, d in results.items()
     ]
     if rows:
+        expected_kws = [r["keyword"] for r in rows]
         try:
-            supabase.table("keyword_rankings").upsert(
+            _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+            _pg.from_("keyword_rankings").upsert(
                 rows, on_conflict="user_id,keyword,domain"
             ).execute()
-            save_ok = True
+            # Verificar que as linhas foram realmente gravadas usando o mesmo token autenticado
+            _pg_v = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+            _verify = (
+                _pg_v.from_("keyword_rankings")
+                .select("keyword")
+                .eq("user_id", str(user_id))
+                .eq("domain", domain)
+                .in_("keyword", expected_kws)
+                .execute()
+            )
+            found_kws = {r["keyword"] for r in (_verify.data or [])}
+            save_ok = set(expected_kws) == found_kws
+            if not save_ok:
+                print(
+                    f"[on_demand_ranking] verificação falhou: "
+                    f"esperados={sorted(expected_kws)}, encontrados={sorted(found_kws)}"
+                )
         except Exception as e:
             import traceback
             print(f"[on_demand_ranking] upsert error: {e}\n{traceback.format_exc()}")
@@ -1196,6 +1217,7 @@ else:
                         user_id, _rank_domain, _rank_kws,
                         DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD,
                         _status_el, _progress_bar,
+                        st.session_state.access_token,
                     )
                     log_event(user_id, "initial_ranking_completed",
                               {"results": {k: v["position"] for k, v in _ranking_results.items()},
