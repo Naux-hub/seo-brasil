@@ -1259,7 +1259,7 @@ else:
 
             # ── ON-DEMAND INITIAL RANKING ─────────────────
             if st.session_state.ranking_in_progress:
-                _rank_domain = get_user_domain(st.session_state.user.email)
+                _rank_domain = _ob_domain
                 _rank_kws = st.session_state._ranking_kws
                 if _rank_domain and _rank_kws:
                     st.markdown(
