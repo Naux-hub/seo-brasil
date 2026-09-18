@@ -205,17 +205,21 @@ def has_any_rankings(user_id):
         return False
 
 
-def get_keywords_without_rankings(user_id, domain):
+def get_keywords_without_rankings(user_id, domain, access_token=None):
     """
     Retorna os keywords ativos do usuário que ainda não têm dados de ranking
     para o domínio especificado.
 
     Usado para disparar o ranking on-demand apenas para keywords novos,
     sem re-verificar keywords que já têm dados (V1 da initial ranking).
+
+    access_token — JWT do usuário autenticado; necessário para RLS em
+                   tracked_keywords e keyword_rankings.
     """
     try:
-        # Todos os keywords ativos do usuário
-        all_res = supabase.table("tracked_keywords") \
+        # Todos os keywords ativos do usuário — usa cliente autenticado se disponível
+        _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+        all_res = _pg.from_("tracked_keywords") \
             .select("keyword") \
             .eq("user_id", str(user_id)) \
             .eq("is_active", True) \
@@ -228,7 +232,8 @@ def get_keywords_without_rankings(user_id, domain):
             return []
 
         # Keywords que já têm pelo menos uma linha em keyword_rankings
-        ranked_res = supabase.table("keyword_rankings") \
+        _pg2 = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+        ranked_res = _pg2.from_("keyword_rankings") \
             .select("keyword") \
             .eq("user_id", str(user_id)) \
             .eq("domain", domain) \
@@ -1329,10 +1334,10 @@ else:
                                 ok, msg = add_tracking(kw, user_id)
                                 if ok:
                                     log_event(user_id, "keyword_tracked", {"keyword": kw})
-                                    _user_domain = get_user_domain(st.session_state.user.email)
-                                    print(f"[track_button] get_user_domain returned: {_user_domain!r}", flush=True)
+                                    _user_domain = _ob_domain
+                                    print(f"[track_button] _ob_domain: {_user_domain!r}", flush=True)
                                     if _user_domain:
-                                        _new_kws = get_keywords_without_rankings(user_id, _user_domain)
+                                        _new_kws = get_keywords_without_rankings(user_id, _user_domain, st.session_state.access_token)
                                         if _new_kws:
                                             st.session_state._ranking_kws = _new_kws
                                             st.session_state.ranking_in_progress = True
@@ -1428,9 +1433,9 @@ else:
                                     ok, msg = add_tracking(ikw, user_id)
                                     if ok:
                                         log_event(user_id, "keyword_tracked", {"keyword": ikw})
-                                        _user_domain = get_user_domain(st.session_state.user.email)
+                                        _user_domain = _ob_domain
                                         if _user_domain:
-                                            _new_kws = get_keywords_without_rankings(user_id, _user_domain)
+                                            _new_kws = get_keywords_without_rankings(user_id, _user_domain, st.session_state.access_token)
                                             if _new_kws:
                                                 st.session_state._ranking_kws = _new_kws
                                                 st.session_state.ranking_in_progress = True
