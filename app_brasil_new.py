@@ -64,8 +64,9 @@ def get_social_proof():
     except Exception:
         return 2000
 
-def get_user_domain(email):
-    res = supabase.table("subscribers").select("domain").eq("email", email).execute()
+def get_user_domain(email, access_token=None):
+    _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+    res = _pg.from_("subscribers").select("domain").eq("email", email).execute()
     if res.data and res.data[0].get("domain"):
         return res.data[0]["domain"]
     return None
@@ -1222,7 +1223,7 @@ else:
 
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
-        _ob_domain = get_user_domain(_ob_email)
+        _ob_domain = get_user_domain(_ob_email, st.session_state.access_token)
 
         if not _ob_domain:
             st.markdown("""
@@ -1492,7 +1493,7 @@ else:
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
             user_email = st.session_state.user.email
-            domain = get_user_domain(user_email)
+            domain = get_user_domain(user_email, st.session_state.access_token)
             if not st.session_state.get("_ranking_viewed_logged"):
                 log_event(user_id, "ranking_viewed")
                 st.session_state._ranking_viewed_logged = True
