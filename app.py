@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
 from urllib.parse import quote as urlquote
+import logging
 
 DATAFORSEO_LOGIN = os.environ["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
@@ -64,8 +65,9 @@ def get_social_proof():
     except Exception:
         return 2000
 
-def get_user_domain(email):
-    res = supabase.table("subscribers").select("domain").eq("email", email).execute()
+def get_user_domain(email, access_token=None):
+    _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+    res = _pg.from_("subscribers").select("domain").eq("email", email).execute()
     if res.data and res.data[0].get("domain"):
         return res.data[0]["domain"]
     return None
@@ -204,6 +206,47 @@ def has_any_rankings(user_id):
     except Exception:
         return False
 
+
+def get_keywords_without_rankings(user_id, domain, access_token=None):
+    """
+    Returnerar aktiva keywords som saknar ranking-data (rank_position NOT NULL)
+    för det angivna domännamnet.
+    Används för att bara ranka nya keywords vid initial ranking (V1).
+    """
+    logging.info("[get_kwor] start: user=%s domain=%s access_token_present=%s",
+                 user_id, domain, bool(access_token))
+    try:
+        _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+        all_res = _pg.from_("tracked_keywords") \
+            .select("keyword") \
+            .eq("user_id", str(user_id)) \
+            .eq("is_active", True) \
+            .execute()
+        all_keywords = {r["keyword"] for r in (all_res.data or [])}
+        logging.info("[get_kwor] all_keywords (%d): %s", len(all_keywords), sorted(all_keywords))
+
+        if not all_keywords or not domain:
+            logging.info("[get_kwor] returning [] — empty keywords or domain=%r", domain)
+            return []
+
+        # Bara keywords med faktisk rankingdata (rank_position IS NOT NULL)
+        _pg2 = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+        ranked_res = _pg2.from_("keyword_rankings") \
+            .select("keyword") \
+            .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
+            .in_("keyword", list(all_keywords)) \
+            .not_.is_("rank_position", "null") \
+            .execute()
+        ranked_keywords = {r["keyword"] for r in (ranked_res.data or [])}
+        unranked = sorted(all_keywords - ranked_keywords)
+        logging.info("[get_kwor] ranked=%s unranked=%s", sorted(ranked_keywords), unranked)
+        return unranked
+    except Exception:
+        logging.exception("[get_kwor] error: user=%s domain=%s", user_id, domain)
+        return []
+
+
 # ── ON-DEMAND RANKING ─────────────────────────────────────────────────────────
 
 def _fetch_single_rank(keyword, domain, login, password):
@@ -264,10 +307,14 @@ def _fetch_single_rank(keyword, domain, login, password):
 
 
 def run_on_demand_ranking(user_id, domain, keywords, login, password,
-                          status_el, progress_bar):
+                          status_el, progress_bar, access_token=None):
     """
     Verifica posição no Google para todos os keywords com feedback visual.
-    Salva em keyword_rankings e retorna dict de resultados.
+    Salva em keyword_rankings e retorna (results, save_ok).
+
+    access_token — JWT do usuário autenticado; necessário para RLS em keyword_rankings.
+    save_ok=True  → upsert executado E verificação confirmou linhas gravadas.
+    save_ok=False → dados buscados mas falha ao salvar.
     """
     results = {}
     total = len(keywords)
@@ -295,18 +342,40 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             "rank_position": d["position"],
             "prev_rank_position": None,
             "checked_at": now,
+            "market": "br",
         }
         for kw, d in results.items()
     ]
+
+    save_ok = False
     if rows:
+        expected_kws = [r["keyword"] for r in rows]
         try:
-            supabase.table("keyword_rankings").upsert(
+            _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+            logging.info("[on_demand_ranking] upsert: count=%d authenticated=%s",
+                         len(rows), bool(access_token))
+            _pg.from_("keyword_rankings").upsert(
                 rows, on_conflict="user_id,keyword,domain"
             ).execute()
+            # Verifiera att raderna faktiskt sparades
+            _pg_v = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
+            _verify = (
+                _pg_v.from_("keyword_rankings")
+                .select("keyword")
+                .eq("user_id", str(user_id))
+                .eq("domain", domain)
+                .in_("keyword", expected_kws)
+                .execute()
+            )
+            found_kws = {r["keyword"] for r in (_verify.data or [])}
+            save_ok = set(expected_kws) == found_kws
+            logging.info("[on_demand_ranking] verification: expected=%s found=%s save_ok=%s",
+                         sorted(expected_kws), sorted(found_kws), save_ok)
         except Exception:
-            pass
+            logging.exception("[on_demand_ranking] upsert error: user=%s domain=%s",
+                              user_id, domain)
 
-    return results
+    return results, save_ok
 
 
 # ── IN-APP ONBOARDING ────────────────────────────────────────────────────────
@@ -1156,7 +1225,7 @@ else:
 
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
-        _ob_domain = get_user_domain(_ob_email)
+        _ob_domain = get_user_domain(_ob_email, st.session_state.access_token)
 
         if not _ob_domain:
             st.markdown("""
@@ -1195,7 +1264,7 @@ else:
 
             # ── ON-DEMAND INITIAL RANKING ─────────────────
             if st.session_state.ranking_in_progress:
-                _rank_domain = get_user_domain(st.session_state.user.email)
+                _rank_domain = _ob_domain
                 _rank_kws = st.session_state._ranking_kws
                 if _rank_domain and _rank_kws:
                     st.markdown(
@@ -1206,15 +1275,17 @@ else:
                     _status_el = st.empty()
                     _progress_bar = st.progress(0)
                     log_event(user_id, "initial_ranking_started", {"keyword_count": len(_rank_kws)})
-                    _ranking_results = run_on_demand_ranking(
+                    _ranking_results, _save_ok = run_on_demand_ranking(
                         user_id, _rank_domain, _rank_kws,
                         DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD,
                         _status_el, _progress_bar,
+                        access_token=st.session_state.access_token,
                     )
                     log_event(user_id, "initial_ranking_completed",
-                              {"results": {k: v["position"] for k, v in _ranking_results.items()}})
+                              {"results": {k: v["position"] for k, v in _ranking_results.items()},
+                               "save_ok": _save_ok})
                     st.session_state.ranking_in_progress = False
-                    st.session_state.ranking_done = True
+                    st.session_state.ranking_done = _save_ok
                     st.rerun()
 
             if st.session_state.ranking_done:
@@ -1310,14 +1381,15 @@ else:
                                     log_event(user_id, "keyword_saved", {"keyword": kw})
                                     if not has_event(user_id, "keyword_tracked"):
                                         log_event(user_id, "keyword_tracked", {"keyword": kw})
-                                    _user_domain = get_user_domain(st.session_state.user.email)
-                                    if _user_domain and not has_any_rankings(user_id):
-                                        _all_kws = get_tracked_keywords_list(user_id)
-                                        st.session_state._ranking_kws = [r["keyword"] for r in _all_kws]
-                                        st.session_state.ranking_in_progress = True
-                                        st.session_state.ranking_done = False
-                                    else:
-                                        st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
+                                    _user_domain = _ob_domain
+                                    if _user_domain:
+                                        _new_kws = get_keywords_without_rankings(
+                                            user_id, _user_domain,
+                                            st.session_state.access_token)
+                                        if _new_kws:
+                                            st.session_state._ranking_kws = _new_kws
+                                            st.session_state.ranking_in_progress = True
+                                            st.session_state.ranking_done = False
                                     st.rerun()
                                 else:
                                     st.error(msg)
@@ -1410,14 +1482,15 @@ else:
                                         log_event(user_id, "keyword_saved", {"keyword": ikw})
                                         if not has_event(user_id, "keyword_tracked"):
                                             log_event(user_id, "keyword_tracked", {"keyword": ikw})
-                                        _user_domain = get_user_domain(st.session_state.user.email)
-                                        if _user_domain and not has_any_rankings(user_id):
-                                            _all_kws = get_tracked_keywords_list(user_id)
-                                            st.session_state._ranking_kws = [r["keyword"] for r in _all_kws]
-                                            st.session_state.ranking_in_progress = True
-                                            st.session_state.ranking_done = False
-                                        else:
-                                            st.info("📅 Nosso robô analisa as posições toda segunda-feira de manhã. Seu primeiro relatório chega na próxima segunda.")
+                                        _user_domain = _ob_domain
+                                        if _user_domain:
+                                            _new_kws = get_keywords_without_rankings(
+                                                user_id, _user_domain,
+                                                st.session_state.access_token)
+                                            if _new_kws:
+                                                st.session_state._ranking_kws = _new_kws
+                                                st.session_state.ranking_in_progress = True
+                                                st.session_state.ranking_done = False
                                         st.rerun()
                                     else:
                                         st.error(msg)
