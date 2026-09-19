@@ -1224,6 +1224,12 @@ else:
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
         _ob_domain = get_user_domain(_ob_email, st.session_state.access_token)
+        logging.info(
+            "[ob_domain] email=%s result=%r access_token_set=%r",
+            _ob_email,
+            _ob_domain,
+            bool(st.session_state.access_token)
+        )
 
         if not _ob_domain:
             st.markdown("""
