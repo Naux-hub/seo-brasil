@@ -217,6 +217,7 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
     access_token — JWT do usuário autenticado; necessário para RLS em
                    tracked_keywords e keyword_rankings.
     """
+    logging.info("[get_kwor] start: user=%s domain=%s access_token_present=%s", user_id, domain, bool(access_token))
     try:
         # Todos os keywords ativos do usuário — usa cliente autenticado se disponível
         _pg = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
@@ -226,10 +227,10 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
             .eq("is_active", True) \
             .execute()
         all_keywords = {r["keyword"] for r in (all_res.data or [])}
-        print(f"[get_keywords_without_rankings] all_keywords ({len(all_keywords)}): {sorted(all_keywords)}", flush=True)
+        logging.info("[get_kwor] all_keywords (%d): %s", len(all_keywords), sorted(all_keywords))
 
         if not all_keywords or not domain:
-            print(f"[get_keywords_without_rankings] retornando [] — all_keywords vazio ou domain vazio (domain={domain!r})", flush=True)
+            logging.info("[get_kwor] retornando [] — all_keywords vazio ou domain vazio (domain=%r)", domain)
             return []
 
         # Keywords que já têm pelo menos uma linha em keyword_rankings
@@ -241,17 +242,17 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
             .in_("keyword", list(all_keywords)) \
             .execute()
         ranked_keywords = {r["keyword"] for r in (ranked_res.data or [])}
-        print(f"[get_keywords_without_rankings] ranked_keywords ({len(ranked_keywords)}): {sorted(ranked_keywords)}", flush=True)
+        logging.info("[get_kwor] ranked_keywords (%d): %s", len(ranked_keywords), sorted(ranked_keywords))
 
         # Retorna apenas os que ainda não têm dados
         unranked = list(all_keywords - ranked_keywords)
-        print(f"[get_keywords_without_rankings] unranked → retornando ({len(unranked)}): {sorted(unranked)}", flush=True)
+        logging.info("[get_kwor] unranked → retornando (%d): %s", len(unranked), sorted(unranked))
         if not unranked:
-            print("[get_keywords_without_rankings] AVISO: retornando [] — todos os keywords já têm ranking", flush=True)
+            logging.info("[get_kwor] AVISO: retornando [] — todos os keywords ja tem ranking")
         return unranked
     except Exception as exc:
         import traceback as _tb
-        print(f"[get_keywords_without_rankings] ERRO: {exc}\n{_tb.format_exc()}", flush=True)
+        logging.info("[get_kwor] ERRO: %s\n%s", exc, _tb.format_exc())
         return []
 
 
