@@ -264,6 +264,7 @@ def _fetch_single_rank(keyword, domain, login, password):
     except Exception:
         return None, None
 
+    logging.info("[dfs_post] kw=%r status=%s", keyword, data.get("status_code"))
     if data.get("status_code") != 20000:
         return None, None
 
@@ -275,7 +276,7 @@ def _fetch_single_rank(keyword, domain, login, password):
         return None, None
 
     # Retry: 15s → 5s → 5s
-    for wait_time in [15, 5, 5]:
+    for attempt, wait_time in enumerate([15, 5, 5], 1):
         time.sleep(wait_time)
         try:
             r = requests.get(
@@ -288,8 +289,10 @@ def _fetch_single_rank(keyword, domain, login, password):
                 continue
             result = tasks_list[0].get("result") or []
             if not result:
+                logging.info("[dfs_get] kw=%r attempt=%d status=%s result=empty", keyword, attempt, result_data.get("status_code"))
                 continue
             items = result[0].get("items", [])
+            logging.info("[dfs_get] kw=%r attempt=%d status=%s items=%d", keyword, attempt, result_data.get("status_code"), len(items))
             if not items:
                 continue
             for item in items:
@@ -298,9 +301,11 @@ def _fetch_single_rank(keyword, domain, login, password):
                 item_url = item.get("url", "") or ""
                 item_domain = item.get("domain", "") or ""
                 if domain in item_url or domain in item_domain:
+                    logging.info("[dfs_match] kw=%r rank=%s url=%r", keyword, item.get("rank_absolute"), item_url)
                     return item.get("rank_absolute"), item_url
             return None, None  # Não está no top 100
         except Exception:
+            logging.exception("[dfs_get] kw=%r attempt=%d exception", keyword, attempt)
             continue
 
     return None, None
