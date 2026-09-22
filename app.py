@@ -276,7 +276,7 @@ def _fetch_single_rank(keyword, domain, login, password):
         return None, None
 
     # Retry: 15s → 5s → 5s
-    for attempt, wait_time in enumerate([15, 5, 5], 1):
+    for attempt, wait_time in enumerate([30, 20, 20], 1):
         time.sleep(wait_time)
         try:
             r = requests.get(
