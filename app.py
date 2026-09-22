@@ -209,9 +209,9 @@ def has_any_rankings(user_id):
 
 def get_keywords_without_rankings(user_id, domain, access_token=None):
     """
-    Returnerar aktiva keywords som saknar ranking-data (rank_position NOT NULL)
-    för det angivna domännamnet.
-    Används för att bara ranka nya keywords vid initial ranking (V1).
+    Returnerar aktiva keywords som saknar RAD i keyword_rankings för domänen.
+    En rad = keyword är kontrollerat (oavsett om rank_position är NULL eller ej).
+    Används för att bara ranka okontrollerade keywords vid initial ranking (V1).
     """
     logging.info("[get_kwor] start: user=%s domain=%s access_token_present=%s",
                  user_id, domain, bool(access_token))
@@ -229,14 +229,14 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
             logging.info("[get_kwor] returning [] — empty keywords or domain=%r", domain)
             return []
 
-        # Bara keywords med faktisk rankingdata (rank_position IS NOT NULL)
+        # Alla keywords med en rad i keyword_rankings räknas som kontrollerade
+        # (rank_position=NULL = kontrollerat men ej i topp 100, också klart)
         _pg2 = supabase.postgrest.auth(access_token) if access_token else supabase.postgrest
         ranked_res = _pg2.from_("keyword_rankings") \
             .select("keyword") \
             .eq("user_id", str(user_id)) \
             .eq("domain", domain) \
             .in_("keyword", list(all_keywords)) \
-            .not_.is_("rank_position", "null") \
             .execute()
         ranked_keywords = {r["keyword"] for r in (ranked_res.data or [])}
         unranked = sorted(all_keywords - ranked_keywords)
