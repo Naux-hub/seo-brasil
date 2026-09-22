@@ -316,6 +316,7 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
     save_ok=True  → upsert executado E verificação confirmou linhas gravadas.
     save_ok=False → dados buscados mas falha ao salvar.
     """
+    logging.info("[rank_fn] user=%s domain=%s keywords=%d", user_id, domain, len(keywords))
     results = {}
     total = len(keywords)
 
@@ -1266,6 +1267,7 @@ else:
             if st.session_state.ranking_in_progress:
                 _rank_domain = _ob_domain
                 _rank_kws = st.session_state._ranking_kws
+                logging.info("[rank_block] domain=%s kws_count=%d", _rank_domain, len(_rank_kws) if _rank_kws else 0)
                 if _rank_domain and _rank_kws:
                     st.markdown(
                         "<div style='font-weight:700;font-size:1rem;margin-bottom:0.5rem'>"
