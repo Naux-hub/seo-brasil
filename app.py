@@ -251,66 +251,48 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
 
 def _fetch_single_rank(keyword, domain, login, password):
     """
-    Busca posição de um keyword no Google via DataForSEO (async + retry).
+    Busca posição de um keyword no Google via DataForSEO (live/advanced).
     Retorna (position, url) ou (None, None) em caso de erro.
     """
     tasks = [{"keyword": keyword, "location_code": 2076, "language_code": "pt", "depth": 100}]
     try:
         r = requests.post(
-            "https://api.dataforseo.com/v3/serp/google/organic/task_post",
-            auth=(login, password), json=tasks, timeout=30,
+            "https://api.dataforseo.com/v3/serp/google/organic/live/advanced",
+            auth=(login, password), json=tasks, timeout=60,
         )
         data = r.json()
     except Exception:
+        logging.exception("[dfs_live] kw=%r exception", keyword)
         return None, None
 
-    logging.info("[dfs_post] kw=%r status=%s", keyword, data.get("status_code"))
+    logging.info("[dfs_live] kw=%r status=%s", keyword, data.get("status_code"))
     if data.get("status_code") != 20000:
         return None, None
 
-    task_items = data.get("tasks", [])
-    if not task_items:
-        return None, None
-    task_id = task_items[0].get("id")
-    if not task_id:
+    tasks_list = data.get("tasks", [])
+    if not tasks_list:
         return None, None
 
-    # Retry: 15s → 5s → 5s
-    for attempt, wait_time in enumerate([30, 20, 20], 1):
-        time.sleep(wait_time)
-        try:
-            r = requests.get(
-                f"https://api.dataforseo.com/v3/serp/google/organic/task_get/regular/{task_id}",
-                auth=(login, password), timeout=30,
-            )
-            result_data = r.json()
-            tasks_list = result_data.get("tasks", [])
-            if not tasks_list:
-                continue
-            task_status = tasks_list[0].get("status_code")
-            task_message = tasks_list[0].get("status_message")
-            result = tasks_list[0].get("result") or []
-            if not result:
-                logging.info("[dfs_get] kw=%r attempt=%d status=%s task_status=%s task_msg=%r result=empty", keyword, attempt, result_data.get("status_code"), task_status, task_message)
-                continue
-            items = result[0].get("items", [])
-            logging.info("[dfs_get] kw=%r attempt=%d status=%s items=%d", keyword, attempt, result_data.get("status_code"), len(items))
-            if not items:
-                continue
-            for item in items:
-                if item.get("type") != "organic":
-                    continue
-                item_url = item.get("url", "") or ""
-                item_domain = item.get("domain", "") or ""
-                if domain in item_url or domain in item_domain:
-                    logging.info("[dfs_match] kw=%r rank=%s url=%r", keyword, item.get("rank_absolute"), item_url)
-                    return item.get("rank_absolute"), item_url
-            return None, None  # Não está no top 100
-        except Exception:
-            logging.exception("[dfs_get] kw=%r attempt=%d exception", keyword, attempt)
+    result = tasks_list[0].get("result") or []
+    logging.info("[dfs_live] kw=%r task_status=%s result_len=%d", keyword, tasks_list[0].get("status_code"), len(result))
+    if not result:
+        return None, None
+
+    items = result[0].get("items", [])
+    logging.info("[dfs_live] kw=%r items=%d", keyword, len(items))
+    if not items:
+        return None, None
+
+    for item in items:
+        if item.get("type") != "organic":
             continue
+        item_url = item.get("url", "") or ""
+        item_domain = item.get("domain", "") or ""
+        if domain in item_url or domain in item_domain:
+            logging.info("[dfs_match] kw=%r rank=%s url=%r", keyword, item.get("rank_absolute"), item_url)
+            return item.get("rank_absolute"), item_url
 
-    return None, None
+    return None, None  # Não está no top 100
 
 
 def run_on_demand_ranking(user_id, domain, keywords, login, password,
