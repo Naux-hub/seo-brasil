@@ -287,9 +287,11 @@ def _fetch_single_rank(keyword, domain, login, password):
             tasks_list = result_data.get("tasks", [])
             if not tasks_list:
                 continue
+            task_status = tasks_list[0].get("status_code")
+            task_message = tasks_list[0].get("status_message")
             result = tasks_list[0].get("result") or []
             if not result:
-                logging.info("[dfs_get] kw=%r attempt=%d status=%s result=empty", keyword, attempt, result_data.get("status_code"))
+                logging.info("[dfs_get] kw=%r attempt=%d status=%s task_status=%s task_msg=%r result=empty", keyword, attempt, result_data.get("status_code"), task_status, task_message)
                 continue
             items = result[0].get("items", [])
             logging.info("[dfs_get] kw=%r attempt=%d status=%s items=%d", keyword, attempt, result_data.get("status_code"), len(items))
