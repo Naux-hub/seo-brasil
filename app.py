@@ -1332,12 +1332,15 @@ else:
                     volume = item.get("search_volume") or 0
                     cpc = item.get("cpc") or 0
                     comp = str(item.get("competition", "N/A")).capitalize()
+                    kd = item.get("keyword_difficulty")
                     volume_fmt = f"{int(volume):,}".replace(",", ".")
                     cpc_fmt = f"{float(cpc):.2f}" if cpc else "N/A"
+                    kd_str = str(kd) if kd is not None else "—"
 
                     csv_rows.append({
                         "Palavra-chave": kw,
                         "Volume/mês": volume_fmt,
+                        "Dificuldade SEO": kd_str,
                         "Competição Ads": comp,
                         "CPC médio (R$)": cpc_fmt,
                     })
@@ -1351,6 +1354,9 @@ else:
                             <span style="color:white;font-size:14px;font-weight:500;flex:1 0 100%">{kw}</span>
                             <span style="color:#9CA3AF;font-size:13px">
                                 <span style="color:#6B7280;font-size:11px">Vol. </span>{volume_fmt}
+                            </span>
+                            <span style="color:#9CA3AF;font-size:13px">
+                                <span style="color:#6B7280;font-size:11px">Dificuldade SEO </span>{kd_str}
                             </span>
                             <span style="color:#9CA3AF;font-size:13px">
                                 <span style="color:#6B7280;font-size:11px">Comp. Ads </span>{comp}
@@ -1428,8 +1434,10 @@ else:
                         ikw      = idea.get("keyword", "")
                         ivol     = idea.get("search_volume") or 0
                         icpc     = idea.get("cpc") or 0
+                        ikd      = idea.get("keyword_difficulty")
                         ivol_fmt = f"{int(ivol):,}".replace(",", ".")
                         icpc_fmt = f"{float(icpc):.2f}" if icpc else "N/A"
+                        ikd_str  = str(ikd) if ikd is not None else "—"
                         is_opp   = _is_opportunity(idea)
                         diff_label, diff_color = _ads_competition_label(icpc)
                         border   = "#2ecc71" if is_opp else "#1a6de0"
@@ -1448,6 +1456,9 @@ else:
                                 <span style="color:white;font-size:14px;font-weight:500;flex:1 0 100%">{ikw}{badge}</span>
                                 <span style="color:#9CA3AF;font-size:13px">
                                     <span style="color:#6B7280;font-size:11px">Vol. </span>{ivol_fmt}
+                                </span>
+                                <span style="color:#9CA3AF;font-size:13px">
+                                    <span style="color:#6B7280;font-size:11px">Dificuldade SEO </span>{ikd_str}
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
                                     <span style="color:#6B7280;font-size:11px">Concorrência Ads </span>

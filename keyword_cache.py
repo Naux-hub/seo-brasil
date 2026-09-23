@@ -11,10 +11,12 @@ Om MARKET saknas eller är "br" är beteendet identiskt med tidigare version.
 
 Flöde i get_keyword_data():
     1. Slå upp alla sökord i Supabase keyword_cache-tabellen.
-    2. Sökord < 30 dagar gamla -> cache-träff, inget API-anrop.
-    3. Saknade/inaktuella sökord -> batchar om max 10 -> $0.09/batch.
-    4. Batch-upsert: ett DB-anrop för alla nya resultat.
-    5. Returnerar samlad data (cache + nyhämtat) för ALLA efterfrågade sökord.
+    2. Sökord < 30 dagar gamla med KD -> cache-träff, inget API-anrop.
+    3. Sökord < 30 dagar gamla men KD=NULL -> hämtar KD, uppdaterar cache.
+    4. Saknade/inaktuella sökord -> batchar om max 10 -> $0.09/batch.
+    5. KD hämtas i ett bulk-anrop för alla cache-missar + KD-saknade.
+    6. Batch-upsert: ett DB-anrop för alla nya resultat.
+    7. Returnerar samlad data (cache + nyhämtat) för ALLA efterfrågade sökord.
 
 Integrering i app.py:
     from keyword_cache import get_keyword_data
@@ -43,6 +45,10 @@ SLEEP_BETWEEN_BATCHES = 0.5 # sekunder, undviker rate-limits vid stora listor
 
 DATAFORSEO_ENDPOINT = (
     "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live"
+)
+
+KD_ENDPOINT = (
+    "https://api.dataforseo.com/v3/dataforseo_labs/google/bulk_keyword_difficulty/live"
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -125,10 +131,57 @@ def _fetch_from_dataforseo(batch: list, login: str, password: str) -> list:
     return results
 
 
+def _fetch_keyword_difficulty(keywords: list, login: str, password: str) -> dict:
+    """
+    Hämtar Keyword Difficulty (0-100) för upp till 1000 sökord i ett anrop.
+    Returnerar {keyword: int_kd} för alla hittade sökord.
+    Returnerar {} vid fel (graceful failure — påverkar aldrig pipelinen).
+
+    Endpoint: POST /v3/dataforseo_labs/google/bulk_keyword_difficulty/live
+    Kostnad: $0.012/task + $0.00012/keyword (under "All Other Endpoints"-prissättning)
+    """
+    if not keywords:
+        return {}
+    payload = [{
+        "keywords": list(keywords),
+        "location_code": LOCATION_CODE,
+        "language_code": LANGUAGE_CODE,
+    }]
+    try:
+        response = requests.post(
+            KD_ENDPOINT,
+            json=payload,
+            auth=(login, password),
+            timeout=30,
+        )
+        response.raise_for_status()
+        body = response.json()
+    except Exception as e:
+        logger.error(f"DataForSEO bulk_keyword_difficulty misslyckades: {e}")
+        return {}
+
+    tasks = body.get("tasks") or []
+    if not tasks:
+        logger.warning("Tomt 'tasks'-svar från bulk_keyword_difficulty")
+        return {}
+
+    kd_map = {}
+    for task in tasks:
+        for result in (task.get("result") or []):
+            for item in (result.get("items") or []):
+                kw = item.get("keyword")
+                kd = item.get("keyword_difficulty")
+                if kw and kd is not None:
+                    kd_map[kw] = int(kd)
+
+    logger.info(f"KD hämtad för {len(kd_map)}/{len(keywords)} sökord")
+    return kd_map
+
+
 def _batch_upsert(supabase, items: list) -> None:
     """
     Sparar alla nya resultat till keyword_cache i ETT DB-anrop (batch upsert).
-    Tidigare: ett anrop per sökord. Nu: ett anrop per batch -> färre DB-runder.
+    Items kan innehålla keyword_difficulty (int eller None).
     """
     if not items:
         return
@@ -141,6 +194,7 @@ def _batch_upsert(supabase, items: list) -> None:
             "search_volume": item.get("search_volume") or 0,
             "competition": str(item.get("competition", "N/A")),
             "cpc": float(item["cpc"]) if item.get("cpc") else None,
+            "keyword_difficulty": item.get("keyword_difficulty"),
             "cached_at": now,
         }
         for item in items
@@ -154,6 +208,32 @@ def _batch_upsert(supabase, items: list) -> None:
             logger.info(f"Upsertade {len(rows)} rader i keyword_cache.")
         except Exception as e:
             logger.error(f"Fel vid upsert till Supabase: {e}")
+
+
+def _update_kd_in_cache(supabase, kd_map: dict) -> None:
+    """
+    Uppdaterar keyword_difficulty för befintliga, färska cache-rader
+    som saknade KD (NULL). Berör inga andra kolumner.
+    """
+    if not kd_map:
+        return
+    rows = [
+        {
+            "keyword": kw,
+            "location_code": LOCATION_CODE,
+            "language_code": LANGUAGE_CODE,
+            "keyword_difficulty": kd,
+        }
+        for kw, kd in kd_map.items()
+    ]
+    if rows:
+        try:
+            supabase.table("keyword_cache").upsert(
+                rows, on_conflict="keyword,location_code,language_code"
+            ).execute()
+            logger.info(f"Uppdaterade KD för {len(rows)} cachade sökord.")
+        except Exception as e:
+            logger.error(f"Fel vid uppdatering av keyword_difficulty: {e}")
 
 
 # ------------------------------------------------------------------
@@ -219,7 +299,8 @@ def get_keyword_ideas(
         limit:          Max antal förslag att returnera
 
     Returns:
-        list of dicts med nycklarna: keyword, search_volume, competition, cpc
+        list of dicts med nycklarna: keyword, search_volume, competition, cpc,
+        keyword_difficulty (int 0-100 eller None)
         Sorterat på search_volume fallande.
     """
     seeds = [kw for kw in seed_keywords if kw][:5]
@@ -268,10 +349,8 @@ def get_keyword_ideas(
                     "search_volume": item.get("search_volume") or 0,
                     "competition": str(item.get("competition", "N/A")),
                     "cpc": item.get("cpc") or 0,
+                    "keyword_difficulty": None,
                 })
-
-    # Spara individuella sökord i keyword_cache
-    _batch_upsert(supabase, api_items)
 
     # Filtrera bort förslag med duplicerade ord ("whey whey protein", "protein whey protein")
     def _has_duplicate_words(kw: str) -> bool:
@@ -283,6 +362,48 @@ def get_keyword_ideas(
     # Sortera på sökvolym och returnera top N
     results.sort(key=lambda x: x.get("search_volume", 0), reverse=True)
     final = results[:limit]
+
+    # Hämta KD — cache-first: kolla keyword_cache innan API-anrop
+    idea_keywords = [r["keyword"] for r in final]
+    cached_kd_rows = _get_cached_keywords(supabase, idea_keywords)
+    kd_to_fetch = []
+
+    for r in final:
+        cr = cached_kd_rows.get(r["keyword"])
+        if cr and _is_fresh(cr.get("cached_at", "")) and cr.get("keyword_difficulty") is not None:
+            r["keyword_difficulty"] = cr["keyword_difficulty"]   # cache-träff
+        else:
+            r["keyword_difficulty"] = None
+            kd_to_fetch.append(r["keyword"])                     # behöver hämtas
+
+    kd_map = {}
+    if kd_to_fetch:
+        kd_map = _fetch_keyword_difficulty(kd_to_fetch, login, password)
+        for r in final:
+            if r["keyword"] in kd_map:
+                r["keyword_difficulty"] = kd_map[r["keyword"]]
+
+        # Uppdatera KD för färska keyword_cache-rader som hade KD=NULL
+        kd_for_fresh_update = {}
+        for kw in kd_to_fetch:
+            if kw in kd_map:
+                cr = cached_kd_rows.get(kw)
+                if cr and _is_fresh(cr.get("cached_at", "")):
+                    kd_for_fresh_update[kw] = kd_map[kw]
+        if kd_for_fresh_update:
+            _update_kd_in_cache(supabase, kd_for_fresh_update)
+
+    # Sätt KD på api_items inför upsert — använd fetched eller cached KD
+    for item in api_items:
+        kw = item.get("keyword", "")
+        if kw in kd_map:
+            item["keyword_difficulty"] = kd_map[kw]
+        else:
+            cr = cached_kd_rows.get(kw)
+            item["keyword_difficulty"] = cr.get("keyword_difficulty") if cr else None
+
+    # Spara individuella sökord i keyword_cache (inkl. KD)
+    _batch_upsert(supabase, api_items)
 
     # 3. Spara i keyword_ideas_cache — gratis nästa gång
     _set_cached_ideas(supabase, seeds_key, final)
@@ -298,6 +419,7 @@ def get_keyword_data(keywords: list, supabase, login: str, password: str) -> lis
     """
     Returnerar sökordsdata för alla efterfrågade sökord.
     Cache-first: anropar DataForSEO enbart för ord som saknas eller > 30 dagar gamla.
+    KD hämtas separat via bulk_keyword_difficulty för cache-missar och rader med KD=NULL.
 
     Args:
         keywords:  Lista med sökord, t.ex. ["seo brasil", "marketing digital"]
@@ -306,10 +428,12 @@ def get_keyword_data(keywords: list, supabase, login: str, password: str) -> lis
         password:  DataForSEO password
 
     Returns:
-        list of dicts med nycklarna: keyword, search_volume, competition, cpc
+        list of dicts med nycklarna: keyword, search_volume, competition, cpc,
+        keyword_difficulty (int 0-100 eller None vid misslyckad KD-hämtning)
 
     Kostnad: $0.09 per batch om 10 sökord (enbart cache-missar).
-    Exempel: 10 ord redan cachade = $0.00. 10 nya ord = $0.09.
+             $0.012 + $0.00012/kw för KD-batch (alla missar + KD-saknade i ett anrop).
+    Exempel: 10 ord cachade med KD = $0.00. 10 nya ord = $0.09 + ~$0.013.
     """
     # Rensa dubbletter och tomma strängar
     seen = set()
@@ -327,29 +451,35 @@ def get_keyword_data(keywords: list, supabase, login: str, password: str) -> lis
     cached_rows = _get_cached_keywords(supabase, clean)
 
     final_results = []
-    to_fetch = []
+    to_fetch = []        # Saknas i cache eller är inaktuella — behöver full datahämtning
+    kd_update_needed = []  # Färska rader men keyword_difficulty = NULL
 
     for kw in clean:
         row = cached_rows.get(kw)
         if row and _is_fresh(row.get("cached_at", "")):
+            kd = row.get("keyword_difficulty")
             final_results.append({
                 "keyword": row["keyword"],
                 "search_volume": row["search_volume"],
                 "competition": row["competition"],
                 "cpc": row["cpc"],
+                "keyword_difficulty": kd,
             })
+            if kd is None:
+                kd_update_needed.append(kw)
         else:
             to_fetch.append(kw)
 
     logger.info(
-        f"{len(final_results)} sökord från cache, "
+        f"{len(final_results)} sökord från cache "
+        f"({len(kd_update_needed)} saknar KD), "
         f"{len(to_fetch)} hämtas från DataForSEO."
     )
 
     # 2. Hämta cache-missar i batchar om 10
+    all_api_items = []
     if to_fetch:
         batches = [to_fetch[i:i + BATCH_SIZE] for i in range(0, len(to_fetch), BATCH_SIZE)]
-        all_api_items = []
 
         for i, batch in enumerate(batches, start=1):
             logger.info(f"Batch {i}/{len(batches)}: {len(batch)} sökord...")
@@ -362,11 +492,34 @@ def get_keyword_data(keywords: list, supabase, login: str, password: str) -> lis
                         "search_volume": item.get("search_volume") or 0,
                         "competition": str(item.get("competition", "N/A")),
                         "cpc": item.get("cpc") or 0,
+                        "keyword_difficulty": None,  # fylls i nedan
                     })
             if i < len(batches):
                 time.sleep(SLEEP_BETWEEN_BATCHES)
 
-        # 3. Batch-upsert alla nya resultat i ett DB-anrop
+    # 3. Hämta KD i ett enda bulk-anrop för alla som behöver det
+    #    (cache-missar + färska rader med KD=NULL)
+    kd_needed = to_fetch + kd_update_needed
+    if kd_needed:
+        kd_map = _fetch_keyword_difficulty(kd_needed, login, password)
+
+        # Applicera KD på final_results
+        for r in final_results:
+            if r["keyword_difficulty"] is None and r["keyword"] in kd_map:
+                r["keyword_difficulty"] = kd_map[r["keyword"]]
+
+        # Lägg KD på api_items (cache-missar) inför upsert
+        for item in all_api_items:
+            item["keyword_difficulty"] = kd_map.get(item.get("keyword", ""))
+
+        # Uppdatera bara KD för färska rader som saknade det
+        if kd_update_needed:
+            kd_for_fresh = {kw: kd_map[kw] for kw in kd_update_needed if kw in kd_map}
+            if kd_for_fresh:
+                _update_kd_in_cache(supabase, kd_for_fresh)
+
+    # 4. Batch-upsert nya resultat (cache-missar) med KD
+    if all_api_items:
         _batch_upsert(supabase, all_api_items)
 
     return final_results
