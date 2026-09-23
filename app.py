@@ -1338,7 +1338,7 @@ else:
                     csv_rows.append({
                         "Palavra-chave": kw,
                         "Volume/mês": volume_fmt,
-                        "Competição": comp,
+                        "Competição Ads": comp,
                         "CPC médio (R$)": cpc_fmt,
                     })
 
@@ -1353,7 +1353,7 @@ else:
                                 <span style="color:#6B7280;font-size:11px">Vol. </span>{volume_fmt}
                             </span>
                             <span style="color:#9CA3AF;font-size:13px">
-                                <span style="color:#6B7280;font-size:11px">Comp. </span>{comp}
+                                <span style="color:#6B7280;font-size:11px">Comp. Ads </span>{comp}
                             </span>
                             <span style="color:#9CA3AF;font-size:13px">
                                 <span style="color:#6B7280;font-size:11px">CPC </span>R${cpc_fmt}
@@ -1404,7 +1404,7 @@ else:
                     def _is_opportunity(idea):
                         return (idea.get("search_volume") or 0) > 10000 and float(idea.get("cpc") or 0) < 0.25
 
-                    def _seo_difficulty(cpc):
+                    def _ads_competition_label(cpc):
                         cpc = float(cpc or 0)
                         if cpc < 0.25:
                             return "Low", "#2ecc71"
@@ -1431,7 +1431,7 @@ else:
                         ivol_fmt = f"{int(ivol):,}".replace(",", ".")
                         icpc_fmt = f"{float(icpc):.2f}" if icpc else "N/A"
                         is_opp   = _is_opportunity(idea)
-                        diff_label, diff_color = _seo_difficulty(icpc)
+                        diff_label, diff_color = _ads_competition_label(icpc)
                         border   = "#2ecc71" if is_opp else "#1a6de0"
                         badge    = (
                             "<span style='background:#0d2b1a;color:#2ecc71;font-size:11px;"
@@ -1450,7 +1450,7 @@ else:
                                     <span style="color:#6B7280;font-size:11px">Vol. </span>{ivol_fmt}
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
-                                    <span style="color:#6B7280;font-size:11px">Dificuldade SEO </span>
+                                    <span style="color:#6B7280;font-size:11px">Concorrência Ads </span>
                                     <span style="color:{diff_color}">{diff_label}</span>
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
