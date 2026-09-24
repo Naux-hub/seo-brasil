@@ -139,8 +139,161 @@ def create_trial_account(email, senha):
 
 def save_user_domain(email, domain):
     domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
-    supabase.table("subscribers").update({"domain": domain}).eq("email", email).execute()
+    # Nollställ domain health-cache när domänen ändras — ny domän kräver ny hämtning
+    supabase.table("subscribers").update({
+        "domain": domain,
+        "domain_rank": None,
+        "spam_score": None,
+        "domain_enriched_at": None,
+    }).eq("email", email).execute()
 
+
+# ── DOMAIN HEALTH (Domain Rank + Spam Score) ─────────────────────────────────
+
+_DOMAIN_HEALTH_TTL_DAYS    = 30   # Auto-refresh efter 30 dagar
+_DOMAIN_HEALTH_THROTTLE_DAYS = 7  # Manuell refresh: minst 7 dagar mellan anrop
+
+
+def fetch_domain_health(domain, login, password):
+    """
+    Anropar DataForSEO:
+      POST /v3/backlinks/bulk_ranks/live       → domain_rank (int|None)
+      POST /v3/backlinks/bulk_spam_score/live  → spam_score  (int|None)
+
+    Returnerar (domain_rank, spam_score).
+    DR=0 bevaras som 0 — inte None.
+    SS=None bevaras som None om domänen saknas i svaret.
+    Kastar inga undantag utåt — returnerar (None, None) vid fel.
+    """
+    dr = None
+    ss = None
+
+    # --- Domain Rank ---
+    try:
+        r = requests.post(
+            "https://api.dataforseo.com/v3/backlinks/bulk_ranks/live",
+            auth=(login, password),
+            json=[{"targets": [domain], "rank_scale": "one_hundred"}],
+            timeout=30,
+        )
+        data = r.json()
+        if data.get("status_code") == 20000:
+            task = (data.get("tasks") or [{}])[0]
+            if task.get("status_code") == 20000:
+                items = []
+                for result_block in (task.get("result") or []):
+                    items.extend(result_block.get("items") or [])
+                for item in items:
+                    if item.get("target") == domain:
+                        dr = item.get("rank")   # 0 är giltigt värde
+                        break
+    except Exception:
+        logging.exception("[domain_health] bulk_ranks fel: domain=%s", domain)
+
+    # --- Spam Score ---
+    try:
+        r2 = requests.post(
+            "https://api.dataforseo.com/v3/backlinks/bulk_spam_score/live",
+            auth=(login, password),
+            json=[{"targets": [domain]}],
+            timeout=30,
+        )
+        data2 = r2.json()
+        if data2.get("status_code") == 20000:
+            task2 = (data2.get("tasks") or [{}])[0]
+            if task2.get("status_code") == 20000:
+                items2 = []
+                for result_block2 in (task2.get("result") or []):
+                    items2.extend(result_block2.get("items") or [])
+                for item2 in items2:
+                    if item2.get("target") == domain:
+                        ss = item2.get("spam_score")  # None bevaras om saknas
+                        break
+    except Exception:
+        logging.exception("[domain_health] bulk_spam_score fel: domain=%s", domain)
+
+    return dr, ss
+
+
+def get_domain_health(email, domain):
+    """
+    Läser domain_rank, spam_score, domain_enriched_at från subscribers.
+    Hämtar från DataForSEO om cache saknas eller är äldre än 30 dagar.
+
+    Returnerar dict: {domain_rank, spam_score, domain_enriched_at} eller None.
+    Kastar aldrig undantag utåt.
+    """
+    if not domain:
+        return None
+    try:
+        res = supabase.table("subscribers").select(
+            "domain_rank,spam_score,domain_enriched_at"
+        ).eq("email", email).execute()
+        if not res.data:
+            return None
+        row = res.data[0]
+    except Exception:
+        logging.exception("[domain_health] get: read fel email=%s", email)
+        return None
+
+    dr            = row.get("domain_rank")          # None eller int (0 giltigt)
+    ss            = row.get("spam_score")            # None eller int
+    enriched_str  = row.get("domain_enriched_at")
+
+    enriched_at   = None
+    needs_fetch   = True
+
+    if enriched_str:
+        try:
+            enriched_at = datetime.fromisoformat(enriched_str.replace("Z", "+00:00"))
+            days_since  = (datetime.now(timezone.utc) - enriched_at).days
+            if days_since < _DOMAIN_HEALTH_TTL_DAYS:
+                needs_fetch = False
+        except Exception:
+            pass
+
+    if needs_fetch:
+        new_dr, new_ss = fetch_domain_health(domain, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD)
+        now_str = datetime.now(timezone.utc).isoformat()
+        try:
+            supabase.table("subscribers").update({
+                "domain_rank":        new_dr,
+                "spam_score":         new_ss,
+                "domain_enriched_at": now_str,
+            }).eq("email", email).execute()
+        except Exception:
+            logging.exception("[domain_health] save fel email=%s", email)
+        dr          = new_dr
+        ss          = new_ss
+        enriched_at = datetime.now(timezone.utc)
+
+    return {"domain_rank": dr, "spam_score": ss, "domain_enriched_at": enriched_at}
+
+
+def _dr_level(dr):
+    """Returnerar (etikett, färg) för Domain Rank-nivå."""
+    if dr is None:
+        return "—", "#6B7280"
+    if dr >= 80:
+        return "Muito forte", "#16a34a"
+    if dr >= 60:
+        return "Forte", "#22c55e"
+    if dr >= 40:
+        return "Consolidado", "#3b82f6"
+    if dr >= 20:
+        return "Em crescimento", "#f59e0b"
+    return "Iniciante", "#6B7280"
+
+
+def _ss_level(ss):
+    """Returnerar (etikett, färg) för Spam Score-nivå."""
+    if ss is None:
+        return "Não disponível", "#6B7280"
+    if ss >= 16:
+        return "Alto", "#ef4444"
+    if ss >= 6:
+        return "Médio", "#f59e0b"
+    return "Baixo", "#22c55e"
 
 
 def has_event(user_id, event):
@@ -1525,8 +1678,110 @@ else:
                     st.markdown(f"🌐 **Seu site:** `{domain}`")
                 with col_b:
                     if st.button("Alterar", key="change_domain"):
-                        supabase.table("subscribers").update({"domain": None}).eq("email", user_email).execute()
+                        supabase.table("subscribers").update({
+                            "domain": None,
+                            "domain_rank": None,
+                            "spam_score": None,
+                            "domain_enriched_at": None,
+                        }).eq("email", user_email).execute()
                         st.rerun()
+
+            # ── DOMAIN HEALTH CARD ────────────────────────────────────────
+            if domain:
+                with st.spinner("Carregando autoridade do domínio..."):
+                    _health = get_domain_health(user_email, domain)
+
+                if _health is not None:
+                    _dr          = _health["domain_rank"]
+                    _ss          = _health["spam_score"]
+                    _enriched_at = _health["domain_enriched_at"]
+
+                    # Formatering
+                    _dr_display = str(_dr) if _dr is not None else "—"
+                    _dr_pct     = _dr if _dr is not None else 0
+                    _dr_label, _dr_color = _dr_level(_dr)
+
+                    _ss_display = str(_ss) if _ss is not None else "—"
+                    _ss_label, _ss_color = _ss_level(_ss)
+
+                    _date_str = (
+                        _enriched_at.strftime("%-d %b %Y")
+                        if _enriched_at else "—"
+                    )
+
+                    st.markdown(f"""
+                    <div style="background:#1a1a2e;border:1px solid #2d2d4e;border-radius:10px;
+                                padding:14px 18px;margin:8px 0 4px 0">
+                        <div style="font-size:0.72rem;color:#6B7280;font-weight:600;
+                                    letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px">
+                            📊 Autoridade do domínio
+                        </div>
+                        <div style="display:flex;gap:24px;flex-wrap:wrap">
+                            <div style="flex:1;min-width:130px">
+                                <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">Domain Rank</div>
+                                <div style="font-size:2rem;font-weight:800;color:white;line-height:1">{_dr_display}</div>
+                                <div style="background:#2d2d4e;border-radius:4px;height:5px;margin:8px 0 5px 0;overflow:hidden">
+                                    <div style="background:#1a6de0;height:100%;width:{_dr_pct}%;border-radius:4px;transition:width 0.4s"></div>
+                                </div>
+                                <div style="font-size:0.8rem;color:{_dr_color}">{_dr_label}</div>
+                            </div>
+                            <div style="flex:1;min-width:130px">
+                                <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">Spam Score</div>
+                                <div style="font-size:2rem;font-weight:800;color:white;line-height:1">{_ss_display}</div>
+                                <div style="height:5px;margin:8px 0 5px 0"></div>
+                                <div style="font-size:0.8rem;color:{_ss_color}">{_ss_label}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:10px;font-size:0.75rem;color:#4B5563">
+                            Atualizado em {_date_str}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # DR=0: hjälptext
+                    if _dr == 0:
+                        st.caption("ℹ️ Domain Rank 0 indica que o DataForSEO ainda não registrou backlinks para este domínio. Domínios novos normalmente levam algumas semanas para aparecer.")
+
+                    # SS médio/alto: varningsinformation
+                    if _ss is not None and _ss >= 6:
+                        st.caption("ℹ️ Vale a pena revisar o perfil de backlinks para identificar links de baixa qualidade ou potencialmente problemáticos.")
+
+                    # Info om vad värdena betyder
+                    with st.expander("O que são Domain Rank e Spam Score?", expanded=False):
+                        st.markdown(
+                            "**Domain Rank** é uma métrica baseada no perfil de backlinks do seu domínio. "
+                            "Valores mais altos indicam um perfil de backlinks mais forte.\n\n"
+                            "**Spam Score** é um indicador baseado no perfil de backlinks. "
+                            "Valores mais altos podem indicar a necessidade de revisar a qualidade dos links que apontam para o domínio."
+                        )
+
+                    # Manuell refresh-knapp (throttlad)
+                    _throttle_ok = True
+                    if _enriched_at:
+                        _days_since = (datetime.now(timezone.utc) - _enriched_at).days
+                        _throttle_ok = _days_since >= _DOMAIN_HEALTH_THROTTLE_DAYS
+
+                    if st.button(
+                        "Atualizar autoridade",
+                        key="refresh_domain_health",
+                        disabled=not _throttle_ok,
+                        help="Disponível após 7 dias da última atualização" if not _throttle_ok else None,
+                    ):
+                        with st.spinner("Atualizando..."):
+                            _new_dr, _new_ss = fetch_domain_health(
+                                domain, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
+                            )
+                            _now_str = datetime.now(timezone.utc).isoformat()
+                            try:
+                                supabase.table("subscribers").update({
+                                    "domain_rank":        _new_dr,
+                                    "spam_score":         _new_ss,
+                                    "domain_enriched_at": _now_str,
+                                }).eq("email", user_email).execute()
+                            except Exception:
+                                pass
+                        st.rerun()
+            # ── /DOMAIN HEALTH CARD ───────────────────────────────────────
 
             st.divider()
 
