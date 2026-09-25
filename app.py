@@ -5,6 +5,11 @@ import time
 import os
 from supabase import create_client
 from keyword_cache import get_keyword_data, get_keyword_ideas
+from domain_opportunities import (
+    fetch_catchdoms, enrich_with_dataforseo, merge_results,
+    compact_num, tf_cf_ratio, registro_br_url, wayback_url, majestic_url,
+    MAJESTIC_CATEGORIES,
+)
 from datetime import datetime, timedelta, timezone
 from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
@@ -14,6 +19,7 @@ import logging
 DATAFORSEO_LOGIN = os.environ["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
 AHREFS_API_KEY = os.environ.get("AHREFS_API_KEY", "")
+CATCHDOMS_TOKEN = os.environ.get("CATCHDOMS_TOKEN", "")
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
@@ -1422,6 +1428,11 @@ else:
             st.session_state._ranking_kws = []
         if "_ranking_viewed_logged" not in st.session_state:
             st.session_state._ranking_viewed_logged = False
+        # Domain Opportunities — isolerad session state
+        if "opps_results" not in st.session_state:
+            st.session_state.opps_results = None
+        if "opps_last_filters" not in st.session_state:
+            st.session_state.opps_last_filters = {}
 
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
@@ -1457,7 +1468,7 @@ else:
         )
         render_onboarding_progress(_ob_status)
 
-        tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
+        tab1, tab2, tab3 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento", "🔎 Oportunidades de Domínios"])
 
         # ── TAB 1: SÖKNING ──────────────────────────────
         with tab1:
@@ -1929,6 +1940,247 @@ else:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
                             remove_tracking(kw, user_id)
                             st.rerun()
+
+        # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────
+        with tab3:
+            st.markdown("#### Domínios .com.br com histórico — disponíveis para registro")
+            st.caption(
+                "⚠️ **Disponibilidade não verificada automaticamente.** "
+                "Confirme sempre em [Registro.br](https://registro.br/pesquisa-dominio/) "
+                "antes de tentar registrar o domínio."
+            )
+
+            # Filtros
+            with st.expander("⚙️ Filtros de busca", expanded=True):
+                _fc1, _fc2, _fc3, _fc4 = st.columns(4)
+                with _fc1:
+                    _opps_tf_min = st.slider("TF mínimo", 5, 50, 15, key="opps_tf_min",
+                                             help="Trust Flow (Majestic). Fonte: CatchDoms")
+                with _fc2:
+                    _opps_rd_min = st.slider("Referring Domains mín.", 5, 200, 15, key="opps_rd_min",
+                                             help="Domínios de referência únicos. Fonte: CatchDoms")
+                with _fc3:
+                    _opps_score_min = st.slider("Score mínimo", 20, 80, 45, key="opps_score_min",
+                                                help="Pontuação geral CatchDoms (0–100)")
+                with _fc4:
+                    _opps_age_min = st.slider("Idade mínima (anos)", 0, 20, 0, key="opps_age_min",
+                                              help="Baseado no primeiro snapshot Wayback")
+                _opps_cats = st.multiselect(
+                    "Categoria Majestic (opcional)",
+                    MAJESTIC_CATEGORIES,
+                    key="opps_categories",
+                    help="Deixe vazio para todas as categorias"
+                )
+                _col_btn, _col_reset = st.columns([4, 1])
+                with _col_btn:
+                    _opps_search = st.button("🔍 Buscar Domínios", key="opps_search_btn", type="primary",
+                                             use_container_width=True)
+                with _col_reset:
+                    if st.session_state.opps_results is not None:
+                        if st.button("🔄", key="opps_reset_btn", help="Limpar resultados",
+                                     use_container_width=True):
+                            st.session_state.opps_results = None
+                            st.rerun()
+
+            # Execução da busca
+            if _opps_search:
+                if not CATCHDOMS_TOKEN:
+                    st.error(
+                        "CATCHDOMS_TOKEN não configurado. "
+                        "Adicione o segredo `CATCHDOMS_TOKEN` nas configurações do Streamlit Cloud."
+                    )
+                else:
+                    _opps_filters = {
+                        "tf_min": _opps_tf_min,
+                        "rd_min": _opps_rd_min,
+                        "score_min": _opps_score_min,
+                        "age_min": _opps_age_min,
+                        "categories": _opps_cats,
+                    }
+                    with st.spinner("Buscando domínios em CatchDoms..."):
+                        _opps_cd = fetch_catchdoms(
+                            tf_min=_opps_tf_min,
+                            rd_min=_opps_rd_min,
+                            score_min=_opps_score_min,
+                            age_min=_opps_age_min,
+                            categories=_opps_cats,
+                            per_page=25,
+                            token=CATCHDOMS_TOKEN,
+                        )
+
+                    if isinstance(_opps_cd, dict) and _opps_cd.get("error"):
+                        st.error(_opps_cd.get("message", "Erro ao buscar domínios."))
+                        st.session_state.opps_results = None
+                    elif not _opps_cd:
+                        st.info("Nenhum domínio encontrado com esses filtros. Tente reduzir os valores mínimos.")
+                        st.session_state.opps_results = []
+                    else:
+                        _opps_targets = [_d.get("name", "") for _d in _opps_cd if _d.get("name")]
+                        with st.spinner(f"Enriquecendo {len(_opps_targets)} domínio(s) com DataForSEO..."):
+                            _opps_dfs = enrich_with_dataforseo(
+                                _opps_targets, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
+                            )
+                        st.session_state.opps_results = merge_results(_opps_cd, _opps_dfs)
+                        st.session_state.opps_last_filters = _opps_filters
+
+            # Exibição de resultados
+            if st.session_state.opps_results is None:
+                st.info("Configure os filtros acima e clique em **Buscar Domínios** para encontrar oportunidades.")
+            elif len(st.session_state.opps_results) == 0:
+                st.info("Nenhum resultado para os filtros selecionados.")
+            else:
+                _opps_res = st.session_state.opps_results
+                st.markdown(f"**{len(_opps_res)} domínio(s) encontrado(s)**")
+
+                # Ordenação
+                _opps_sort = st.selectbox(
+                    "Ordenar por", ["Score ↓", "TF ↓", "RD ↓", "DR ↓"],
+                    key="opps_sort_by", label_visibility="collapsed"
+                )
+                _sort_field_map = {
+                    "Score ↓": "score", "TF ↓": "trust_flow",
+                    "RD ↓": "referring_domains", "DR ↓": "dr",
+                }
+                _sort_field = _sort_field_map[_opps_sort]
+                _opps_sorted = sorted(
+                    _opps_res,
+                    key=lambda x: (x.get(_sort_field) is not None, x.get(_sort_field) or 0),
+                    reverse=True,
+                )
+
+                # Tabela resumida
+                _opps_table = []
+                for _d in _opps_sorted:
+                    _tf = _d.get("trust_flow")
+                    _cf = _d.get("citation_flow")
+                    _opps_table.append({
+                        "Domínio": _d.get("name", ""),
+                        "TF": _tf if _tf is not None else "—",
+                        "CF": _cf if _cf is not None else "—",
+                        "TF/CF %": tf_cf_ratio(_tf, _cf) or "—",
+                        "RD": _d.get("referring_domains") if _d.get("referring_domains") is not None else "—",
+                        "Backlinks": compact_num(_d.get("backlinks_count")),
+                        "Idade": f"{_d['age']}a" if _d.get("age") is not None else "—",
+                        "Score": _d.get("score") if _d.get("score") is not None else "—",
+                        "WB": compact_num(_d.get("wayback_snapshots")),
+                        "Tráfego": compact_num(_d.get("historical_traffic_peak")),
+                        "Categoria": (_d.get("ttf_topic") or _d.get("seo_domains_category") or "—")[:20],
+                        "DR": _d.get("dr") if _d.get("dr") is not None else "—",
+                        "SS": _d.get("ss") if _d.get("ss") is not None else "—",
+                        "⚠️Spam": "Sim" if _d.get("is_spammy") else "Não",
+                    })
+                _opps_df = pd.DataFrame(_opps_table)
+                st.dataframe(_opps_df, use_container_width=True, hide_index=True)
+
+                # Seleção para detalhe
+                _opps_names = [_d.get("name", "") for _d in _opps_sorted]
+                _opps_detail_sel = st.selectbox(
+                    "Ver detalhes de domínio:",
+                    _opps_names,
+                    key="opps_detail_select",
+                )
+                _opps_detail_dom = next(
+                    (_d for _d in _opps_sorted if _d.get("name") == _opps_detail_sel), None
+                )
+
+                if _opps_detail_dom:
+                    _dn = _opps_detail_dom
+                    _d_tf = _dn.get("trust_flow")
+                    _d_cf = _dn.get("citation_flow")
+                    _d_rd = _dn.get("referring_domains")
+                    _d_bl = _dn.get("backlinks_count")
+                    _d_dr = _dn.get("dr")
+                    _d_ss = _dn.get("ss")
+                    _d_age = _dn.get("age")
+                    _d_wb = _dn.get("wayback_snapshots")
+                    _d_wb_last = _dn.get("wayback_last_date", "")
+                    _d_traffic = _dn.get("historical_traffic_peak")
+                    _d_cat = _dn.get("ttf_topic") or _dn.get("seo_domains_category") or "—"
+                    _d_lang = _dn.get("language", "—")
+                    _d_gmb = _dn.get("has_gmb")
+                    _d_price = _dn.get("price")
+                    _d_currency = _dn.get("currency", "€")
+                    _d_spammy = _dn.get("is_spammy", False)
+                    _d_edu = _dn.get("ref_domains_edu")
+                    _d_gov = _dn.get("ref_domains_gov")
+                    _d_whois = _dn.get("whois_registered_at", "")
+
+                    _d_ratio = tf_cf_ratio(_d_tf, _d_cf)
+
+                    # BL/RD-ratio varning (hög = potentiellt widget/footer-links)
+                    _blrd_warn = ""
+                    if _d_bl and _d_rd and _d_rd > 0:
+                        _blrd = _d_bl / _d_rd
+                        if _blrd > 200:
+                            _blrd_warn = f"⚠️ BL/RD-ratio hög ({_blrd:.0f}x) — granska o perfil de links manualmente."
+
+                    st.markdown(f"---\n#### 🔍 {_opps_detail_sel}")
+
+                    _det_c1, _det_c2 = st.columns(2)
+
+                    with _det_c1:
+                        st.markdown("**🏛️ Autoridade** *(fonte: CatchDoms/DataForSEO)*")
+                        _auth_data = {
+                            "Trust Flow (TF)": str(_d_tf) if _d_tf is not None else "—",
+                            "Citation Flow (CF)": str(_d_cf) if _d_cf is not None else "—",
+                            "TF/CF Ratio": _d_ratio or "—",
+                            "Domain Rank (DataForSEO)": str(_d_dr) if _d_dr is not None else "— (não encontrado)",
+                        }
+                        for _lbl, _val in _auth_data.items():
+                            st.markdown(f"- **{_lbl}:** {_val}")
+
+                        st.markdown("**📊 Perfil de links** *(fonte: CatchDoms)*")
+                        _link_data = {
+                            "Referring Domains": compact_num(_d_rd),
+                            "Total Backlinks": compact_num(_d_bl),
+                            "EDU": compact_num(_d_edu),
+                            "GOV": compact_num(_d_gov),
+                        }
+                        for _lbl, _val in _link_data.items():
+                            st.markdown(f"- **{_lbl}:** {_val}")
+                        if _blrd_warn:
+                            st.warning(_blrd_warn)
+
+                    with _det_c2:
+                        st.markdown("**⏱️ Histórico** *(fonte: CatchDoms)*")
+                        _hist_data = {
+                            "Idade": f"{_d_age} anos" if _d_age is not None else "—",
+                            "Wayback Snapshots": compact_num(_d_wb),
+                            "Último WB": _d_wb_last or "—",
+                            "Tráfego pico": compact_num(_d_traffic),
+                            "Categoria": _d_cat,
+                            "Idioma": _d_lang,
+                            "Google My Business": "Sim" if _d_gmb else "Não" if _d_gmb is not None else "—",
+                        }
+                        for _lbl, _val in _hist_data.items():
+                            st.markdown(f"- **{_lbl}:** {_val}")
+
+                        st.markdown("**🚨 Risco** *(fonte: DataForSEO/CatchDoms)*")
+                        _ss_disp = str(_d_ss) if _d_ss is not None else "— (não disponível)"
+                        _ss_flag = " 🔴" if _d_ss is not None and _d_ss >= 50 else (
+                            " 🟡" if _d_ss is not None and _d_ss >= 30 else ""
+                        )
+                        st.markdown(f"- **Spam Score (DataForSEO):** {_ss_disp}{_ss_flag}")
+                        st.markdown(f"- **is_spammy (CatchDoms):** {'⚠️ Sim' if _d_spammy else 'Não'}")
+
+                        if _d_price:
+                            st.markdown(f"- **Preço CatchDoms:** {_d_currency}{_d_price:.2f} *(verifique registrar via registrador direto)*")
+
+                    # Links externos
+                    st.markdown("**🔗 Links externos**")
+                    _reg_url = registro_br_url(_opps_detail_sel)
+                    _wb_url = wayback_url(_opps_detail_sel)
+                    _maj_url = majestic_url(_opps_detail_sel)
+                    st.markdown(
+                        f"[🌐 Verificar disponibilidade no Registro.br]({_reg_url})  |  "
+                        f"[📸 Wayback Machine]({_wb_url})  |  "
+                        f"[🔗 Majestic]({_maj_url})"
+                    )
+
+                    st.caption(
+                        "⚠️ Disponibilidade não verificada automaticamente. "
+                        "Confirme sempre no Registro.br antes de tentar registrar o domínio."
+                    )
 
     else:
         st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
