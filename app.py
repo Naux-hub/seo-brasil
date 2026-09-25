@@ -13,6 +13,7 @@ import logging
 
 DATAFORSEO_LOGIN = os.environ["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
+AHREFS_API_KEY = os.environ.get("AHREFS_API_KEY", "")
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
 HOTMART_URL = "https://pay.hotmart.com/L106736067M"
@@ -144,26 +145,60 @@ def save_user_domain(email, domain):
         "domain": domain,
         "domain_rank": None,
         "spam_score": None,
+        "ahrefs_dr": None,
         "domain_enriched_at": None,
     }).eq("email", email).execute()
 
 
-# ── DOMAIN HEALTH (Domain Rank + Spam Score) ─────────────────────────────────
+# ── DOMAIN HEALTH (Domain Rank + Spam Score + Ahrefs DR) ─────────────────────
 
 _DOMAIN_HEALTH_TTL_DAYS    = 30   # Auto-refresh efter 30 dagar
 _DOMAIN_HEALTH_THROTTLE_DAYS = 7  # Manuell refresh: minst 7 dagar mellan anrop
 
 
+def fetch_ahrefs_dr(domain, api_key):
+    """
+    Anropar Ahrefs gratis Domain Rating-endpoint (kostnadsfri, kräver gratis APIv3-nyckel).
+    GET /v3/public/domain-rating-free?target={domain}
+
+    Returnerar float (0.0–100.0) eller None vid fel/saknad nyckel.
+    DR=0.0 bevaras — indikerar att Ahrefs inte registrerat backlinks för domänen.
+    Kastar inga undantag utåt.
+
+    Licens: http://ahrefs.com/legal/domain-rating-license
+    Attribution krävs i UI: "Domain Rating by Ahrefs" (https://ahrefs.com/)
+    """
+    if not api_key:
+        return None
+    try:
+        r = requests.get(
+            "https://api.ahrefs.com/v3/public/domain-rating-free",
+            params={"target": domain},
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=15,
+        )
+        if r.status_code == 200:
+            data = r.json()
+            dr_obj = (data.get("domain_rating") or {})
+            dr_val = dr_obj.get("domain_rating")
+            if dr_val is not None:
+                return float(dr_val)
+    except Exception:
+        logging.exception("[ahrefs_dr] fetch fel: domain=%s", domain)
+    return None
+
+
 def fetch_domain_health(domain, login, password):
     """
-    Anropar DataForSEO:
+    Anropar DataForSEO + Ahrefs:
       POST /v3/backlinks/bulk_ranks/live       → domain_rank (int|None)
       POST /v3/backlinks/bulk_spam_score/live  → spam_score  (int|None)
+      GET  Ahrefs /v3/public/domain-rating-free → ahrefs_dr (float|None)
 
-    Returnerar (domain_rank, spam_score).
+    Returnerar (domain_rank, spam_score, ahrefs_dr).
     DR=0 bevaras som 0 — inte None.
-    SS=None bevaras som None om domänen saknas i svaret.
-    Kastar inga undantag utåt — returnerar (None, None) vid fel.
+    SS=None bevaras om domänen saknas i svaret.
+    Kastar inga undantag utåt — returnerar (None, None, None) vid totalt fel.
     """
     dr = None
     ss = None
@@ -212,22 +247,24 @@ def fetch_domain_health(domain, login, password):
     except Exception:
         logging.exception("[domain_health] bulk_spam_score fel: domain=%s", domain)
 
-    return dr, ss
+    ahrefs_dr = fetch_ahrefs_dr(domain, AHREFS_API_KEY)
+
+    return dr, ss, ahrefs_dr
 
 
 def get_domain_health(email, domain):
     """
-    Läser domain_rank, spam_score, domain_enriched_at från subscribers.
-    Hämtar från DataForSEO om cache saknas eller är äldre än 30 dagar.
+    Läser domain_rank, spam_score, ahrefs_dr, domain_enriched_at från subscribers.
+    Hämtar från DataForSEO + Ahrefs om cache saknas eller är äldre än 30 dagar.
 
-    Returnerar dict: {domain_rank, spam_score, domain_enriched_at} eller None.
+    Returnerar dict: {domain_rank, spam_score, ahrefs_dr, domain_enriched_at} eller None.
     Kastar aldrig undantag utåt.
     """
     if not domain:
         return None
     try:
         res = supabase.table("subscribers").select(
-            "domain_rank,spam_score,domain_enriched_at"
+            "domain_rank,spam_score,ahrefs_dr,domain_enriched_at"
         ).eq("email", email).execute()
         if not res.data:
             return None
@@ -238,6 +275,7 @@ def get_domain_health(email, domain):
 
     dr            = row.get("domain_rank")          # None eller int (0 giltigt)
     ss            = row.get("spam_score")            # None eller int
+    ahrefs_dr     = row.get("ahrefs_dr")             # None eller float (0.0 giltigt)
     enriched_str  = row.get("domain_enriched_at")
 
     enriched_at   = None
@@ -253,21 +291,23 @@ def get_domain_health(email, domain):
             pass
 
     if needs_fetch:
-        new_dr, new_ss = fetch_domain_health(domain, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD)
+        new_dr, new_ss, new_ahrefs_dr = fetch_domain_health(domain, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD)
         now_str = datetime.now(timezone.utc).isoformat()
         try:
             supabase.table("subscribers").update({
                 "domain_rank":        new_dr,
                 "spam_score":         new_ss,
+                "ahrefs_dr":          new_ahrefs_dr,
                 "domain_enriched_at": now_str,
             }).eq("email", email).execute()
         except Exception:
             logging.exception("[domain_health] save fel email=%s", email)
         dr          = new_dr
         ss          = new_ss
+        ahrefs_dr   = new_ahrefs_dr
         enriched_at = datetime.now(timezone.utc)
 
-    return {"domain_rank": dr, "spam_score": ss, "domain_enriched_at": enriched_at}
+    return {"domain_rank": dr, "spam_score": ss, "ahrefs_dr": ahrefs_dr, "domain_enriched_at": enriched_at}
 
 
 def _dr_level(dr):
@@ -281,6 +321,23 @@ def _dr_level(dr):
     if dr >= 40:
         return "Consolidado", "#3b82f6"
     if dr >= 20:
+        return "Em crescimento", "#f59e0b"
+    return "Iniciante", "#6B7280"
+
+
+def _ahrefs_dr_level(ahrefs_dr):
+    """Returnerar (etikett, färg) för Ahrefs Domain Rating-nivå.
+    DR=None eller DR=0.0 → 'Sem dados' (Ahrefs saknar backlinkdata för domänen).
+    """
+    if ahrefs_dr is None or ahrefs_dr == 0.0:
+        return "Sem dados", "#6B7280"
+    if ahrefs_dr >= 80:
+        return "Muito forte", "#16a34a"
+    if ahrefs_dr >= 60:
+        return "Forte", "#22c55e"
+    if ahrefs_dr >= 40:
+        return "Consolidado", "#3b82f6"
+    if ahrefs_dr >= 20:
         return "Em crescimento", "#f59e0b"
     return "Iniciante", "#6B7280"
 
@@ -1682,6 +1739,7 @@ else:
                             "domain": None,
                             "domain_rank": None,
                             "spam_score": None,
+                            "ahrefs_dr": None,
                             "domain_enriched_at": None,
                         }).eq("email", user_email).execute()
                         st.rerun()
@@ -1694,15 +1752,23 @@ else:
                 if _health is not None:
                     _dr          = _health["domain_rank"]
                     _ss          = _health["spam_score"]
+                    _ahrefs_dr   = _health["ahrefs_dr"]
                     _enriched_at = _health["domain_enriched_at"]
 
-                    # Formatering
+                    # Formatering — DataForSEO Domain Rank
                     _dr_display = str(_dr) if _dr is not None else "—"
                     _dr_pct     = _dr if _dr is not None else 0
                     _dr_label, _dr_color = _dr_level(_dr)
 
+                    # Formatering — Spam Score
                     _ss_display = str(_ss) if _ss is not None else "—"
                     _ss_label, _ss_color = _ss_level(_ss)
+
+                    # Formatering — Ahrefs Domain Rating
+                    _ahrefs_dr_no_data = (_ahrefs_dr is None or _ahrefs_dr == 0.0)
+                    _ahrefs_dr_display = "—" if _ahrefs_dr_no_data else str(int(_ahrefs_dr))
+                    _ahrefs_dr_pct     = 0 if _ahrefs_dr_no_data else int(_ahrefs_dr)
+                    _ahrefs_dr_label, _ahrefs_dr_color = _ahrefs_dr_level(_ahrefs_dr)
 
                     _date_str = (
                         _enriched_at.strftime("%-d %b %Y")
@@ -1716,43 +1782,84 @@ else:
                                     letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px">
                             📊 Autoridade do domínio
                         </div>
-                        <div style="display:flex;gap:24px;flex-wrap:wrap">
-                            <div style="flex:1;min-width:130px">
+                        <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap">
+
+                            <div style="flex:1;min-width:110px;padding-right:18px">
+                                <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">
+                                    Domain Rating
+                                    <span style="background:#1e2a3a;color:#818cf8;border:1px solid #3b4070;
+                                                 font-size:0.62rem;font-weight:600;padding:1px 6px;
+                                                 border-radius:4px;margin-left:5px;vertical-align:middle">novo</span>
+                                </div>
+                                <div style="font-size:2rem;font-weight:800;color:{'#4B5563' if _ahrefs_dr_no_data else 'white'};line-height:1">{_ahrefs_dr_display}</div>
+                                <div style="background:#2d2d4e;border-radius:4px;height:4px;margin:8px 0 5px 0;overflow:hidden">
+                                    <div style="background:#6366f1;height:100%;width:{_ahrefs_dr_pct}%;border-radius:4px;transition:width 0.4s"></div>
+                                </div>
+                                <div style="font-size:0.8rem;color:{_ahrefs_dr_color}">{_ahrefs_dr_label}</div>
+                                <div style="font-size:0.7rem;color:#4B5563;margin-top:3px">
+                                    <a href="https://ahrefs.com/" target="_blank"
+                                       style="color:#6366f1;text-decoration:none">Ahrefs</a>
+                                </div>
+                            </div>
+
+                            <div style="width:1px;background:#2d2d4e;margin:0 18px 0 0;flex-shrink:0"></div>
+
+                            <div style="flex:1;min-width:110px;padding-right:18px">
                                 <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">Domain Rank</div>
                                 <div style="font-size:2rem;font-weight:800;color:white;line-height:1">{_dr_display}</div>
-                                <div style="background:#2d2d4e;border-radius:4px;height:5px;margin:8px 0 5px 0;overflow:hidden">
-                                    <div style="background:#1a6de0;height:100%;width:{_dr_pct}%;border-radius:4px;transition:width 0.4s"></div>
+                                <div style="background:#2d2d4e;border-radius:4px;height:4px;margin:8px 0 5px 0;overflow:hidden">
+                                    <div style="background:#3b82f6;height:100%;width:{_dr_pct}%;border-radius:4px;transition:width 0.4s"></div>
                                 </div>
                                 <div style="font-size:0.8rem;color:{_dr_color}">{_dr_label}</div>
+                                <div style="font-size:0.7rem;color:#4B5563;margin-top:3px">DataForSEO</div>
                             </div>
-                            <div style="flex:1;min-width:130px">
+
+                            <div style="width:1px;background:#2d2d4e;margin:0 18px 0 0;flex-shrink:0"></div>
+
+                            <div style="flex:1;min-width:110px">
                                 <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">Spam Score</div>
                                 <div style="font-size:2rem;font-weight:800;color:white;line-height:1">{_ss_display}</div>
-                                <div style="height:5px;margin:8px 0 5px 0"></div>
+                                <div style="height:4px;margin:8px 0 5px 0"></div>
                                 <div style="font-size:0.8rem;color:{_ss_color}">{_ss_label}</div>
+                                <div style="font-size:0.7rem;color:#4B5563;margin-top:3px">DataForSEO</div>
                             </div>
+
                         </div>
-                        <div style="margin-top:10px;font-size:0.75rem;color:#4B5563">
-                            Atualizado em {_date_str}
+                        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #2d2d4e;
+                                    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                            <div style="font-size:0.7rem;color:#4B5563">
+                                <a href="https://ahrefs.com/" target="_blank"
+                                   style="color:#6366f1;text-decoration:none">Domain Rating by Ahrefs</a>
+                            </div>
+                            <div style="font-size:0.7rem;color:#4B5563">
+                                Atualizado em {_date_str}
+                            </div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # DR=0: hjälptext
+                    # DR=0 (DataForSEO): hjälptext
                     if _dr == 0:
                         st.caption("ℹ️ Domain Rank 0 indica que o DataForSEO ainda não registrou backlinks para este domínio. Domínios novos normalmente levam algumas semanas para aparecer.")
+
+                    # Ahrefs DR sem dados: hjälptext
+                    if _ahrefs_dr_no_data:
+                        st.caption("ℹ️ Domain Rating não disponível — o Ahrefs ainda não registrou backlinks para este domínio. Novos domínios podem levar algumas semanas para aparecer.")
 
                     # SS médio/alto: varningsinformation
                     if _ss is not None and _ss >= 6:
                         st.caption("ℹ️ Vale a pena revisar o perfil de backlinks para identificar links de baixa qualidade ou potencialmente problemáticos.")
 
                     # Info om vad värdena betyder
-                    with st.expander("O que são Domain Rank e Spam Score?", expanded=False):
+                    with st.expander("O que são Domain Rating, Domain Rank e Spam Score?", expanded=False):
                         st.markdown(
-                            "**Domain Rank** é uma métrica baseada no perfil de backlinks do seu domínio. "
-                            "Valores mais altos indicam um perfil de backlinks mais forte.\n\n"
-                            "**Spam Score** é um indicador baseado no perfil de backlinks. "
-                            "Valores mais altos podem indicar a necessidade de revisar a qualidade dos links que apontam para o domínio."
+                            "**Domain Rating (Ahrefs)** mede a força do perfil de backlinks em relação a todos os sites "
+                            "do índice do Ahrefs, numa escala de 0 a 100. Quanto maior, mais links de qualidade apontam "
+                            "para o domínio.\n\n"
+                            "**Domain Rank (DataForSEO)** mede a autoridade de backlinks pelo índice do DataForSEO, "
+                            "numa escala de 0 a 100. Métrica complementar ao Domain Rating.\n\n"
+                            "**Spam Score** indica a probabilidade de o perfil de backlinks conter links de baixa qualidade. "
+                            "Valores mais baixos são melhores. Acima de 6%, vale revisar o perfil de links."
                         )
 
                     # Manuell refresh-knapp (throttlad)
@@ -1768,7 +1875,7 @@ else:
                         help="Disponível após 7 dias da última atualização" if not _throttle_ok else None,
                     ):
                         with st.spinner("Atualizando..."):
-                            _new_dr, _new_ss = fetch_domain_health(
+                            _new_dr, _new_ss, _new_ahrefs_dr = fetch_domain_health(
                                 domain, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
                             )
                             _now_str = datetime.now(timezone.utc).isoformat()
@@ -1776,6 +1883,7 @@ else:
                                 supabase.table("subscribers").update({
                                     "domain_rank":        _new_dr,
                                     "spam_score":         _new_ss,
+                                    "ahrefs_dr":          _new_ahrefs_dr,
                                     "domain_enriched_at": _now_str,
                                 }).eq("email", user_email).execute()
                             except Exception:
