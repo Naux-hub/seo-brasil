@@ -1943,7 +1943,7 @@ else:
 
         # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────
         with tab3:
-            st.markdown("#### Domínios .com.br com histórico — disponíveis para registro")
+            st.markdown("#### Oportunidades de domínios .com.br")
             st.caption(
                 "⚠️ **Disponibilidade não verificada automaticamente.** "
                 "Confirme sempre em [Registro.br](https://registro.br/pesquisa-dominio/) "
