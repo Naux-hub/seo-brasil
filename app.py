@@ -1783,7 +1783,6 @@ else:
                             📊 Autoridade do domínio
                         </div>
                         <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap">
-
                             <div style="flex:1;min-width:110px;padding-right:18px">
                                 <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">
                                     Domain Rating
@@ -1801,9 +1800,7 @@ else:
                                        style="color:#6366f1;text-decoration:none">Ahrefs</a>
                                 </div>
                             </div>
-
                             <div style="width:1px;background:#2d2d4e;margin:0 18px 0 0;flex-shrink:0"></div>
-
                             <div style="flex:1;min-width:110px;padding-right:18px">
                                 <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">Domain Rank</div>
                                 <div style="font-size:2rem;font-weight:800;color:white;line-height:1">{_dr_display}</div>
@@ -1813,9 +1810,7 @@ else:
                                 <div style="font-size:0.8rem;color:{_dr_color}">{_dr_label}</div>
                                 <div style="font-size:0.7rem;color:#4B5563;margin-top:3px">DataForSEO</div>
                             </div>
-
                             <div style="width:1px;background:#2d2d4e;margin:0 18px 0 0;flex-shrink:0"></div>
-
                             <div style="flex:1;min-width:110px">
                                 <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:4px">Spam Score</div>
                                 <div style="font-size:2rem;font-weight:800;color:white;line-height:1">{_ss_display}</div>
@@ -1823,7 +1818,6 @@ else:
                                 <div style="font-size:0.8rem;color:{_ss_color}">{_ss_label}</div>
                                 <div style="font-size:0.7rem;color:#4B5563;margin-top:3px">DataForSEO</div>
                             </div>
-
                         </div>
                         <div style="margin-top:12px;padding-top:10px;border-top:1px solid #2d2d4e;
                                     display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
