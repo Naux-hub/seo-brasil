@@ -1567,7 +1567,14 @@ else:
     with col_logo:
         st.markdown("<div style='font-size:1.3rem;font-weight:800;padding-top:6px'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
     with col_user:
-        st.markdown(f"<div style='font-size:0.85rem;opacity:0.6;padding-top:10px;text-align:right'>{st.session_state.user.email}</div>", unsafe_allow_html=True)
+        _header_plan = get_user_plan(st.session_state.user.email)
+        _plan_label = "✨ Plano Premium" if _header_plan == "premium" else "Plano Pro"
+        _plan_color = "#f0b429" if _header_plan == "premium" else "rgba(255,255,255,0.4)"
+        st.markdown(f"""
+            <div style='text-align:right;padding-top:6px'>
+                <div style='font-size:0.85rem;opacity:0.6'>{st.session_state.user.email}</div>
+                <div style='font-size:0.75rem;color:{_plan_color};margin-top:2px'>{_plan_label}</div>
+            </div>""", unsafe_allow_html=True)
     with col_sair:
         sair_clicked = st.button("Sair", key="sair_btn")
 
