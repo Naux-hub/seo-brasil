@@ -79,6 +79,16 @@ def get_user_domain(email, access_token=None):
         return res.data[0]["domain"]
     return None
 
+def get_user_plan(email):
+    """Returnerar 'premium', 'pro' (default) eller None (ej prenumerant)."""
+    try:
+        res = supabase.table("subscribers").select("plan").eq("email", email).execute()
+        if res.data:
+            return res.data[0].get("plan", "pro") or "pro"
+        return None
+    except Exception:
+        return "pro"
+
 def get_trial_status(email):
     res = supabase.table("subscribers").select("subscription_status, created_at").eq("email", email).execute()
     if not res.data:
@@ -381,6 +391,23 @@ def get_rank_data_for_keyword(user_id, keyword, domain):
         .execute()
     return res.data[0] if res.data else None
 
+def get_rank_history(user_id, keyword, domain, weeks=12):
+    """Returnerar upp till 12 veckors rankinghistorik, äldsta först.
+    NULL-värden (inte i top 100) ingår som None — visas som gap i grafen.
+    """
+    try:
+        res = supabase.table("keyword_rankings_history") \
+            .select("rank_position, checked_at") \
+            .eq("user_id", str(user_id)) \
+            .eq("keyword", keyword) \
+            .eq("domain", domain) \
+            .order("checked_at", desc=False) \
+            .limit(weeks) \
+            .execute()
+        return res.data or []
+    except Exception:
+        return []
+
 def trend_label(row):
     if not row:
         return "⏳ Aguardando dados"
@@ -577,6 +604,26 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             save_ok = set(expected_kws) == found_kws
             logging.info("[on_demand_ranking] verification: expected=%s found=%s save_ok=%s",
                          sorted(expected_kws), sorted(found_kws), save_ok)
+
+            # Historiklogg — initial datapunkt, körs aldrig om med DataForSEO
+            if save_ok:
+                try:
+                    history_rows = [
+                        {
+                            "user_id": str(user_id),
+                            "keyword": r["keyword"],
+                            "domain": r["domain"],
+                            "rank_position": r["rank_position"],
+                            "checked_at": r["checked_at"],
+                            "market": r["market"],
+                            "source": "initial",
+                        }
+                        for r in rows
+                    ]
+                    supabase.table("keyword_rankings_history").insert(history_rows).execute()
+                    logging.info("[on_demand_ranking] history insert: count=%d", len(history_rows))
+                except Exception:
+                    logging.exception("[on_demand_ranking] history insert error: user=%s", user_id)
         except Exception:
             logging.exception("[on_demand_ranking] upsert error: user=%s domain=%s",
                               user_id, domain)
@@ -1919,6 +1966,8 @@ else:
                 st.caption(f"{count}/100 palavras rastreadas — dados atualizados toda segunda-feira")
                 st.divider()
 
+                _user_plan = get_user_plan(st.session_state.user.email)
+
                 for item in tracked_list:
                     kw = item["keyword"]
                     rank_row = get_rank_data_for_keyword(user_id, kw, domain)
@@ -1936,6 +1985,30 @@ else:
                                          white-space:nowrap">{trend}</span>
                         </div>
                         """, unsafe_allow_html=True)
+
+                        # ── Historikgraf — Premium ──
+                        if _user_plan == "premium":
+                            _history = get_rank_history(user_id, kw, domain)
+                            if _history:
+                                with st.expander("📊 Ver histórico de posição", expanded=False):
+                                    import pandas as pd
+                                    _df = pd.DataFrame(_history)
+                                    _df["semana"] = pd.to_datetime(_df["checked_at"]).dt.strftime("%d/%m")
+                                    _df = _df.set_index("semana")[["rank_position"]]
+                                    _df.columns = ["Posição"]
+                                    # Inverte eixo: posição 1 = melhor (topo do gráfico)
+                                    # st.line_chart não suporta invert diretamente;
+                                    # transformamos: plottar (101 - posição) e anotamos no caption
+                                    _df_plot = _df.copy()
+                                    _df_plot["Posição"] = _df_plot["Posição"].apply(
+                                        lambda x: 101 - x if x is not None else None
+                                    )
+                                    st.line_chart(_df_plot, use_container_width=True, height=160)
+                                    st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                        else:
+                            with st.expander("📊 Ver histórico de posição 🔒 Premium", expanded=False):
+                                st.info("🔒 Histórico de posicionamento é um recurso **Premium**. Faça upgrade para visualizar a evolução do seu ranking nas últimas 12 semanas.")
+
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
                             remove_tracking(kw, user_id)

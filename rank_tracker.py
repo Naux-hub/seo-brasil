@@ -205,6 +205,21 @@ def save_keyword_rankings(user_id, domain, keyword_results, existing_positions):
             rows, on_conflict="user_id,keyword,domain"
         ).execute()
 
+        # Historiklogg — INSERT-only, påverkar inte ovanstående upsert
+        history_rows = [
+            {
+                "user_id": r["user_id"],
+                "keyword": r["keyword"],
+                "domain": r["domain"],
+                "rank_position": r["rank_position"],
+                "checked_at": r["checked_at"],
+                "market": r["market"],
+                "source": "weekly",
+            }
+            for r in rows
+        ]
+        supabase.table("keyword_rankings_history").insert(history_rows).execute()
+
 
 def run():
     """Huvudfunktion — körs varje måndag."""
