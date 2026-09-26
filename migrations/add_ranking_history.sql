@@ -33,6 +33,16 @@ CREATE TABLE IF NOT EXISTS keyword_rankings_history (
 CREATE INDEX IF NOT EXISTS idx_krh_lookup
     ON keyword_rankings_history (user_id, keyword, domain, checked_at DESC);
 
+-- RLS: enable row-level security + policy mirroring keyword_rankings
+ALTER TABLE keyword_rankings_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "authenticated users can access own history" ON keyword_rankings_history;
+CREATE POLICY "authenticated users can access own history"
+    ON keyword_rankings_history
+    FOR ALL
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
 -- ---------------------------------------------------------------------------
 -- 2. plan column on subscribers
 -- ---------------------------------------------------------------------------
