@@ -1438,10 +1438,13 @@ if st.session_state.user is None:
     st.divider()
 
     # --- Preço ---
-    st.markdown('<div class="section-title">Plano único, sem surpresas</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Escolha seu plano</div>', unsafe_allow_html=True)
     st.markdown(f"""
-    <div class="price-box">
+    <div class="plans-row" style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
+
+      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;">
         <div class="trial-pill">14 dias grátis para testar</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#4d9fff">SEO Brasil Pro</div>
         <div class="price">R$197</div>
         <div class="per">por mês • sem fidelidade</div>
         <ul>
@@ -1455,6 +1458,24 @@ if st.session_state.user is None:
         </ul>
         <a class="cta-btn" href="{HOTMART_URL}">Começar grátis por 14 dias →</a>
         <div class="no-cc">Sem cartão de crédito no período de teste</div>
+      </div>
+
+      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;border-color:rgba(255,200,60,0.5);background:rgba(255,200,60,0.04);">
+        <div class="trial-pill" style="background:rgba(255,200,60,0.2);color:#f0b429;">✨ Premium</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#f0b429">SEO Brasil Premium</div>
+        <div class="price">R$297</div>
+        <div class="per">por mês • sem fidelidade</div>
+        <ul>
+            <li>🌐 Até 5 projetos/domínios ativos</li>
+            <li>✅ Até 300 palavras-chave monitoradas no total</li>
+            <li>📊 Histórico de posicionamento / evolução</li>
+            <li>🔍 Oportunidades de Domínios</li>
+            <li>📈 Todos os recursos do Pro</li>
+        </ul>
+        <a class="cta-btn" href="{HOTMART_PREMIUM_URL}" style="background:#f0b429;color:#1a1a2e;">Assinar Premium →</a>
+        <div class="no-cc">Pagamento mensal • Cancele quando quiser</div>
+      </div>
+
     </div>
     """, unsafe_allow_html=True)
 
