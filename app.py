@@ -35,30 +35,39 @@ def get_tracked_set(user_id):
     res = supabase.table("tracked_keywords").select("keyword").eq("user_id", str(user_id)).eq("is_active", True).execute()
     return {r["keyword"] for r in res.data}
 
-def add_tracking(keyword, user_id):
+def add_tracking(keyword, user_id, domain, plan='pro'):
+    if not domain:
+        return False, "Configure seu site antes de rastrear palavras-chave."
+    limit = 300 if plan == 'premium' else 100
     count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
-    if len(count_res.data) >= 100:
-        return False, "Limite de 100 palavras atingido."
+    if len(count_res.data) >= limit:
+        return False, f"Limite de {limit} palavras atingido."
     try:
-        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).eq("domain", domain).execute()
         if existing.data:
-            supabase.table("tracked_keywords").update({"is_active": True}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+            supabase.table("tracked_keywords").update({"is_active": True}).eq("user_id", str(user_id)).eq("keyword", keyword).eq("domain", domain).execute()
         else:
             supabase.table("tracked_keywords").insert({
                 "user_id": str(user_id),
                 "keyword": keyword,
+                "domain": domain,
                 "is_active": True
             }).execute()
         return True, "ok"
     except Exception as e:
         return False, f"Erro: {str(e)}"
 
-def remove_tracking(keyword, user_id):
-    supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+def remove_tracking(keyword, user_id, domain=None):
+    q = supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword)
+    if domain:
+        q = q.eq("domain", domain)
+    q.execute()
 
-def get_tracked_keywords_list(user_id):
-    res = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True).order("created_at", desc=True).execute()
-    return res.data
+def get_tracked_keywords_list(user_id, domain=None):
+    q = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True)
+    if domain:
+        q = q.eq("domain", domain)
+    return q.order("created_at", desc=True).execute().data
 
 @st.cache_data(ttl=3600)
 def get_social_proof():
@@ -88,6 +97,82 @@ def get_user_plan(email):
         return None
     except Exception:
         return "pro"
+
+def get_user_domains(user_id):
+    """Returnerar lista av {domain, is_active} från user_domains för en användare."""
+    try:
+        res = supabase.table("user_domains") \
+            .select("domain, is_active") \
+            .eq("user_id", str(user_id)) \
+            .order("created_at", desc=False) \
+            .execute()
+        return res.data or []
+    except Exception:
+        return []
+
+
+def add_user_domain(user_id, domain, email=None):
+    """
+    Lägger till en domän i user_domains (eller reaktiverar om den tidigare pausats).
+    Skriver också till subscribers.domain för att hålla dem synkroniserade.
+    Returnerar (True, "ok") eller (False, felmeddelande).
+    """
+    try:
+        domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
+        if not domain:
+            return False, "Domínio inválido."
+        # Hämta market från subscribers
+        market = "br"
+        if email:
+            try:
+                _sub = supabase.table("subscribers").select("market").eq("email", email).execute()
+                if _sub.data:
+                    market = _sub.data[0].get("market") or "br"
+            except Exception:
+                pass
+        # Kontrollera gräns: max 5 aktiva domäner per Premium-användare
+        active_res = supabase.table("user_domains") \
+            .select("domain") \
+            .eq("user_id", str(user_id)) \
+            .eq("is_active", True) \
+            .execute()
+        if len(active_res.data) >= 5:
+            return False, "Limite de 5 projetos ativos atingido."
+        # Upsert: reaktiverar om domänen redan finns pausad
+        supabase.table("user_domains").upsert({
+            "user_id": str(user_id),
+            "domain": domain,
+            "market": market,
+            "is_active": True,
+        }, on_conflict="user_id,domain").execute()
+        # Synkronisera subscribers.domain (behålls för bakåtkompatibilitet)
+        if email:
+            try:
+                supabase.table("subscribers").update({
+                    "domain": domain,
+                    "domain_rank": None,
+                    "spam_score": None,
+                    "ahrefs_dr": None,
+                    "domain_enriched_at": None,
+                }).eq("email", email).execute()
+            except Exception:
+                pass
+        return True, "ok"
+    except Exception as e:
+        return False, f"Erro: {str(e)}"
+
+
+def set_domain_active(user_id, domain, is_active):
+    """Pausar (is_active=False) eller aktiverar (is_active=True) en domän i user_domains."""
+    try:
+        supabase.table("user_domains") \
+            .update({"is_active": is_active}) \
+            .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
+            .execute()
+    except Exception:
+        pass
+
 
 def get_trial_status(email):
     res = supabase.table("subscribers").select("subscription_status, created_at").eq("email", email).execute()
@@ -164,6 +249,20 @@ def save_user_domain(email, domain):
         "ahrefs_dr": None,
         "domain_enriched_at": None,
     }).eq("email", email).execute()
+    # Skriv också till user_domains (multi-domain-stöd)
+    try:
+        sub_res = supabase.table("subscribers").select("user_id, market").eq("email", email).execute()
+        if sub_res.data and sub_res.data[0].get("user_id"):
+            _uid = str(sub_res.data[0]["user_id"])
+            _mkt = sub_res.data[0].get("market") or "br"
+            supabase.table("user_domains").upsert({
+                "user_id": _uid,
+                "domain": domain,
+                "market": _mkt,
+                "is_active": True,
+            }, on_conflict="user_id,domain").execute()
+    except Exception:
+        pass
 
 
 # ── DOMAIN HEALTH (Domain Rank + Spam Score + Ahrefs DR) ─────────────────────
@@ -463,6 +562,7 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
         all_res = _pg.from_("tracked_keywords") \
             .select("keyword") \
             .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
             .eq("is_active", True) \
             .execute()
         all_keywords = {r["keyword"] for r in (all_res.data or [])}
@@ -1484,6 +1584,7 @@ else:
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
         _ob_domain = get_user_domain(_ob_email, st.session_state.access_token)
+        _user_plan = get_user_plan(_ob_email)
 
         if not _ob_domain:
             st.markdown("""
@@ -1641,7 +1742,7 @@ else:
                             st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
                             if st.button("+ Rastrear", key=f"track_{kw}",
                                          disabled=st.session_state.ranking_in_progress):
-                                ok, msg = add_tracking(kw, user_id)
+                                ok, msg = add_tracking(kw, user_id, _ob_domain, _user_plan)
                                 if ok:
                                     log_event(user_id, "keyword_saved", {"keyword": kw})
                                     if not has_event(user_id, "keyword_tracked"):
@@ -1747,7 +1848,7 @@ else:
                                 st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
                                 if st.button("+ Rastrear", key=f"track_idea_{ikw}",
                                              disabled=st.session_state.ranking_in_progress):
-                                    ok, msg = add_tracking(ikw, user_id)
+                                    ok, msg = add_tracking(ikw, user_id, _ob_domain, _user_plan)
                                     if ok:
                                         log_event(user_id, "keyword_saved", {"keyword": ikw})
                                         if not has_event(user_id, "keyword_tracked"):
@@ -1769,38 +1870,112 @@ else:
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
             user_email = st.session_state.user.email
-            domain = get_user_domain(user_email)
+            _user_plan = get_user_plan(user_email)
             if not st.session_state.get("_ranking_viewed_logged"):
                 log_event(user_id, "ranking_viewed")
                 st.session_state._ranking_viewed_logged = True
 
-            # --- Domän-input ---
-            if not domain:
-                st.info("💡 Adicione o endereço do seu site para monitorar sua posição no Google.")
-                col_d, col_b = st.columns([4, 1])
-                with col_d:
-                    new_domain = st.text_input("", placeholder="seobrasil.app", key="domain_input", label_visibility="collapsed")
-                with col_b:
-                    if st.button("Salvar site", key="save_domain"):
-                        if new_domain.strip():
-                            save_user_domain(user_email, new_domain)
-                            log_event(user_id, "domain_added")
-                            st.success("✅ Site salvo!")
+            # --- Domän-val: Premium = multi-domain, Pro = enskild domän ---
+            if _user_plan == "premium":
+                _all_domains = get_user_domains(user_id)
+                _active_domains = [d for d in _all_domains if d["is_active"]]
+                _paused_domains = [d for d in _all_domains if not d["is_active"]]
+
+                # Rubrik + knapp för att lägga till nytt projekt
+                _col_title, _col_add = st.columns([3, 1])
+                with _col_title:
+                    st.markdown(f"**Seus projetos** ({len(_active_domains)}/5 ativos)")
+                with _col_add:
+                    if len(_active_domains) < 5:
+                        if st.button("➕ Novo projeto", key="premium_new_proj"):
+                            st.session_state._premium_adding_domain = not st.session_state.get("_premium_adding_domain", False)
+
+                # Formulär för att lägga till domän
+                if st.session_state.get("_premium_adding_domain", False):
+                    _col_nd, _col_nb, _col_nc = st.columns([4, 1, 1])
+                    with _col_nd:
+                        _new_proj_domain = st.text_input("", placeholder="novosite.com.br",
+                                                          key="premium_add_domain_input",
+                                                          label_visibility="collapsed")
+                    with _col_nb:
+                        if st.button("Salvar", key="premium_save_domain_btn"):
+                            if _new_proj_domain.strip():
+                                _add_ok, _add_msg = add_user_domain(user_id, _new_proj_domain, user_email)
+                                if _add_ok:
+                                    log_event(user_id, "domain_added")
+                                    st.session_state._premium_adding_domain = False
+                                    st.rerun()
+                                else:
+                                    st.error(_add_msg)
+                    with _col_nc:
+                        if st.button("Cancelar", key="premium_cancel_domain_btn"):
+                            st.session_state._premium_adding_domain = False
                             st.rerun()
+
+                # Pausade projekt
+                if _paused_domains:
+                    with st.expander(f"⏸️ {len(_paused_domains)} projeto(s) pausado(s)", expanded=False):
+                        for _pd in _paused_domains:
+                            _pc1, _pc2 = st.columns([4, 1])
+                            with _pc1:
+                                st.markdown(f"`{_pd['domain']}`")
+                            with _pc2:
+                                if st.button("Ativar", key=f"resume_dom_{_pd['domain']}"):
+                                    set_domain_active(user_id, _pd["domain"], True)
+                                    st.rerun()
+
+                # Seletor av aktivt projekt
+                if not _active_domains:
+                    if not _all_domains:
+                        st.info("💡 Adicione o endereço do seu site para monitorar seu ranking no Google.")
+                    else:
+                        st.info("Todos os projetos estão pausados. Ative um para visualizar os dados.")
+                    domain = None
+                else:
+                    _dom_col, _pause_col = st.columns([4, 1])
+                    with _dom_col:
+                        _dom_options = [d["domain"] for d in _active_domains]
+                        domain = st.selectbox("", _dom_options, key="selected_domain",
+                                              label_visibility="collapsed")
+                    with _pause_col:
+                        if domain and st.button("⏸ Pausar", key=f"pause_dom_{domain}"):
+                            set_domain_active(user_id, domain, False)
+                            st.rerun()
+
             else:
-                col_d, col_b = st.columns([5, 1])
-                with col_d:
-                    st.markdown(f"🌐 **Seu site:** `{domain}`")
-                with col_b:
-                    if st.button("Alterar", key="change_domain"):
-                        supabase.table("subscribers").update({
-                            "domain": None,
-                            "domain_rank": None,
-                            "spam_score": None,
-                            "ahrefs_dr": None,
-                            "domain_enriched_at": None,
-                        }).eq("email", user_email).execute()
-                        st.rerun()
+                # Pro: enskild domän-hantering (oförändrat)
+                domain = get_user_domain(user_email)
+                if not domain:
+                    st.info("💡 Adicione o endereço do seu site para monitorar sua posição no Google.")
+                    col_d, col_b = st.columns([4, 1])
+                    with col_d:
+                        new_domain = st.text_input("", placeholder="seobrasil.app", key="domain_input", label_visibility="collapsed")
+                    with col_b:
+                        if st.button("Salvar site", key="save_domain"):
+                            if new_domain.strip():
+                                save_user_domain(user_email, new_domain)
+                                log_event(user_id, "domain_added")
+                                st.success("✅ Site salvo!")
+                                st.rerun()
+                else:
+                    col_d, col_b = st.columns([5, 1])
+                    with col_d:
+                        st.markdown(f"🌐 **Seu site:** `{domain}`")
+                    with col_b:
+                        if st.button("Alterar", key="change_domain"):
+                            supabase.table("subscribers").update({
+                                "domain": None,
+                                "domain_rank": None,
+                                "spam_score": None,
+                                "ahrefs_dr": None,
+                                "domain_enriched_at": None,
+                            }).eq("email", user_email).execute()
+                            try:
+                                supabase.table("user_domains").update({"is_active": False}) \
+                                    .eq("user_id", str(user_id)).eq("domain", domain).execute()
+                            except Exception:
+                                pass
+                            st.rerun()
 
             # ── DOMAIN HEALTH CARD ────────────────────────────────────────
             if domain:
@@ -1945,7 +2120,7 @@ else:
 
             st.divider()
 
-            tracked_list = get_tracked_keywords_list(user_id)
+            tracked_list = get_tracked_keywords_list(user_id, domain)
 
             # ranking_viewed: loggas en gång — kräver domän, trackade keywords och faktisk ranking-data
             if domain and tracked_list and not has_event(user_id, "ranking_viewed"):
@@ -1963,10 +2138,13 @@ else:
                 st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
                 count = len(tracked_list)
-                st.caption(f"{count}/100 palavras rastreadas — dados atualizados toda segunda-feira")
+                _kw_limit = 300 if _user_plan == "premium" else 100
+                if _user_plan == "premium":
+                    _total_kw = len(supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute().data or [])
+                    st.caption(f"{count} palavra(s) neste projeto · {_total_kw}/{_kw_limit} no total — dados atualizados toda segunda-feira")
+                else:
+                    st.caption(f"{count}/{_kw_limit} palavras rastreadas — dados atualizados toda segunda-feira")
                 st.divider()
-
-                _user_plan = get_user_plan(st.session_state.user.email)
 
                 for item in tracked_list:
                     kw = item["keyword"]
@@ -2011,7 +2189,7 @@ else:
 
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
-                            remove_tracking(kw, user_id)
+                            remove_tracking(kw, user_id, domain)
                             st.rerun()
 
         # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────

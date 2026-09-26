@@ -60,14 +60,57 @@ def get_user_id_by_email(email):
     return None
 
 
-def get_tracked_keywords(user_id):
-    """Hämtar alla aktiva spårade sökord för en användare."""
+def get_tracked_keywords(user_id, domain):
+    """Hämtar alla aktiva spårade sökord för en användare och domän."""
     res = supabase.table("tracked_keywords") \
         .select("keyword") \
         .eq("user_id", user_id) \
+        .eq("domain", domain) \
         .eq("is_active", True) \
         .execute()
     return [r["keyword"] for r in res.data]
+
+
+def get_active_user_domains():
+    """
+    Hämtar alla aktiva domäner för prenumeranter på aktuell marknad.
+    Returnerar lista av {email, domain, user_id}.
+    Används av run() — ersätter get_active_subscribers() för multi-domain-stöd.
+    """
+    # Steg 1: Hämta user_id → email-mappning för aktuell marknad
+    sub_res = (
+        supabase.table("subscribers")
+        .select("email, user_id")
+        .eq("market", MARKET)
+        .execute()
+    )
+    user_map = {
+        r["user_id"]: r["email"]
+        for r in (sub_res.data or [])
+        if r.get("user_id") and r.get("email")
+    }
+
+    if not user_map:
+        return []
+
+    # Steg 2: Hämta aktiva domäner för dessa användare
+    domain_res = (
+        supabase.table("user_domains")
+        .select("user_id, domain")
+        .eq("is_active", True)
+        .in_("user_id", list(user_map.keys()))
+        .execute()
+    )
+
+    return [
+        {
+            "email": user_map[r["user_id"]],
+            "domain": r["domain"],
+            "user_id": r["user_id"],
+        }
+        for r in (domain_res.data or [])
+        if r.get("user_id") in user_map
+    ]
 
 
 def get_existing_positions(user_id, domain, keywords):
@@ -225,24 +268,16 @@ def run():
     """Huvudfunktion — körs varje måndag."""
     print(f"=== Rank Tracker kör {datetime.now().strftime('%Y-%m-%d %H:%M')} | marknad={MARKET.upper()} | location={LOCATION_CODE} | lang={LANGUAGE_CODE} ===")
 
-    subscribers = get_active_subscribers()
-    print(f"Hittade {len(subscribers)} aktiva prenumeranter")
+    active_domains = get_active_user_domains()
+    print(f"Hittade {len(active_domains)} aktiva domän-projekt")
 
-    for row in subscribers:
-        email = row.get("email")
-        domain = row.get("domain")
-        print(f"\n→ {email} | domän: {domain or '—'}")
+    for row in active_domains:
+        email = row["email"]
+        domain = row["domain"]
+        user_id = row["user_id"]
+        print(f"\n→ {email} | domän: {domain}")
 
-        if not domain:
-            print(f"  Ingen domän registrerad, hoppar över SERP-tracking")
-            continue
-
-        user_id = get_user_id_by_email(email)
-        if not user_id:
-            print(f"  Kunde inte hitta user_id, hoppar över")
-            continue
-
-        keywords = get_tracked_keywords(user_id)
+        keywords = get_tracked_keywords(user_id, domain)
         if not keywords:
             print(f"  Inga spårade sökord, hoppar över")
             continue
