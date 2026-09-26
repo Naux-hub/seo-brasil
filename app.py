@@ -37,8 +37,8 @@ def get_tracked_set(user_id):
 
 def add_tracking(keyword, user_id):
     count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
-    if len(count_res.data) >= 20:
-        return False, "Limite de 20 palavras atingido."
+    if len(count_res.data) >= 100:
+        return False, "Limite de 100 palavras atingido."
     try:
         existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
         if existing.data:
@@ -1298,8 +1298,8 @@ if st.session_state.user is None:
         <div class="per">por mês • sem fidelidade</div>
         <ul>
             <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
-            <li>✅ Monitoramento de até 20 palavras-chave</li>
-            <li>📈 Monitoramento de ranking — até 20 palavras-chave</li>
+            <li>✅ Monitoramento de até 100 palavras-chave</li>
+            <li>📈 Monitoramento de ranking — até 100 palavras-chave</li>
             <li>📬 Relatório automático toda segunda-feira</li>
             <li>🇧🇷 Dados focados no mercado brasileiro</li>
             <li>📊 Exportação CSV dos resultados</li>
@@ -1916,7 +1916,7 @@ else:
                 st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
                 count = len(tracked_list)
-                st.caption(f"{count}/20 palavras rastreadas — dados atualizados toda segunda-feira")
+                st.caption(f"{count}/100 palavras rastreadas — dados atualizados toda segunda-feira")
                 st.divider()
 
                 for item in tracked_list:
