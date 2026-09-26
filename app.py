@@ -22,7 +22,8 @@ AHREFS_API_KEY = os.environ.get("AHREFS_API_KEY", "")
 CATCHDOMS_TOKEN = os.environ.get("CATCHDOMS_TOKEN", "")
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-HOTMART_URL = "https://pay.hotmart.com/L106736067M"
+HOTMART_URL         = "https://pay.hotmart.com/L106736067M"
+HOTMART_PREMIUM_URL = "https://pay.hotmart.com/L106736067M?off=bdwmhc7l"
 COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 dagar i sekunder
 
 cookie = CookieController()
@@ -2185,7 +2186,8 @@ else:
                                     st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
                         else:
                             with st.expander("📊 Ver histórico de posição 🔒 Premium", expanded=False):
-                                st.info("🔒 Histórico de posicionamento é um recurso **Premium**. Faça upgrade para visualizar a evolução do seu ranking nas últimas 12 semanas.")
+                                st.info("🔒 Histórico de posicionamento é um recurso **Premium**. Faça upgrade para acompanhar a evolução do seu ranking nas últimas 12 semanas.")
+                                st.markdown(f'<a href="{HOTMART_PREMIUM_URL}" target="_blank">👉 Assinar SEO Brasil Premium — R$297/mês</a>', unsafe_allow_html=True)
 
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
