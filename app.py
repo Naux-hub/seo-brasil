@@ -1614,6 +1614,12 @@ else:
         _ob_email = st.session_state.user.email
         _ob_domain = get_user_domain(_ob_email, st.session_state.access_token)
         _user_plan = get_user_plan(_ob_email)
+        _sub_active = False
+        try:
+            _sub_active_row = supabase.table("subscribers").select("subscription_status").eq("email", _ob_email).execute()
+            _sub_active = bool(_sub_active_row.data and _sub_active_row.data[0].get("subscription_status") == "active")
+        except Exception:
+            pass
 
         if not _ob_domain:
             st.markdown("""
@@ -1644,6 +1650,23 @@ else:
             user_id, _ob_domain, st.session_state.ranking_in_progress
         )
         render_onboarding_progress(_ob_status)
+
+        if _user_plan == 'pro' and _sub_active:
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
+            border:1px solid rgba(240,180,41,0.25);border-radius:10px;
+            padding:0.7rem 1.1rem;margin-bottom:0.6rem;
+            display:flex;align-items:center;justify-content:space-between">
+                <div>
+                    <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para Premium</span><br>
+                    <span style="font-size:0.81rem;opacity:0.7">300 keywords • até 5 domínios • histórico de posicionamento</span>
+                </div>
+                <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                   style="background:#f0b429;color:#1a1a1a;padding:0.38rem 0.95rem;border-radius:6px;
+                   text-decoration:none;font-weight:700;font-size:0.83rem;white-space:nowrap;margin-left:1rem">
+                    Assinar Premium →
+                </a>
+            </div>""", unsafe_allow_html=True)
 
         tab1, tab2, tab3 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento", "🔎 Oportunidades de Domínios"])
 
