@@ -1449,7 +1449,6 @@ if st.session_state.user is None:
         <div class="per">por mês • sem fidelidade</div>
         <ul>
             <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
-            <li>✅ Monitoramento de até 100 palavras-chave</li>
             <li>📈 Monitoramento de ranking — até 100 palavras-chave</li>
             <li>📬 Relatório automático toda segunda-feira</li>
             <li>🇧🇷 Dados focados no mercado brasileiro</li>
@@ -2247,15 +2246,37 @@ else:
 
         # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────
         with tab3:
-            st.markdown("#### Oportunidades de domínios .com.br")
-            st.caption(
-                "⚠️ **Disponibilidade não verificada automaticamente.** "
-                "Confirme sempre em [Registro.br](https://registro.br/pesquisa-dominio/) "
-                "antes de tentar registrar o domínio."
-            )
+            if _user_plan != "premium":
+                st.markdown(f"""
+                <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
+                border:1px solid rgba(240,180,41,0.25);border-radius:12px;
+                padding:1.4rem 1.6rem;margin-top:0.5rem;text-align:center">
+                    <div style="font-size:1.5rem;margin-bottom:0.5rem">🔒</div>
+                    <div style="color:#f0b429;font-weight:700;font-size:1rem;margin-bottom:0.4rem">
+                        Oportunidades de Domínios é um recurso Premium
+                    </div>
+                    <div style="font-size:0.87rem;opacity:0.75;margin-bottom:1rem">
+                        Encontre domínios .com.br expirados com autoridade — filtre por Trust Flow,
+                        Referring Domains, idade e categoria.
+                    </div>
+                    <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                       style="background:#f0b429;color:#1a1a1a;padding:0.5rem 1.3rem;border-radius:7px;
+                       text-decoration:none;font-weight:700;font-size:0.9rem">
+                        Assinar Premium — R$297/mês →
+                    </a>
+                </div>""", unsafe_allow_html=True)
+            else:
+                st.markdown("#### Oportunidades de domínios .com.br")
+                st.caption(
+                    "⚠️ **Disponibilidade não verificada automaticamente.** "
+                    "Confirme sempre em [Registro.br](https://registro.br/pesquisa-dominio/) "
+                    "antes de tentar registrar o domínio."
+                )
 
-            # Filtros
-            with st.expander("⚙️ Filtros de busca", expanded=True):
+            # Filtros (apenas Premium)
+            _opps_search = False
+            if _user_plan == "premium":
+              with st.expander("⚙️ Filtros de busca", expanded=True):
                 _fc1, _fc2, _fc3, _fc4 = st.columns(4)
                 with _fc1:
                     _opps_tf_min = st.slider("TF mínimo", 5, 50, 15, key="opps_tf_min",
@@ -2327,12 +2348,12 @@ else:
                         st.session_state.opps_results = merge_results(_opps_cd, _opps_dfs)
                         st.session_state.opps_last_filters = _opps_filters
 
-            # Exibição de resultados
-            if st.session_state.opps_results is None:
+            # Exibição de resultados (apenas Premium)
+            if _user_plan == "premium" and st.session_state.opps_results is None:
                 st.info("Configure os filtros acima e clique em **Buscar Domínios** para encontrar oportunidades.")
-            elif len(st.session_state.opps_results) == 0:
+            elif _user_plan == "premium" and len(st.session_state.opps_results) == 0:
                 st.info("Nenhum resultado para os filtros selecionados.")
-            else:
+            elif _user_plan == "premium":
                 _opps_res = st.session_state.opps_results
                 st.markdown(f"**{len(_opps_res)} domínio(s) encontrado(s)**")
 
