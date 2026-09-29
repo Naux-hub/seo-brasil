@@ -33,8 +33,30 @@ def ar_prenumerant(email):
     return len(res.data) > 0
 
 def get_tracked_set(user_id):
-    res = supabase.table("tracked_keywords").select("keyword").eq("user_id", str(user_id)).eq("is_active", True).execute()
-    return {r["keyword"] for r in res.data}
+    """Returnerar keywords som är aktivt sparat för ett aktivt projekt/domän.
+    Kontrollerar att domänen är is_active=True i user_domains — så att keywords
+    från borttagna projekt inte visas som sparade (grön bock) i sökresultaten.
+    """
+    try:
+        # Hämta aktiva domäner för denna användare
+        active_res = supabase.table("user_domains") \
+            .select("domain") \
+            .eq("user_id", str(user_id)) \
+            .eq("is_active", True) \
+            .execute()
+        active_domains = {r["domain"] for r in (active_res.data or [])}
+        if not active_domains:
+            return set()
+        # Hämta tracked keywords inkl. domänfält
+        res = supabase.table("tracked_keywords") \
+            .select("keyword, domain") \
+            .eq("user_id", str(user_id)) \
+            .eq("is_active", True) \
+            .execute()
+        # Visa bara ✅ för keywords kopplade till en aktiv domän
+        return {r["keyword"] for r in (res.data or []) if r.get("domain") in active_domains}
+    except Exception:
+        return set()
 
 def add_tracking(keyword, user_id, domain, plan='pro'):
     if not domain:
