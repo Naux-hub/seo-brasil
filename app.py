@@ -463,10 +463,10 @@ def _ss_level(ss):
     if ss is None:
         return "Não disponível", "#6B7280"
     if ss >= 61:
-        return "🔴 High", "#ef4444"
+        return "🔴 Alto", "#ef4444"
     if ss >= 31:
-        return "🟡 Moderate", "#f59e0b"
-    return "🟢 Low", "#22c55e"
+        return "🟡 Moderado", "#f59e0b"
+    return "🟢 Baixo", "#22c55e"
 
 
 def has_event(user_id, event):
