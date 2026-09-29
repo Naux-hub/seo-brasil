@@ -175,6 +175,22 @@ def set_domain_active(user_id, domain, is_active):
         pass
 
 
+def delete_user_domain(user_id, domain):
+    """
+    Tar bort projektassociationen från user_domains.
+    Bevarar all historisk data: ranking_history, tracked_keywords, keyword_rankings.
+    Raderar ALDRIG data för andra användare — filtrerar alltid på user_id + domain.
+    """
+    try:
+        supabase.table("user_domains") \
+            .delete() \
+            .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
+            .execute()
+    except Exception:
+        pass
+
+
 def get_trial_status(email):
     res = supabase.table("subscribers").select("subscription_status, created_at").eq("email", email).execute()
     if not res.data:
@@ -1450,6 +1466,7 @@ if st.session_state.user is None:
         <ul>
             <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
             <li>📈 Monitoramento de ranking — até 100 palavras-chave</li>
+            <li>📊 Histórico básico de posicionamento / evolução</li>
             <li>📬 Relatório automático toda segunda-feira</li>
             <li>🇧🇷 Dados focados no mercado brasileiro</li>
             <li>📊 Exportação CSV dos resultados</li>
@@ -1467,7 +1484,7 @@ if st.session_state.user is None:
         <ul>
             <li>🌐 Até 5 projetos/domínios ativos</li>
             <li>✅ Até 300 palavras-chave monitoradas no total</li>
-            <li>📊 Histórico de posicionamento / evolução</li>
+            <li>📊 Histórico avançado / comparações</li>
             <li>🔍 Oportunidades de Domínios</li>
             <li>📈 Todos os recursos do Pro</li>
         </ul>
@@ -1982,22 +1999,19 @@ else:
                                     st.session_state[f"_confirm_remove_{_pd['domain']}"] = True
                             # Bekräftelse innan DELETE
                             if st.session_state.get(f"_confirm_remove_{_pd['domain']}"):
-                                st.warning(f"Remover **{_pd['domain']}** da lista? O histórico de ranking e palavras-chave será preservado.")
+                                st.warning(
+                                    f"**Remover este projeto?**  \n"
+                                    f"Esta ação remove **{_pd['domain']}** da sua lista, mas preserva o histórico "
+                                    f"de posicionamento e as palavras-chave."
+                                )
                                 _rc1, _rc2 = st.columns(2)
                                 with _rc1:
-                                    if st.button("Confirmar remoção", key=f"confirm_yes_{_pd['domain']}", type="primary"):
-                                        try:
-                                            supabase.table("user_domains") \
-                                                .delete() \
-                                                .eq("user_id", str(user_id)) \
-                                                .eq("domain", _pd["domain"]) \
-                                                .execute()
-                                        except Exception:
-                                            pass
+                                    if st.button("Cancelar", key=f"confirm_no_{_pd['domain']}"):
                                         st.session_state.pop(f"_confirm_remove_{_pd['domain']}", None)
                                         st.rerun()
                                 with _rc2:
-                                    if st.button("Cancelar", key=f"confirm_no_{_pd['domain']}"):
+                                    if st.button("Remover", key=f"confirm_yes_{_pd['domain']}", type="primary"):
+                                        delete_user_domain(user_id, _pd["domain"])
                                         st.session_state.pop(f"_confirm_remove_{_pd['domain']}", None)
                                         st.rerun()
 
@@ -2009,7 +2023,7 @@ else:
                         st.info("Todos os projetos estão pausados. Ative um para visualizar os dados.")
                     domain = None
                 else:
-                    _dom_col, _pause_col = st.columns([4, 1])
+                    _dom_col, _pause_col, _remove_col = st.columns([4, 1, 1])
                     with _dom_col:
                         _dom_options = [d["domain"] for d in _active_domains]
                         domain = st.selectbox("", _dom_options, key="selected_domain",
@@ -2018,6 +2032,26 @@ else:
                         if domain and st.button("⏸ Pausar", key=f"pause_dom_{domain}"):
                             set_domain_active(user_id, domain, False)
                             st.rerun()
+                    with _remove_col:
+                        if domain and st.button("Remover", key=f"remove_active_{domain}"):
+                            st.session_state[f"_confirm_remove_{domain}"] = True
+                    # Bekräftelse för aktivt projekt
+                    if domain and st.session_state.get(f"_confirm_remove_{domain}"):
+                        st.warning(
+                            f"**Remover este projeto?**  \n"
+                            f"Esta ação remove **{domain}** da sua lista, mas preserva o histórico "
+                            f"de posicionamento e as palavras-chave."
+                        )
+                        _ra1, _ra2 = st.columns(2)
+                        with _ra1:
+                            if st.button("Cancelar", key=f"cancel_remove_active_{domain}"):
+                                st.session_state.pop(f"_confirm_remove_{domain}", None)
+                                st.rerun()
+                        with _ra2:
+                            if st.button("Remover", key=f"confirm_remove_active_{domain}", type="primary"):
+                                delete_user_domain(user_id, domain)
+                                st.session_state.pop(f"_confirm_remove_{domain}", None)
+                                st.rerun()
 
             else:
                 # Pro: enskild domän-hantering
@@ -2283,29 +2317,30 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # ── Historikgraf — Premium ──
-                        if _user_plan == "premium":
-                            _history = get_rank_history(user_id, kw, domain)
-                            if _history:
-                                with st.expander("📊 Ver histórico de posição", expanded=False):
-                                    import pandas as pd
-                                    _df = pd.DataFrame(_history)
-                                    _df["semana"] = pd.to_datetime(_df["checked_at"]).dt.strftime("%d/%m")
-                                    _df = _df.set_index("semana")[["rank_position"]]
-                                    _df.columns = ["Posição"]
-                                    # Inverte eixo: posição 1 = melhor (topo do gráfico)
-                                    # st.line_chart não suporta invert diretamente;
-                                    # transformamos: plottar (101 - posição) e anotamos no caption
-                                    _df_plot = _df.copy()
-                                    _df_plot["Posição"] = _df_plot["Posição"].apply(
-                                        lambda x: 101 - x if x is not None else None
-                                    )
-                                    st.line_chart(_df_plot, use_container_width=True, height=160)
-                                    st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
-                        else:
-                            with st.expander("📊 Ver histórico de posição 🔒 Premium", expanded=False):
-                                st.info("🔒 Histórico de posicionamento é um recurso **Premium**. Faça upgrade para acompanhar a evolução do seu ranking nas últimas 12 semanas.")
-                                st.markdown(f'<a href="{HOTMART_PREMIUM_URL}" target="_blank">👉 Assinar SEO Brasil Premium — R$297/mês</a>', unsafe_allow_html=True)
+                        # ── Historikgraf — Pro (4 veckor) / Premium (12 veckor) ──
+                        _hist_weeks = 12 if _user_plan == "premium" else 4
+                        _history = get_rank_history(user_id, kw, domain, weeks=_hist_weeks)
+                        if _history:
+                            _hist_label = (
+                                "📊 Ver histórico de posição (últimas 12 semanas)"
+                                if _user_plan == "premium"
+                                else "📊 Ver histórico básico (últimas 4 semanas)"
+                            )
+                            with st.expander(_hist_label, expanded=False):
+                                import pandas as pd
+                                _df = pd.DataFrame(_history)
+                                _df["semana"] = pd.to_datetime(_df["checked_at"]).dt.strftime("%d/%m")
+                                _df = _df.set_index("semana")[["rank_position"]]
+                                _df.columns = ["Posição"]
+                                # Inverte eixo: posição 1 = melhor (topo do gráfico)
+                                _df_plot = _df.copy()
+                                _df_plot["Posição"] = _df_plot["Posição"].apply(
+                                    lambda x: 101 - x if x is not None else None
+                                )
+                                st.line_chart(_df_plot, use_container_width=True, height=160)
+                                st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                                if _user_plan != "premium":
+                                    st.caption(f'💡 Veja as últimas 12 semanas com o Premium. <a href="{HOTMART_PREMIUM_URL}" target="_blank">Assinar →</a>', unsafe_allow_html=True)
 
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
