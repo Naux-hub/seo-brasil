@@ -5,6 +5,11 @@ import time
 import os
 from supabase import create_client
 from keyword_cache import get_keyword_data, get_keyword_ideas
+from domain_opportunities import (
+    fetch_catchdoms, enrich_with_dataforseo, merge_results,
+    compact_num, tf_cf_ratio, registro_br_url, wayback_url, majestic_url,
+    MAJESTIC_CATEGORIES,
+)
 from datetime import datetime, timedelta, timezone
 from streamlit_cookies_controller import CookieController
 import streamlit.components.v1 as components
@@ -14,9 +19,11 @@ import logging
 DATAFORSEO_LOGIN = os.environ["DATAFORSEO_LOGIN"]
 DATAFORSEO_PASSWORD = os.environ["DATAFORSEO_PASSWORD"]
 AHREFS_API_KEY = os.environ.get("AHREFS_API_KEY", "")
+CATCHDOMS_TOKEN = os.environ.get("CATCHDOMS_TOKEN", "")
 supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
 
-HOTMART_URL = "https://pay.hotmart.com/L106736067M"
+HOTMART_URL         = "https://pay.hotmart.com/L106736067M"
+HOTMART_PREMIUM_URL = "https://pay.hotmart.com/L106736067M?off=bdwmhc7l"
 COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 dagar i sekunder
 
 cookie = CookieController()
@@ -29,30 +36,39 @@ def get_tracked_set(user_id):
     res = supabase.table("tracked_keywords").select("keyword").eq("user_id", str(user_id)).eq("is_active", True).execute()
     return {r["keyword"] for r in res.data}
 
-def add_tracking(keyword, user_id):
+def add_tracking(keyword, user_id, domain, plan='pro'):
+    if not domain:
+        return False, "Configure seu site antes de rastrear palavras-chave."
+    limit = 300 if plan == 'premium' else 100
     count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
-    if len(count_res.data) >= 20:
-        return False, "Limite de 20 palavras atingido."
+    if len(count_res.data) >= limit:
+        return False, f"Limite de {limit} palavras atingido."
     try:
-        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).eq("domain", domain).execute()
         if existing.data:
-            supabase.table("tracked_keywords").update({"is_active": True}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+            supabase.table("tracked_keywords").update({"is_active": True}).eq("user_id", str(user_id)).eq("keyword", keyword).eq("domain", domain).execute()
         else:
             supabase.table("tracked_keywords").insert({
                 "user_id": str(user_id),
                 "keyword": keyword,
+                "domain": domain,
                 "is_active": True
             }).execute()
         return True, "ok"
     except Exception as e:
         return False, f"Erro: {str(e)}"
 
-def remove_tracking(keyword, user_id):
-    supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
+def remove_tracking(keyword, user_id, domain=None):
+    q = supabase.table("tracked_keywords").update({"is_active": False}).eq("user_id", str(user_id)).eq("keyword", keyword)
+    if domain:
+        q = q.eq("domain", domain)
+    q.execute()
 
-def get_tracked_keywords_list(user_id):
-    res = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True).order("created_at", desc=True).execute()
-    return res.data
+def get_tracked_keywords_list(user_id, domain=None):
+    q = supabase.table("tracked_keywords").select("keyword, created_at").eq("user_id", str(user_id)).eq("is_active", True)
+    if domain:
+        q = q.eq("domain", domain)
+    return q.order("created_at", desc=True).execute().data
 
 @st.cache_data(ttl=3600)
 def get_social_proof():
@@ -72,6 +88,92 @@ def get_user_domain(email, access_token=None):
     if res.data and res.data[0].get("domain"):
         return res.data[0]["domain"]
     return None
+
+def get_user_plan(email):
+    """Returnerar 'premium', 'pro' (default) eller None (ej prenumerant)."""
+    try:
+        res = supabase.table("subscribers").select("plan").eq("email", email).execute()
+        if res.data:
+            return res.data[0].get("plan", "pro") or "pro"
+        return None
+    except Exception:
+        return "pro"
+
+def get_user_domains(user_id):
+    """Returnerar lista av {domain, is_active} från user_domains för en användare."""
+    try:
+        res = supabase.table("user_domains") \
+            .select("domain, is_active") \
+            .eq("user_id", str(user_id)) \
+            .order("created_at", desc=False) \
+            .execute()
+        return res.data or []
+    except Exception:
+        return []
+
+
+def add_user_domain(user_id, domain, email=None):
+    """
+    Lägger till en domän i user_domains (eller reaktiverar om den tidigare pausats).
+    Skriver också till subscribers.domain för att hålla dem synkroniserade.
+    Returnerar (True, "ok") eller (False, felmeddelande).
+    """
+    try:
+        domain = domain.strip().lower().replace("https://", "").replace("http://", "").rstrip("/")
+        if not domain:
+            return False, "Domínio inválido."
+        # Hämta market från subscribers
+        market = "br"
+        if email:
+            try:
+                _sub = supabase.table("subscribers").select("market").eq("email", email).execute()
+                if _sub.data:
+                    market = _sub.data[0].get("market") or "br"
+            except Exception:
+                pass
+        # Kontrollera gräns: max 5 aktiva domäner per Premium-användare
+        active_res = supabase.table("user_domains") \
+            .select("domain") \
+            .eq("user_id", str(user_id)) \
+            .eq("is_active", True) \
+            .execute()
+        if len(active_res.data) >= 5:
+            return False, "Limite de 5 projetos ativos atingido."
+        # Upsert: reaktiverar om domänen redan finns pausad
+        supabase.table("user_domains").upsert({
+            "user_id": str(user_id),
+            "domain": domain,
+            "market": market,
+            "is_active": True,
+        }, on_conflict="user_id,domain").execute()
+        # Synkronisera subscribers.domain (behålls för bakåtkompatibilitet)
+        if email:
+            try:
+                supabase.table("subscribers").update({
+                    "domain": domain,
+                    "domain_rank": None,
+                    "spam_score": None,
+                    "ahrefs_dr": None,
+                    "domain_enriched_at": None,
+                }).eq("email", email).execute()
+            except Exception:
+                pass
+        return True, "ok"
+    except Exception as e:
+        return False, f"Erro: {str(e)}"
+
+
+def set_domain_active(user_id, domain, is_active):
+    """Pausar (is_active=False) eller aktiverar (is_active=True) en domän i user_domains."""
+    try:
+        supabase.table("user_domains") \
+            .update({"is_active": is_active}) \
+            .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
+            .execute()
+    except Exception:
+        pass
+
 
 def get_trial_status(email):
     res = supabase.table("subscribers").select("subscription_status, created_at").eq("email", email).execute()
@@ -148,6 +250,20 @@ def save_user_domain(email, domain):
         "ahrefs_dr": None,
         "domain_enriched_at": None,
     }).eq("email", email).execute()
+    # Skriv också till user_domains (multi-domain-stöd)
+    try:
+        sub_res = supabase.table("subscribers").select("user_id, market").eq("email", email).execute()
+        if sub_res.data and sub_res.data[0].get("user_id"):
+            _uid = str(sub_res.data[0]["user_id"])
+            _mkt = sub_res.data[0].get("market") or "br"
+            supabase.table("user_domains").upsert({
+                "user_id": _uid,
+                "domain": domain,
+                "market": _mkt,
+                "is_active": True,
+            }, on_conflict="user_id,domain").execute()
+    except Exception:
+        pass
 
 
 # ── DOMAIN HEALTH (Domain Rank + Spam Score + Ahrefs DR) ─────────────────────
@@ -343,14 +459,14 @@ def _ahrefs_dr_level(ahrefs_dr):
 
 
 def _ss_level(ss):
-    """Returnerar (etikett, färg) för Spam Score-nivå."""
+    """Returnerar (etikett, färg) för Spam Score-nivå (DataForSEO officiella intervall)."""
     if ss is None:
         return "Não disponível", "#6B7280"
-    if ss >= 16:
-        return "Alto", "#ef4444"
-    if ss >= 6:
-        return "Médio", "#f59e0b"
-    return "Baixo", "#22c55e"
+    if ss >= 61:
+        return "🔴 High", "#ef4444"
+    if ss >= 31:
+        return "🟡 Moderate", "#f59e0b"
+    return "🟢 Low", "#22c55e"
 
 
 def has_event(user_id, event):
@@ -374,6 +490,23 @@ def get_rank_data_for_keyword(user_id, keyword, domain):
         .limit(1) \
         .execute()
     return res.data[0] if res.data else None
+
+def get_rank_history(user_id, keyword, domain, weeks=12):
+    """Returnerar upp till 12 veckors rankinghistorik, äldsta först.
+    NULL-värden (inte i top 100) ingår som None — visas som gap i grafen.
+    """
+    try:
+        res = supabase.table("keyword_rankings_history") \
+            .select("rank_position, checked_at") \
+            .eq("user_id", str(user_id)) \
+            .eq("keyword", keyword) \
+            .eq("domain", domain) \
+            .order("checked_at", desc=False) \
+            .limit(weeks) \
+            .execute()
+        return res.data or []
+    except Exception:
+        return []
 
 def trend_label(row):
     if not row:
@@ -430,6 +563,7 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
         all_res = _pg.from_("tracked_keywords") \
             .select("keyword") \
             .eq("user_id", str(user_id)) \
+            .eq("domain", domain) \
             .eq("is_active", True) \
             .execute()
         all_keywords = {r["keyword"] for r in (all_res.data or [])}
@@ -571,6 +705,26 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             save_ok = set(expected_kws) == found_kws
             logging.info("[on_demand_ranking] verification: expected=%s found=%s save_ok=%s",
                          sorted(expected_kws), sorted(found_kws), save_ok)
+
+            # Historiklogg — initial datapunkt, körs aldrig om med DataForSEO
+            if save_ok:
+                try:
+                    history_rows = [
+                        {
+                            "user_id": str(user_id),
+                            "keyword": r["keyword"],
+                            "domain": r["domain"],
+                            "rank_position": r["rank_position"],
+                            "checked_at": r["checked_at"],
+                            "market": r["market"],
+                            "source": "initial",
+                        }
+                        for r in rows
+                    ]
+                    supabase.table("keyword_rankings_history").insert(history_rows).execute()
+                    logging.info("[on_demand_ranking] history insert: count=%d", len(history_rows))
+                except Exception:
+                    logging.exception("[on_demand_ranking] history insert error: user=%s", user_id)
         except Exception:
             logging.exception("[on_demand_ranking] upsert error: user=%s domain=%s",
                               user_id, domain)
@@ -1284,16 +1438,18 @@ if st.session_state.user is None:
     st.divider()
 
     # --- Preço ---
-    st.markdown('<div class="section-title">Plano único, sem surpresas</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Escolha seu plano</div>', unsafe_allow_html=True)
     st.markdown(f"""
-    <div class="price-box">
+    <div class="plans-row" style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
+
+      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;">
         <div class="trial-pill">14 dias grátis para testar</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#4d9fff">SEO Brasil Pro</div>
         <div class="price">R$197</div>
         <div class="per">por mês • sem fidelidade</div>
         <ul>
             <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
-            <li>✅ Monitoramento de até 20 palavras-chave</li>
-            <li>📈 Monitoramento de ranking — até 20 palavras-chave</li>
+            <li>📈 Monitoramento de ranking — até 100 palavras-chave</li>
             <li>📬 Relatório automático toda segunda-feira</li>
             <li>🇧🇷 Dados focados no mercado brasileiro</li>
             <li>📊 Exportação CSV dos resultados</li>
@@ -1301,6 +1457,24 @@ if st.session_state.user is None:
         </ul>
         <a class="cta-btn" href="{HOTMART_URL}">Começar grátis por 14 dias →</a>
         <div class="no-cc">Sem cartão de crédito no período de teste</div>
+      </div>
+
+      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;border-color:rgba(255,200,60,0.5);background:rgba(255,200,60,0.04);">
+        <div class="trial-pill" style="background:rgba(255,200,60,0.2);color:#f0b429;">✨ Premium</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#f0b429">SEO Brasil Premium</div>
+        <div class="price">R$297</div>
+        <div class="per">por mês • sem fidelidade</div>
+        <ul>
+            <li>🌐 Até 5 projetos/domínios ativos</li>
+            <li>✅ Até 300 palavras-chave monitoradas no total</li>
+            <li>📊 Histórico de posicionamento / evolução</li>
+            <li>🔍 Oportunidades de Domínios</li>
+            <li>📈 Todos os recursos do Pro</li>
+        </ul>
+        <a class="cta-btn" href="{HOTMART_PREMIUM_URL}" style="background:#f0b429;color:#1a1a2e;">Assinar Premium →</a>
+        <div class="no-cc">Pagamento mensal • Cancele quando quiser</div>
+      </div>
+
     </div>
     """, unsafe_allow_html=True)
 
@@ -1392,7 +1566,14 @@ else:
     with col_logo:
         st.markdown("<div style='font-size:1.3rem;font-weight:800;padding-top:6px'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
     with col_user:
-        st.markdown(f"<div style='font-size:0.85rem;opacity:0.6;padding-top:10px;text-align:right'>{st.session_state.user.email}</div>", unsafe_allow_html=True)
+        _header_plan = get_user_plan(st.session_state.user.email)
+        _plan_label = "✨ Plano Premium" if _header_plan == "premium" else "Plano Pro"
+        _plan_color = "#f0b429" if _header_plan == "premium" else "rgba(255,255,255,0.4)"
+        st.markdown(f"""
+            <div style='text-align:right;padding-top:6px'>
+                <div style='font-size:0.85rem;opacity:0.6'>{st.session_state.user.email}</div>
+                <div style='font-size:0.75rem;color:{_plan_color};margin-top:2px'>{_plan_label}</div>
+            </div>""", unsafe_allow_html=True)
     with col_sair:
         sair_clicked = st.button("Sair", key="sair_btn")
 
@@ -1422,10 +1603,22 @@ else:
             st.session_state._ranking_kws = []
         if "_ranking_viewed_logged" not in st.session_state:
             st.session_state._ranking_viewed_logged = False
+        # Domain Opportunities — isolerad session state
+        if "opps_results" not in st.session_state:
+            st.session_state.opps_results = None
+        if "opps_last_filters" not in st.session_state:
+            st.session_state.opps_last_filters = {}
 
         # --- Onboarding-banner: visa om ingen domän är satt ---
         _ob_email = st.session_state.user.email
         _ob_domain = get_user_domain(_ob_email, st.session_state.access_token)
+        _user_plan = get_user_plan(_ob_email)
+        _sub_active = False
+        try:
+            _sub_active_row = supabase.table("subscribers").select("subscription_status").eq("email", _ob_email).execute()
+            _sub_active = bool(_sub_active_row.data and _sub_active_row.data[0].get("subscription_status") == "active")
+        except Exception:
+            pass
 
         if not _ob_domain:
             st.markdown("""
@@ -1457,7 +1650,24 @@ else:
         )
         render_onboarding_progress(_ob_status)
 
-        tab1, tab2 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento"])
+        if _user_plan == 'pro' and _sub_active:
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
+            border:1px solid rgba(240,180,41,0.25);border-radius:10px;
+            padding:0.7rem 1.1rem;margin-bottom:0.6rem;
+            display:flex;align-items:center;justify-content:space-between">
+                <div>
+                    <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para Premium</span><br>
+                    <span style="font-size:0.81rem;opacity:0.7">300 keywords • até 5 domínios • histórico de posicionamento</span>
+                </div>
+                <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                   style="background:#f0b429;color:#1a1a1a;padding:0.38rem 0.95rem;border-radius:6px;
+                   text-decoration:none;font-weight:700;font-size:0.83rem;white-space:nowrap;margin-left:1rem">
+                    Assinar Premium →
+                </a>
+            </div>""", unsafe_allow_html=True)
+
+        tab1, tab2, tab3 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento", "🔎 Oportunidades de Domínios"])
 
         # ── TAB 1: SÖKNING ──────────────────────────────
         with tab1:
@@ -1528,8 +1738,11 @@ else:
                                 st.session_state.keyword_ideas = [
                                     i for i in ideas if i["keyword"].lower() not in searched_set
                                 ]
+                                st.session_state.keyword_ideas_error = False
                             except Exception as _ideas_err:
+                                logging.warning("[keyword_ideas] misslyckades: %s", _ideas_err)
                                 st.session_state.keyword_ideas = []
+                                st.session_state.keyword_ideas_error = True
 
             # Visa resultat med "+ Rastrear"-knappar
             if st.session_state.search_results:
@@ -1583,7 +1796,7 @@ else:
                             st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
                             if st.button("+ Rastrear", key=f"track_{kw}",
                                          disabled=st.session_state.ranking_in_progress):
-                                ok, msg = add_tracking(kw, user_id)
+                                ok, msg = add_tracking(kw, user_id, _ob_domain, _user_plan)
                                 if ok:
                                     log_event(user_id, "keyword_saved", {"keyword": kw})
                                     if not has_event(user_id, "keyword_tracked"):
@@ -1612,10 +1825,10 @@ else:
                     mime="text/csv",
                 )
 
-                # --- Debug ---
-
                 # --- Sugestões relacionadas ---
                 ideas = st.session_state.get("keyword_ideas", [])
+                if st.session_state.get("keyword_ideas_error"):
+                    st.caption("⚠️ Não foi possível carregar sugestões relacionadas desta vez.")
                 if ideas:
                     def _is_opportunity(idea):
                         return (idea.get("search_volume") or 0) > 10000 and float(idea.get("cpc") or 0) < 0.25
@@ -1689,7 +1902,7 @@ else:
                                 st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
                                 if st.button("+ Rastrear", key=f"track_idea_{ikw}",
                                              disabled=st.session_state.ranking_in_progress):
-                                    ok, msg = add_tracking(ikw, user_id)
+                                    ok, msg = add_tracking(ikw, user_id, _ob_domain, _user_plan)
                                     if ok:
                                         log_event(user_id, "keyword_saved", {"keyword": ikw})
                                         if not has_event(user_id, "keyword_tracked"):
@@ -1711,38 +1924,146 @@ else:
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
             user_email = st.session_state.user.email
-            domain = get_user_domain(user_email)
+            _user_plan = get_user_plan(user_email)
             if not st.session_state.get("_ranking_viewed_logged"):
                 log_event(user_id, "ranking_viewed")
                 st.session_state._ranking_viewed_logged = True
 
-            # --- Domän-input ---
-            if not domain:
-                st.info("💡 Adicione o endereço do seu site para monitorar sua posição no Google.")
-                col_d, col_b = st.columns([4, 1])
-                with col_d:
-                    new_domain = st.text_input("", placeholder="seobrasil.app", key="domain_input", label_visibility="collapsed")
-                with col_b:
-                    if st.button("Salvar site", key="save_domain"):
-                        if new_domain.strip():
-                            save_user_domain(user_email, new_domain)
-                            log_event(user_id, "domain_added")
-                            st.success("✅ Site salvo!")
+            # --- Domän-val: Premium = multi-domain, Pro = enskild domän ---
+            if _user_plan == "premium":
+                _all_domains = get_user_domains(user_id)
+                _active_domains = [d for d in _all_domains if d["is_active"]]
+                _paused_domains = [d for d in _all_domains if not d["is_active"]]
+
+                # Rubrik + knapp för att lägga till nytt projekt
+                _col_title, _col_add = st.columns([3, 1])
+                with _col_title:
+                    st.markdown(f"**Seus projetos** ({len(_active_domains)}/5 ativos)")
+                with _col_add:
+                    if len(_active_domains) < 5:
+                        if st.button("➕ Novo projeto", key="premium_new_proj"):
+                            st.session_state._premium_adding_domain = not st.session_state.get("_premium_adding_domain", False)
+
+                # Formulär för att lägga till domän
+                if st.session_state.get("_premium_adding_domain", False):
+                    _col_nd, _col_nb, _col_nc = st.columns([4, 1, 1])
+                    with _col_nd:
+                        _new_proj_domain = st.text_input("", placeholder="novosite.com.br",
+                                                          key="premium_add_domain_input",
+                                                          label_visibility="collapsed")
+                    with _col_nb:
+                        if st.button("Salvar", key="premium_save_domain_btn"):
+                            if _new_proj_domain.strip():
+                                _add_ok, _add_msg = add_user_domain(user_id, _new_proj_domain, user_email)
+                                if _add_ok:
+                                    log_event(user_id, "domain_added")
+                                    st.session_state._premium_adding_domain = False
+                                    st.rerun()
+                                else:
+                                    st.error(_add_msg)
+                    with _col_nc:
+                        if st.button("Cancelar", key="premium_cancel_domain_btn"):
+                            st.session_state._premium_adding_domain = False
                             st.rerun()
+
+                # Pausade projekt
+                if _paused_domains:
+                    with st.expander(f"⏸️ {len(_paused_domains)} projeto(s) pausado(s)", expanded=False):
+                        for _pd in _paused_domains:
+                            _pc1, _pc2 = st.columns([4, 1])
+                            with _pc1:
+                                st.markdown(f"`{_pd['domain']}`")
+                            with _pc2:
+                                if st.button("Ativar", key=f"resume_dom_{_pd['domain']}"):
+                                    set_domain_active(user_id, _pd["domain"], True)
+                                    st.rerun()
+
+                # Seletor av aktivt projekt
+                if not _active_domains:
+                    if not _all_domains:
+                        st.info("💡 Adicione o endereço do seu site para monitorar seu ranking no Google.")
+                    else:
+                        st.info("Todos os projetos estão pausados. Ative um para visualizar os dados.")
+                    domain = None
+                else:
+                    _dom_col, _pause_col = st.columns([4, 1])
+                    with _dom_col:
+                        _dom_options = [d["domain"] for d in _active_domains]
+                        domain = st.selectbox("", _dom_options, key="selected_domain",
+                                              label_visibility="collapsed")
+                    with _pause_col:
+                        if domain and st.button("⏸ Pausar", key=f"pause_dom_{domain}"):
+                            set_domain_active(user_id, domain, False)
+                            st.rerun()
+
             else:
-                col_d, col_b = st.columns([5, 1])
-                with col_d:
-                    st.markdown(f"🌐 **Seu site:** `{domain}`")
-                with col_b:
-                    if st.button("Alterar", key="change_domain"):
-                        supabase.table("subscribers").update({
-                            "domain": None,
-                            "domain_rank": None,
-                            "spam_score": None,
-                            "ahrefs_dr": None,
-                            "domain_enriched_at": None,
-                        }).eq("email", user_email).execute()
-                        st.rerun()
+                # Pro: enskild domän-hantering
+                domain = get_user_domain(user_email)
+                # Lazy backfill: se till att domänen finns i user_domains så att
+                # rank_tracker.py (som enbart läser user_domains) kan hitta Pro-användare.
+                # Fixar befintliga användare som satte sin domän innan multi-domain-migrationen.
+                if domain and not st.session_state.get("_pro_domain_synced"):
+                    try:
+                        sub_res = supabase.table("subscribers").select("user_id, market").eq("email", user_email).execute()
+                        if sub_res.data and sub_res.data[0].get("user_id"):
+                            _uid = str(sub_res.data[0]["user_id"])
+                            _mkt = sub_res.data[0].get("market") or "br"
+                            supabase.table("user_domains").upsert(
+                                {"user_id": _uid, "domain": domain, "market": _mkt, "is_active": True},
+                                on_conflict="user_id,domain"
+                            ).execute()
+                    except Exception:
+                        pass
+                    st.session_state._pro_domain_synced = True
+                if not domain:
+                    st.info("💡 Adicione o endereço do seu site para monitorar sua posição no Google.")
+                    col_d, col_b = st.columns([4, 1])
+                    with col_d:
+                        new_domain = st.text_input("", placeholder="seobrasil.app", key="domain_input", label_visibility="collapsed")
+                    with col_b:
+                        if st.button("Salvar site", key="save_domain"):
+                            if new_domain.strip():
+                                save_user_domain(user_email, new_domain)
+                                log_event(user_id, "domain_added")
+                                st.success("✅ Site salvo!")
+                                st.rerun()
+                else:
+                    col_d, col_b, col_c = st.columns([5, 1, 1])
+                    with col_d:
+                        st.markdown(f"🌐 **Seu site:** `{domain}`")
+                    with col_b:
+                        if st.button("Alterar", key="change_domain", help="Alterar o domínio monitorado"):
+                            supabase.table("subscribers").update({
+                                "domain": None,
+                                "domain_rank": None,
+                                "spam_score": None,
+                                "ahrefs_dr": None,
+                                "domain_enriched_at": None,
+                            }).eq("email", user_email).execute()
+                            try:
+                                supabase.table("user_domains").update({"is_active": False}) \
+                                    .eq("user_id", str(user_id)).eq("domain", domain).execute()
+                            except Exception:
+                                pass
+                            st.session_state._pro_domain_synced = False
+                            st.rerun()
+                    with col_c:
+                        if st.button("×", key="remove_domain", help="Parar de monitorar este site (histórico preservado)"):
+                            supabase.table("subscribers").update({
+                                "domain": None,
+                                "domain_rank": None,
+                                "spam_score": None,
+                                "ahrefs_dr": None,
+                                "domain_enriched_at": None,
+                            }).eq("email", user_email).execute()
+                            try:
+                                supabase.table("user_domains").update({"is_active": False}) \
+                                    .eq("user_id", str(user_id)).eq("domain", domain).execute()
+                            except Exception:
+                                pass
+                            log_event(user_id, "domain_removed")
+                            st.session_state._pro_domain_synced = False
+                            st.rerun()
 
             # ── DOMAIN HEALTH CARD ────────────────────────────────────────
             if domain:
@@ -1760,8 +2081,8 @@ else:
                     _dr_pct     = _dr if _dr is not None else 0
                     _dr_label, _dr_color = _dr_level(_dr)
 
-                    # Formatering — Spam Score
-                    _ss_display = str(_ss) if _ss is not None else "—"
+                    # Formatering — Spam Score (visa som X/100, inte X%)
+                    _ss_display = f"{_ss}/100" if _ss is not None else "—"
                     _ss_label, _ss_color = _ss_level(_ss)
 
                     # Formatering — Ahrefs Domain Rating
@@ -1840,9 +2161,13 @@ else:
                     if _ahrefs_dr_no_data:
                         st.caption("ℹ️ Domain Rating não disponível — o Ahrefs ainda não registrou backlinks para este domínio. Novos domínios podem levar algumas semanas para aparecer.")
 
-                    # SS médio/alto: varningsinformation
-                    if _ss is not None and _ss >= 6:
+                    # SS Moderate/High: varningsinformation (DataForSEO officiellt tröskelvärde >= 31)
+                    if _ss is not None and _ss >= 31:
                         st.caption("ℹ️ Vale a pena revisar o perfil de backlinks para identificar links de baixa qualidade ou potencialmente problemáticos.")
+
+                    # Förklaring av vad Spam Score faktiskt mäter
+                    if _ss is not None:
+                        st.caption("O Spam Score do DataForSEO é uma pontuação de 0 a 100 baseada em sinais técnicos das páginas analisadas do domínio. Não representa a porcentagem de backlinks considerados spam e não deve ser comparado diretamente ao Spam Score da Moz.")
 
                     # Info om vad värdena betyder
                     with st.expander("O que são Domain Rating, Domain Rank e Spam Score?", expanded=False):
@@ -1852,8 +2177,12 @@ else:
                             "para o domínio.\n\n"
                             "**Domain Rank (DataForSEO)** mede a autoridade de backlinks pelo índice do DataForSEO, "
                             "numa escala de 0 a 100. Métrica complementar ao Domain Rating.\n\n"
-                            "**Spam Score** indica a probabilidade de o perfil de backlinks conter links de baixa qualidade. "
-                            "Valores mais baixos são melhores. Acima de 6%, vale revisar o perfil de links."
+                            "**Spam Score (DataForSEO)** é uma pontuação de 0 a 100 baseada em sinais técnicos das páginas "
+                            "analisadas do domínio — como presença de HTTPS, comprimento de títulos, fontes de scripts externos e links. "
+                            "Para domínios, o valor representa a média das páginas analisadas. "
+                            "Não representa a porcentagem de backlinks considerados spam. "
+                            "⚠️ Não deve ser comparado ao Spam Score da Moz, que é uma métrica diferente baseada em aprendizado de máquina. "
+                            "Intervalos: 0–30 = 🟢 Low, 31–60 = 🟡 Moderate, 61–100 = 🔴 High. Valores mais baixos são melhores."
                         )
 
                     # Manuell refresh-knapp (throttlad)
@@ -1887,7 +2216,7 @@ else:
 
             st.divider()
 
-            tracked_list = get_tracked_keywords_list(user_id)
+            tracked_list = get_tracked_keywords_list(user_id, domain)
 
             # ranking_viewed: loggas en gång — kräver domän, trackade keywords och faktisk ranking-data
             if domain and tracked_list and not has_event(user_id, "ranking_viewed"):
@@ -1905,7 +2234,12 @@ else:
                 st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
                 count = len(tracked_list)
-                st.caption(f"{count}/20 palavras rastreadas — dados atualizados toda segunda-feira")
+                _kw_limit = 300 if _user_plan == "premium" else 100
+                if _user_plan == "premium":
+                    _total_kw = len(supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute().data or [])
+                    st.caption(f"{count} palavra(s) neste projeto · {_total_kw}/{_kw_limit} no total — dados atualizados toda segunda-feira")
+                else:
+                    st.caption(f"{count}/{_kw_limit} palavras rastreadas — dados atualizados toda segunda-feira")
                 st.divider()
 
                 for item in tracked_list:
@@ -1925,10 +2259,298 @@ else:
                                          white-space:nowrap">{trend}</span>
                         </div>
                         """, unsafe_allow_html=True)
+
+                        # ── Historikgraf — Premium ──
+                        if _user_plan == "premium":
+                            _history = get_rank_history(user_id, kw, domain)
+                            if _history:
+                                with st.expander("📊 Ver histórico de posição", expanded=False):
+                                    import pandas as pd
+                                    _df = pd.DataFrame(_history)
+                                    _df["semana"] = pd.to_datetime(_df["checked_at"]).dt.strftime("%d/%m")
+                                    _df = _df.set_index("semana")[["rank_position"]]
+                                    _df.columns = ["Posição"]
+                                    # Inverte eixo: posição 1 = melhor (topo do gráfico)
+                                    # st.line_chart não suporta invert diretamente;
+                                    # transformamos: plottar (101 - posição) e anotamos no caption
+                                    _df_plot = _df.copy()
+                                    _df_plot["Posição"] = _df_plot["Posição"].apply(
+                                        lambda x: 101 - x if x is not None else None
+                                    )
+                                    st.line_chart(_df_plot, use_container_width=True, height=160)
+                                    st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                        else:
+                            with st.expander("📊 Ver histórico de posição 🔒 Premium", expanded=False):
+                                st.info("🔒 Histórico de posicionamento é um recurso **Premium**. Faça upgrade para acompanhar a evolução do seu ranking nas últimas 12 semanas.")
+                                st.markdown(f'<a href="{HOTMART_PREMIUM_URL}" target="_blank">👉 Assinar SEO Brasil Premium — R$297/mês</a>', unsafe_allow_html=True)
+
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
-                            remove_tracking(kw, user_id)
+                            remove_tracking(kw, user_id, domain)
                             st.rerun()
+
+        # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────
+        with tab3:
+            if _user_plan != "premium":
+                st.markdown(f"""
+                <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
+                border:1px solid rgba(240,180,41,0.25);border-radius:12px;
+                padding:1.4rem 1.6rem;margin-top:0.5rem;text-align:center">
+                    <div style="font-size:1.5rem;margin-bottom:0.5rem">🔒</div>
+                    <div style="color:#f0b429;font-weight:700;font-size:1rem;margin-bottom:0.4rem">
+                        Oportunidades de Domínios é um recurso Premium
+                    </div>
+                    <div style="font-size:0.87rem;opacity:0.75;margin-bottom:1rem">
+                        Encontre domínios .com.br expirados com autoridade — filtre por Trust Flow,
+                        Referring Domains, idade e categoria.
+                    </div>
+                    <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                       style="background:#f0b429;color:#1a1a1a;padding:0.5rem 1.3rem;border-radius:7px;
+                       text-decoration:none;font-weight:700;font-size:0.9rem">
+                        Assinar Premium — R$297/mês →
+                    </a>
+                </div>""", unsafe_allow_html=True)
+            else:
+                st.markdown("#### Oportunidades de domínios .com.br")
+                st.caption(
+                    "⚠️ **Disponibilidade não verificada automaticamente.** "
+                    "Confirme sempre em [Registro.br](https://registro.br/pesquisa-dominio/) "
+                    "antes de tentar registrar o domínio."
+                )
+
+            # Filtros (apenas Premium)
+            _opps_search = False
+            if _user_plan == "premium":
+              with st.expander("⚙️ Filtros de busca", expanded=True):
+                _fc1, _fc2, _fc3, _fc4 = st.columns(4)
+                with _fc1:
+                    _opps_tf_min = st.slider("TF mínimo", 5, 50, 15, key="opps_tf_min",
+                                             help="Trust Flow (Majestic). Fonte: CatchDoms")
+                with _fc2:
+                    _opps_rd_min = st.slider("Referring Domains mín.", 5, 200, 15, key="opps_rd_min",
+                                             help="Domínios de referência únicos. Fonte: CatchDoms")
+                with _fc3:
+                    _opps_score_min = st.slider("Score mínimo", 20, 80, 45, key="opps_score_min",
+                                                help="Pontuação geral CatchDoms (0–100)")
+                with _fc4:
+                    _opps_age_min = st.slider("Idade mínima (anos)", 0, 20, 0, key="opps_age_min",
+                                              help="Baseado no primeiro snapshot Wayback")
+                _opps_cats = st.multiselect(
+                    "Categoria Majestic (opcional)",
+                    MAJESTIC_CATEGORIES,
+                    key="opps_categories",
+                    help="Deixe vazio para todas as categorias"
+                )
+                _col_btn, _col_reset = st.columns([4, 1])
+                with _col_btn:
+                    _opps_search = st.button("🔍 Buscar Domínios", key="opps_search_btn", type="primary",
+                                             use_container_width=True)
+                with _col_reset:
+                    if st.session_state.opps_results is not None:
+                        if st.button("🔄", key="opps_reset_btn", help="Limpar resultados",
+                                     use_container_width=True):
+                            st.session_state.opps_results = None
+                            st.rerun()
+
+            # Execução da busca
+            if _opps_search:
+                if not CATCHDOMS_TOKEN:
+                    st.error(
+                        "CATCHDOMS_TOKEN não configurado. "
+                        "Adicione o segredo `CATCHDOMS_TOKEN` nas configurações do Streamlit Cloud."
+                    )
+                else:
+                    _opps_filters = {
+                        "tf_min": _opps_tf_min,
+                        "rd_min": _opps_rd_min,
+                        "score_min": _opps_score_min,
+                        "age_min": _opps_age_min,
+                        "categories": _opps_cats,
+                    }
+                    with st.spinner("Buscando domínios em CatchDoms..."):
+                        _opps_cd = fetch_catchdoms(
+                            tf_min=_opps_tf_min,
+                            rd_min=_opps_rd_min,
+                            score_min=_opps_score_min,
+                            age_min=_opps_age_min,
+                            categories=_opps_cats,
+                            per_page=25,
+                            token=CATCHDOMS_TOKEN,
+                        )
+
+                    if isinstance(_opps_cd, dict) and _opps_cd.get("error"):
+                        st.error(_opps_cd.get("message", "Erro ao buscar domínios."))
+                        st.session_state.opps_results = None
+                    elif not _opps_cd:
+                        st.info("Nenhum domínio encontrado com esses filtros. Tente reduzir os valores mínimos.")
+                        st.session_state.opps_results = []
+                    else:
+                        _opps_targets = [_d.get("name", "") for _d in _opps_cd if _d.get("name")]
+                        with st.spinner(f"Enriquecendo {len(_opps_targets)} domínio(s) com DataForSEO..."):
+                            _opps_dfs = enrich_with_dataforseo(
+                                _opps_targets, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
+                            )
+                        st.session_state.opps_results = merge_results(_opps_cd, _opps_dfs)
+                        st.session_state.opps_last_filters = _opps_filters
+
+            # Exibição de resultados (apenas Premium)
+            if _user_plan == "premium" and st.session_state.opps_results is None:
+                st.info("Configure os filtros acima e clique em **Buscar Domínios** para encontrar oportunidades.")
+            elif _user_plan == "premium" and len(st.session_state.opps_results) == 0:
+                st.info("Nenhum resultado para os filtros selecionados.")
+            elif _user_plan == "premium":
+                _opps_res = st.session_state.opps_results
+                st.markdown(f"**{len(_opps_res)} domínio(s) encontrado(s)**")
+
+                # Ordenação
+                _opps_sort = st.selectbox(
+                    "Ordenar por", ["Score ↓", "TF ↓", "RD ↓", "DR ↓"],
+                    key="opps_sort_by", label_visibility="collapsed"
+                )
+                _sort_field_map = {
+                    "Score ↓": "score", "TF ↓": "trust_flow",
+                    "RD ↓": "referring_domains", "DR ↓": "dr",
+                }
+                _sort_field = _sort_field_map[_opps_sort]
+                _opps_sorted = sorted(
+                    _opps_res,
+                    key=lambda x: (x.get(_sort_field) is not None, x.get(_sort_field) or 0),
+                    reverse=True,
+                )
+
+                # Tabela resumida
+                _opps_table = []
+                for _d in _opps_sorted:
+                    _tf = _d.get("trust_flow")
+                    _cf = _d.get("citation_flow")
+                    _opps_table.append({
+                        "Domínio": _d.get("name", ""),
+                        "TF": _tf if _tf is not None else "—",
+                        "CF": _cf if _cf is not None else "—",
+                        "TF/CF %": tf_cf_ratio(_tf, _cf) or "—",
+                        "RD": _d.get("referring_domains") if _d.get("referring_domains") is not None else "—",
+                        "Backlinks": compact_num(_d.get("backlinks_count")),
+                        "Idade": f"{_d['age']}a" if _d.get("age") is not None else "—",
+                        "Score": _d.get("score") if _d.get("score") is not None else "—",
+                        "WB": compact_num(_d.get("wayback_snapshots")),
+                        "Tráfego": compact_num(_d.get("historical_traffic_peak")),
+                        "Categoria": (_d.get("ttf_topic") or _d.get("seo_domains_category") or "—")[:20],
+                        "DR": _d.get("dr") if _d.get("dr") is not None else "—",
+                        "SS": _d.get("ss") if _d.get("ss") is not None else "—",
+                        "⚠️Spam": "Sim" if _d.get("is_spammy") else "Não",
+                    })
+                _opps_df = pd.DataFrame(_opps_table)
+                st.dataframe(_opps_df, use_container_width=True, hide_index=True)
+
+                # Seleção para detalhe
+                _opps_names = [_d.get("name", "") for _d in _opps_sorted]
+                _opps_detail_sel = st.selectbox(
+                    "Ver detalhes de domínio:",
+                    _opps_names,
+                    key="opps_detail_select",
+                )
+                _opps_detail_dom = next(
+                    (_d for _d in _opps_sorted if _d.get("name") == _opps_detail_sel), None
+                )
+
+                if _opps_detail_dom:
+                    _dn = _opps_detail_dom
+                    _d_tf = _dn.get("trust_flow")
+                    _d_cf = _dn.get("citation_flow")
+                    _d_rd = _dn.get("referring_domains")
+                    _d_bl = _dn.get("backlinks_count")
+                    _d_dr = _dn.get("dr")
+                    _d_ss = _dn.get("ss")
+                    _d_age = _dn.get("age")
+                    _d_wb = _dn.get("wayback_snapshots")
+                    _d_wb_last = _dn.get("wayback_last_date", "")
+                    _d_traffic = _dn.get("historical_traffic_peak")
+                    _d_cat = _dn.get("ttf_topic") or _dn.get("seo_domains_category") or "—"
+                    _d_lang = _dn.get("language", "—")
+                    _d_gmb = _dn.get("has_gmb")
+                    _d_price = _dn.get("price")
+                    _d_currency = _dn.get("currency", "€")
+                    _d_spammy = _dn.get("is_spammy", False)
+                    _d_edu = _dn.get("ref_domains_edu")
+                    _d_gov = _dn.get("ref_domains_gov")
+                    _d_whois = _dn.get("whois_registered_at", "")
+
+                    _d_ratio = tf_cf_ratio(_d_tf, _d_cf)
+
+                    # BL/RD-ratio varning (hög = potentiellt widget/footer-links)
+                    _blrd_warn = ""
+                    if _d_bl and _d_rd and _d_rd > 0:
+                        _blrd = _d_bl / _d_rd
+                        if _blrd > 200:
+                            _blrd_warn = f"⚠️ BL/RD-ratio hög ({_blrd:.0f}x) — granska o perfil de links manualmente."
+
+                    st.markdown(f"---\n#### 🔍 {_opps_detail_sel}")
+
+                    _det_c1, _det_c2 = st.columns(2)
+
+                    with _det_c1:
+                        st.markdown("**🏛️ Autoridade** *(fonte: CatchDoms/DataForSEO)*")
+                        _auth_data = {
+                            "Trust Flow (TF)": str(_d_tf) if _d_tf is not None else "—",
+                            "Citation Flow (CF)": str(_d_cf) if _d_cf is not None else "—",
+                            "TF/CF Ratio": _d_ratio or "—",
+                            "Domain Rank (DataForSEO)": str(_d_dr) if _d_dr is not None else "— (não encontrado)",
+                        }
+                        for _lbl, _val in _auth_data.items():
+                            st.markdown(f"- **{_lbl}:** {_val}")
+
+                        st.markdown("**📊 Perfil de links** *(fonte: CatchDoms)*")
+                        _link_data = {
+                            "Referring Domains": compact_num(_d_rd),
+                            "Total Backlinks": compact_num(_d_bl),
+                            "EDU": compact_num(_d_edu),
+                            "GOV": compact_num(_d_gov),
+                        }
+                        for _lbl, _val in _link_data.items():
+                            st.markdown(f"- **{_lbl}:** {_val}")
+                        if _blrd_warn:
+                            st.warning(_blrd_warn)
+
+                    with _det_c2:
+                        st.markdown("**⏱️ Histórico** *(fonte: CatchDoms)*")
+                        _hist_data = {
+                            "Idade": f"{_d_age} anos" if _d_age is not None else "—",
+                            "Wayback Snapshots": compact_num(_d_wb),
+                            "Último WB": _d_wb_last or "—",
+                            "Tráfego pico": compact_num(_d_traffic),
+                            "Categoria": _d_cat,
+                            "Idioma": _d_lang,
+                            "Google My Business": "Sim" if _d_gmb else "Não" if _d_gmb is not None else "—",
+                        }
+                        for _lbl, _val in _hist_data.items():
+                            st.markdown(f"- **{_lbl}:** {_val}")
+
+                        st.markdown("**🚨 Risco** *(fonte: DataForSEO/CatchDoms)*")
+                        _ss_disp = str(_d_ss) if _d_ss is not None else "— (não disponível)"
+                        _ss_flag = " 🔴" if _d_ss is not None and _d_ss >= 50 else (
+                            " 🟡" if _d_ss is not None and _d_ss >= 30 else ""
+                        )
+                        st.markdown(f"- **Spam Score (DataForSEO):** {_ss_disp}{_ss_flag}")
+                        st.markdown(f"- **is_spammy (CatchDoms):** {'⚠️ Sim' if _d_spammy else 'Não'}")
+
+                        if _d_price:
+                            st.markdown(f"- **Preço CatchDoms:** {_d_currency}{_d_price:.2f} *(verifique registrar via registrador direto)*")
+
+                    # Links externos
+                    st.markdown("**🔗 Links externos**")
+                    _reg_url = registro_br_url(_opps_detail_sel)
+                    _wb_url = wayback_url(_opps_detail_sel)
+                    _maj_url = majestic_url(_opps_detail_sel)
+                    st.markdown(
+                        f"[🌐 Verificar disponibilidade no Registro.br]({_reg_url})  |  "
+                        f"[📸 Wayback Machine]({_wb_url})  |  "
+                        f"[🔗 Majestic]({_maj_url})"
+                    )
+
+                    st.caption(
+                        "⚠️ Disponibilidade não verificada automaticamente. "
+                        "Confirme sempre no Registro.br antes de tentar registrar o domínio."
+                    )
 
     else:
         st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
