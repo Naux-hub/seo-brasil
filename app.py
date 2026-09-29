@@ -66,9 +66,9 @@ def add_tracking(keyword, user_id, domain, plan='pro'):
     if len(count_res.data) >= limit:
         return False, f"Limite de {limit} palavras atingido."
     try:
-        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).eq("domain", domain).execute()
+        existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
         if existing.data:
-            supabase.table("tracked_keywords").update({"is_active": True}).eq("user_id", str(user_id)).eq("keyword", keyword).eq("domain", domain).execute()
+            supabase.table("tracked_keywords").update({"is_active": True, "domain": domain}).eq("user_id", str(user_id)).eq("keyword", keyword).execute()
         else:
             supabase.table("tracked_keywords").insert({
                 "user_id": str(user_id),
