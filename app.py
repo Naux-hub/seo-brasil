@@ -1970,13 +1970,36 @@ else:
                 if _paused_domains:
                     with st.expander(f"⏸️ {len(_paused_domains)} projeto(s) pausado(s)", expanded=False):
                         for _pd in _paused_domains:
-                            _pc1, _pc2 = st.columns([4, 1])
+                            _pc1, _pc2, _pc3 = st.columns([4, 1, 1])
                             with _pc1:
                                 st.markdown(f"`{_pd['domain']}`")
                             with _pc2:
                                 if st.button("Ativar", key=f"resume_dom_{_pd['domain']}"):
                                     set_domain_active(user_id, _pd["domain"], True)
                                     st.rerun()
+                            with _pc3:
+                                if st.button("×", key=f"remove_paused_{_pd['domain']}", help="Remover projeto (histórico de ranking preservado)"):
+                                    st.session_state[f"_confirm_remove_{_pd['domain']}"] = True
+                            # Bekräftelse innan DELETE
+                            if st.session_state.get(f"_confirm_remove_{_pd['domain']}"):
+                                st.warning(f"Remover **{_pd['domain']}** da lista? O histórico de ranking e palavras-chave será preservado.")
+                                _rc1, _rc2 = st.columns(2)
+                                with _rc1:
+                                    if st.button("Confirmar remoção", key=f"confirm_yes_{_pd['domain']}", type="primary"):
+                                        try:
+                                            supabase.table("user_domains") \
+                                                .delete() \
+                                                .eq("user_id", str(user_id)) \
+                                                .eq("domain", _pd["domain"]) \
+                                                .execute()
+                                        except Exception:
+                                            pass
+                                        st.session_state.pop(f"_confirm_remove_{_pd['domain']}", None)
+                                        st.rerun()
+                                with _rc2:
+                                    if st.button("Cancelar", key=f"confirm_no_{_pd['domain']}"):
+                                        st.session_state.pop(f"_confirm_remove_{_pd['domain']}", None)
+                                        st.rerun()
 
                 # Seletor av aktivt projekt
                 if not _active_domains:
@@ -2182,7 +2205,7 @@ else:
                             "Para domínios, o valor representa a média das páginas analisadas. "
                             "Não representa a porcentagem de backlinks considerados spam. "
                             "⚠️ Não deve ser comparado ao Spam Score da Moz, que é uma métrica diferente baseada em aprendizado de máquina. "
-                            "Intervalos: 0–30 = 🟢 Low, 31–60 = 🟡 Moderate, 61–100 = 🔴 High. Valores mais baixos são melhores."
+                            "Intervalos: 0–30 = 🟢 Baixo, 31–60 = 🟡 Moderado, 61–100 = 🔴 Alto. Valores mais baixos são melhores."
                         )
 
                     # Manuell refresh-knapp (throttlad)
