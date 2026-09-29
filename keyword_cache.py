@@ -265,7 +265,9 @@ def _get_cached_ideas(supabase, seeds_key: str) -> list | None:
 
 
 def _set_cached_ideas(supabase, seeds_key: str, results: list) -> None:
-    """Sparar idéer i keyword_ideas_cache."""
+    """Sparar idéer i keyword_ideas_cache. Tomma listor sparas aldrig."""
+    if not results:
+        return
     try:
         supabase.table("keyword_ideas_cache").upsert(
             {
