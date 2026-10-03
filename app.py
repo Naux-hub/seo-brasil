@@ -418,7 +418,7 @@ def get_domain_health(email, domain):
         return None
     try:
         res = supabase.table("subscribers").select(
-            "domain_rank,spam_score,ahrefs_dr,domain_enriched_at"
+            "domain,domain_rank,spam_score,ahrefs_dr,domain_enriched_at"
         ).eq("email", email).execute()
         if not res.data:
             return None
@@ -435,7 +435,11 @@ def get_domain_health(email, domain):
     enriched_at   = None
     needs_fetch   = True
 
-    if enriched_str:
+    # Ogiltigförklara cache om den gäller en annan domän (t.ex. Premium-användare
+    # som byter mellan projekt). Utan denna kontroll visas fel domäns data.
+    if row.get("domain") != domain:
+        needs_fetch = True
+    elif enriched_str:
         try:
             enriched_at = datetime.fromisoformat(enriched_str.replace("Z", "+00:00"))
             days_since  = (datetime.now(timezone.utc) - enriched_at).days
@@ -449,6 +453,7 @@ def get_domain_health(email, domain):
         now_str = datetime.now(timezone.utc).isoformat()
         try:
             supabase.table("subscribers").update({
+                "domain":             domain,
                 "domain_rank":        new_dr,
                 "spam_score":         new_ss,
                 "ahrefs_dr":          new_ahrefs_dr,
@@ -1623,6 +1628,11 @@ else:
         except Exception:
             pass
         st.session_state.user = None
+        # Limpar estado de sessão para não vazar dados entre contas
+        for _k in ("search_results", "keyword_ideas", "keyword_ideas_error",
+                   "ranking_done", "ranking_in_progress", "_ranking_kws",
+                   "_ranking_viewed_logged"):
+            st.session_state.pop(_k, None)
         st.rerun()
 
     st.divider()
@@ -1739,7 +1749,7 @@ else:
                     st.rerun()
 
             if st.session_state.ranking_done:
-                st.success("✅ Seu primeiro ranking está pronto! Veja os resultados em **Meu Monitoramento**.")
+                st.success("✅ Ranking atualizado! Veja os resultados em **Meu Monitoramento**.")
 
             sokord_text = st.text_area(
                 "Digite as palavras-chave (uma por linha, máx 10):",
@@ -2283,6 +2293,7 @@ else:
                             _now_str = datetime.now(timezone.utc).isoformat()
                             try:
                                 supabase.table("subscribers").update({
+                                    "domain":             domain,
                                     "domain_rank":        _new_dr,
                                     "spam_score":         _new_ss,
                                     "ahrefs_dr":          _new_ahrefs_dr,
@@ -2359,8 +2370,11 @@ else:
                                 _df_plot["Posição"] = _df_plot["Posição"].apply(
                                     lambda x: 101 - x if x is not None else None
                                 )
-                                st.line_chart(_df_plot, use_container_width=True, height=160)
-                                st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                                if _df_plot["Posição"].notna().any():
+                                    st.line_chart(_df_plot, use_container_width=True, height=160)
+                                    st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                                else:
+                                    st.caption("Nenhuma posição disponível ainda. Esta palavra-chave não apareceu no top 100 neste período.")
                                 if _user_plan != "premium":
                                     st.caption(f'💡 Veja as últimas 12 semanas com o Premium. <a href="{HOTMART_PREMIUM_URL}" target="_blank">Assinar →</a>', unsafe_allow_html=True)
 

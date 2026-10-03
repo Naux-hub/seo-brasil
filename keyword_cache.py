@@ -340,14 +340,17 @@ def get_keyword_ideas(
     if not tasks:
         return []
 
+    seen_kws = set()
     api_items = []
     results = []
     for task in tasks:
         for item in (task.get("result") or []):
-            if item and item.get("keyword"):
+            kw = item.get("keyword", "") if item else ""
+            if item and kw and kw not in seen_kws:
+                seen_kws.add(kw)
                 api_items.append(item)
                 results.append({
-                    "keyword": item.get("keyword", ""),
+                    "keyword": kw,
                     "search_volume": item.get("search_volume") or 0,
                     "competition": str(item.get("competition", "N/A")),
                     "cpc": item.get("cpc") or 0,
