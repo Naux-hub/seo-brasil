@@ -2350,15 +2350,11 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # ── Historikgraf — Pro (4 veckor) / Premium (12 veckor) ──
-                        _hist_weeks = 12 if _user_plan == "premium" else 4
+                        # ── Historikgraf — 12 veckor för alla (Pro + Premium) ──
+                        _hist_weeks = 12
                         _history = get_rank_history(user_id, kw, domain, weeks=_hist_weeks)
                         if _history:
-                            _hist_label = (
-                                "📊 Ver histórico de posição (últimas 12 semanas)"
-                                if _user_plan == "premium"
-                                else "📊 Ver histórico básico (últimas 4 semanas)"
-                            )
+                            _hist_label = "📊 Ver histórico de posição (últimas 12 semanas)"
                             with st.expander(_hist_label, expanded=False):
                                 import pandas as pd
                                 _df = pd.DataFrame(_history)
@@ -2370,14 +2366,15 @@ else:
                                 _df_plot["Posição"] = _df_plot["Posição"].apply(
                                     lambda x: 101 - x if x is not None else None
                                 )
-                                if _df_plot["Posição"].notna().any():
+                                _valid_count = _df_plot["Posição"].notna().sum()
+                                if _valid_count >= 2:
                                     st.line_chart(_df_plot, use_container_width=True, height=160)
                                     st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                                elif _valid_count == 1:
+                                    st.dataframe(_df[["Posição"]].dropna(), use_container_width=True)
+                                    st.caption("Apenas 1 semana de dados disponível. O gráfico aparecerá quando houver mais histórico.")
                                 else:
                                     st.caption("Nenhuma posição disponível ainda. Esta palavra-chave não apareceu no top 100 neste período.")
-                                if _user_plan != "premium":
-                                    st.caption(f'💡 Veja as últimas 12 semanas com o Premium. <a href="{HOTMART_PREMIUM_URL}" target="_blank">Assinar →</a>', unsafe_allow_html=True)
-
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
                             remove_tracking(kw, user_id, domain)
