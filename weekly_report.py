@@ -8,7 +8,7 @@ import requests
 from datetime import datetime, timezone
 from urllib.parse import quote as url_quote
 from supabase import create_client
-from plan_config import serp_depth
+from plan_config import serp_depth, effective_plan
 
 # --- Anslutningar ---
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -21,23 +21,16 @@ APP_URL = "https://seobrasil.app"
 
 
 def get_active_subscribers():
-    """Returnerar prenumeranter med aktiv status ELLER trial inom 7 dagar."""
+    """
+    Alla prenumeranter får rapporten. Den som inte betalar har gratisplanen.
+    Returnerar (alla, []) — listan med utgångna test är tom sedan gratisplanen infördes.
+    """
     res = supabase.table("subscribers").select("email, domain, subscription_status, created_at, plan").execute()
-    now = datetime.now(timezone.utc)
-    active = []
-    expired = []
+    rows = []
     for row in (res.data or []):
-        status = row.get("subscription_status", "trial")
-        if status == "active":
-            active.append(row)
-        else:
-            created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
-            days = (now - created_at).days
-            if days <= 14:
-                active.append(row)
-            else:
-                expired.append(row)
-    return active, expired
+        row["plan"] = effective_plan(row.get("plan"), row.get("subscription_status"))
+        rows.append(row)
+    return rows, []
 
 
 def build_teaser_html(email, domain):

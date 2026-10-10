@@ -5,7 +5,9 @@ import time
 import os
 from supabase import create_client
 from keyword_cache import get_keyword_data, get_keyword_ideas
-from plan_config import serp_depth
+from plan_config import (
+    serp_depth, effective_plan, get_plan, next_plan, checkout_url, PLANS, FREE_PLAN,
+)
 from domain_opportunities import (
     fetch_catchdoms, enrich_with_dataforseo, merge_results,
     compact_num, tf_cf_ratio, registro_br_url, wayback_url, majestic_url,
@@ -59,13 +61,13 @@ def get_tracked_set(user_id):
     except Exception:
         return set()
 
-def add_tracking(keyword, user_id, domain, plan='pro'):
+def add_tracking(keyword, user_id, domain, plan=FREE_PLAN):
     if not domain:
         return False, "Configure seu site antes de rastrear palavras-chave."
-    limit = 300 if plan == 'premium' else 100
+    limit = get_plan(plan)["max_keywords"]
     count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
     if len(count_res.data) >= limit:
-        return False, f"Limite de {limit} palavras atingido."
+        return False, f"Limite de {limit} palavras do plano {get_plan(plan)['label']} atingido. Faça upgrade para rastrear mais."
     try:
         existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
         if existing.data:
@@ -113,14 +115,59 @@ def get_user_domain(email, access_token=None):
     return None
 
 def get_user_plan(email):
-    """Returnerar 'premium', 'pro' (default) eller None (ej prenumerant)."""
+    """
+    Returnerar planen som faktiskt gäller: 'gratis', 'basico', 'pro' eller 'premium'.
+    Bara subscription_status='active' ger betald plan — allt annat blir 'gratis'.
+    None om användaren saknar rad i subscribers.
+    """
     try:
-        res = supabase.table("subscribers").select("plan").eq("email", email).execute()
+        res = supabase.table("subscribers").select("plan, subscription_status").eq("email", email).execute()
         if res.data:
-            return res.data[0].get("plan", "pro") or "pro"
+            row = res.data[0]
+            return effective_plan(row.get("plan"), row.get("subscription_status"))
         return None
     except Exception:
-        return "pro"
+        return FREE_PLAN
+
+
+_PLAN_FEATURES = {
+    "gratis": ["🌐 1 site", "📈 10 palavras-chave monitoradas", "🔎 Posições no top 30 do Google",
+               "📬 Relatório toda segunda-feira", "🔍 Pesquisa de palavras-chave"],
+    "basico": ["🌐 1 site", "📈 50 palavras-chave monitoradas", "🔎 Posições no top 30 do Google",
+               "📊 Histórico de 4 semanas", "📬 Relatório toda segunda-feira", "📊 Exportação CSV"],
+    "pro": ["🌐 Até 3 sites", "📈 200 palavras-chave monitoradas", "🔎 Posições no top 100 do Google",
+            "📊 Histórico de 12 semanas", "📬 Relatório toda segunda-feira", "📊 Exportação CSV"],
+    "premium": ["🌐 Até 5 sites", "📈 500 palavras-chave monitoradas", "🔎 Posições no top 100 do Google",
+                "📊 Histórico de 12 semanas", "🔍 Oportunidades de Domínios", "📈 Todos os recursos do Pro"],
+}
+
+
+def render_plans_html():
+    """HTML för prissektionen på startsidan — byggs från plan_config.PLANS."""
+    boxes = []
+    for key in ("gratis", "basico", "pro", "premium"):
+        p = PLANS[key]
+        gold = key == "premium"
+        items = "".join(f"<li>{f}</li>" for f in _PLAN_FEATURES[key])
+        if key == "gratis":
+            price, per = "R$0", "para sempre • sem cartão"
+            cta = '<a class="cta-btn" href="#comecar">Criar conta grátis →</a>'
+        else:
+            price, per = f"R${p['price']}", "por mês • sem fidelidade"
+            style = ' style="background:#f0b429;color:#1a1a2e;"' if gold else ""
+            cta = f'<a class="cta-btn" href="{checkout_url(key)}"{style}>Assinar {p["label"]} →</a>'
+        box_style = "flex:1;min-width:220px;max-width:300px;"
+        if gold:
+            box_style += "border-color:rgba(255,200,60,0.5);background:rgba(255,200,60,0.04);"
+        title_color = "#f0b429" if gold else "#4d9fff"
+        boxes.append(
+            f'<div class="price-box" style="{box_style}">'
+            f'<div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:{title_color}">SEO Brasil {p["label"]}</div>'
+            f'<div class="price">{price}</div><div class="per">{per}</div>'
+            f'<ul>{items}</ul>{cta}</div>'
+        )
+    return ('<div class="plans-row" style="display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;">'
+            + "".join(boxes) + "</div>")
 
 def get_user_domains(user_id):
     """Returnerar lista av {domain, is_active} från user_domains för en användare."""
@@ -135,7 +182,7 @@ def get_user_domains(user_id):
         return []
 
 
-def add_user_domain(user_id, domain, email=None):
+def add_user_domain(user_id, domain, email=None, max_domains=1):
     """
     Lägger till en domän i user_domains (eller reaktiverar om den tidigare pausats).
     Skriver också till subscribers.domain för att hålla dem synkroniserade.
@@ -154,14 +201,14 @@ def add_user_domain(user_id, domain, email=None):
                     market = _sub.data[0].get("market") or "br"
             except Exception:
                 pass
-        # Kontrollera gräns: max 5 aktiva domäner per Premium-användare
+        # Kontrollera gräns: max aktiva domäner enligt planen
         active_res = supabase.table("user_domains") \
             .select("domain") \
             .eq("user_id", str(user_id)) \
             .eq("is_active", True) \
             .execute()
-        if len(active_res.data) >= 5:
-            return False, "Limite de 5 projetos ativos atingido."
+        if len(active_res.data) >= max_domains:
+            return False, f"Limite de {max_domains} projetos ativos do seu plano atingido."
         # Upsert: reaktiverar om domänen redan finns pausad
         supabase.table("user_domains").upsert({
             "user_id": str(user_id),
@@ -254,6 +301,9 @@ def create_trial_account(email, senha):
             supabase.table("subscribers").insert({
                 "email": email,
                 "user_id": _uid,
+                "plan": FREE_PLAN,
+                # "trial" behålls som statusvärde (känt giltigt i databasen).
+                # Allt som inte är "active" räknas som gratisplanen.
                 "subscription_status": "trial",
             }).execute()
         except Exception:
@@ -1240,32 +1290,6 @@ if _fb_type in ("up", "down"):
     st.stop()
 
 # =====================================================
-# TRIAL CHECK — körs om användaren är inloggad
-# =====================================================
-if st.session_state.user is not None:
-    _trial_email = st.session_state.user.email
-    _trial_status = get_trial_status(_trial_email)
-
-    if _trial_status == "TRIAL_EXPIRED":
-        if "trial_expired_event_logged" not in st.session_state:
-            log_event(st.session_state.user.id, "trial_expired_shown")
-            st.session_state.trial_expired_event_logged = True
-        st.markdown("<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
-        st.markdown("""
-        <div style='text-align:center;padding:2rem 1rem;'>
-            <div style='font-size:2.5rem;margin-bottom:1rem;'>🔒</div>
-            <h2 style='margin-bottom:0.5rem;'>Seu período de teste de 14 dias terminou!</h2>
-            <p style='color:#888;margin-bottom:2rem;max-width:480px;margin-left:auto;margin-right:auto;'>
-                Para continuar recebendo seus relatórios semanais e descobrindo
-                palavras-chave de alta conversão, assine o plano completo.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-        hotmart_url_with_email = f"https://pay.hotmart.com/L106736067M?email={_trial_email}"
-        st.link_button("👉 Assinar por R$197/mês na Hotmart", hotmart_url_with_email, type="primary", use_container_width=True)
-        st.stop()
-
-# =====================================================
 # NÃO LOGADO — Landningssida
 # =====================================================
 if st.session_state.user is None:
@@ -1308,7 +1332,7 @@ if st.session_state.user is None:
             <div style='font-size:1.5rem;margin-bottom:0.5rem'>🎉</div>
             <h2 style='margin-bottom:0.4rem;font-size:1.6rem;'>Você foi convidado!</h2>
             <p style='opacity:0.7;max-width:420px;margin:0 auto;font-size:0.95rem;'>
-            Crie sua conta e comece seu teste gratuito de 14 dias — sem cartão de crédito.
+            Crie sua conta grátis — sem cartão de crédito.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -1386,8 +1410,8 @@ if st.session_state.user is None:
             <span>📈 Dados atualizados toda semana</span>
             <span>🇧🇷 Focado no mercado brasileiro</span>
         </div>
-        <a class="cta-btn" href="#comecar">Comece grátis por 14 dias →</a>
-        <div class="garantia">Sem cartão de crédito • Cancele quando quiser</div>
+        <a class="cta-btn" href="#comecar">Comece grátis →</a>
+        <div class="garantia">Sem cartão de crédito • Grátis para sempre até 10 palavras-chave</div>
         <div style="margin-top:1.2rem;font-size:0.9rem;opacity:0.65">
             Já tem uma conta?
             <a href="#login-section"
@@ -1400,8 +1424,8 @@ if st.session_state.user is None:
     st.markdown('<div id="comecar"></div>', unsafe_allow_html=True)
     _left, _mid, _right = st.columns([1, 2, 1])
     with _mid:
-        with st.expander("🎁 Comece grátis por 14 dias — sem cartão de crédito", expanded=True):
-            st.caption("Crie sua conta agora e use o SEO Brasil por 14 dias, sem compromisso.")
+        with st.expander("🎁 Crie sua conta grátis — sem cartão de crédito", expanded=True):
+            st.caption("Plano Grátis para sempre: 1 site e 10 palavras-chave monitoradas toda semana.")
             with st.form("public_trial_form"):
                 pt_email = st.text_input("E-mail", key="pt_email")
                 pt_senha = st.text_input("Senha (mín. 6 caracteres)", type="password", key="pt_senha")
@@ -1483,45 +1507,7 @@ if st.session_state.user is None:
 
     # --- Preço ---
     st.markdown('<div class="section-title">Escolha seu plano</div>', unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="plans-row" style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
-
-      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;">
-        <div class="trial-pill">14 dias grátis para testar</div>
-        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#4d9fff">SEO Brasil Pro</div>
-        <div class="price">R$197</div>
-        <div class="per">por mês • sem fidelidade</div>
-        <ul>
-            <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
-            <li>📈 Monitoramento de ranking — até 100 palavras-chave</li>
-            <li>📊 Histórico básico de posicionamento / evolução</li>
-            <li>📬 Relatório automático toda segunda-feira</li>
-            <li>🇧🇷 Dados focados no mercado brasileiro</li>
-            <li>📊 Exportação CSV dos resultados</li>
-            <li>✉️ Suporte por e-mail</li>
-        </ul>
-        <a class="cta-btn" href="{HOTMART_URL}">Começar grátis por 14 dias →</a>
-        <div class="no-cc">Sem cartão de crédito no período de teste</div>
-      </div>
-
-      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;border-color:rgba(255,200,60,0.5);background:rgba(255,200,60,0.04);">
-        <div class="trial-pill" style="background:rgba(255,200,60,0.2);color:#f0b429;">✨ Premium</div>
-        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#f0b429">SEO Brasil Premium</div>
-        <div class="price">R$297</div>
-        <div class="per">por mês • sem fidelidade</div>
-        <ul>
-            <li>🌐 Até 5 projetos/domínios ativos</li>
-            <li>✅ Até 300 palavras-chave monitoradas no total</li>
-            <li>📊 Histórico avançado / comparações</li>
-            <li>🔍 Oportunidades de Domínios</li>
-            <li>📈 Todos os recursos do Pro</li>
-        </ul>
-        <a class="cta-btn" href="{HOTMART_PREMIUM_URL}" style="background:#f0b429;color:#1a1a2e;">Assinar Premium →</a>
-        <div class="no-cc">Pagamento mensal • Cancele quando quiser</div>
-      </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(render_plans_html(), unsafe_allow_html=True)
 
     st.divider()
 
@@ -1562,7 +1548,7 @@ if st.session_state.user is None:
 
     st.markdown(f"""
     <div style="text-align:center;margin-top:1.2rem;font-size:0.92rem;opacity:0.75">
-    Ainda não tem uma conta? <a href="{HOTMART_URL}" style="color:#4d9fff;text-decoration:none;font-weight:600">Assine agora →</a>
+    Ainda não tem uma conta? <a href="#comecar" style="color:#4d9fff;text-decoration:none;font-weight:600">Crie sua conta grátis →</a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1612,7 +1598,7 @@ else:
         st.markdown("<div style='font-size:1.3rem;font-weight:800;padding-top:6px'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
     with col_user:
         _header_plan = get_user_plan(st.session_state.user.email)
-        _plan_label = "✨ Plano Premium" if _header_plan == "premium" else "Plano Pro"
+        _plan_label = ("✨ " if _header_plan == "premium" else "") + f"Plano {get_plan(_header_plan)['label']}"
         _plan_color = "#f0b429" if _header_plan == "premium" else "rgba(255,255,255,0.4)"
         st.markdown(f"""
             <div style='text-align:right;padding-top:6px'>
@@ -1700,20 +1686,25 @@ else:
         )
         render_onboarding_progress(_ob_status)
 
-        if _user_plan == 'pro' and _sub_active:
+        _up_plan = next_plan(_user_plan)
+        if _up_plan:
+            _up = get_plan(_up_plan)
+            _up_text = f"{_up['max_keywords']} palavras-chave • até {_up['max_domains']} site(s) • top {_up['serp_depth']} do Google"
+            if _up["domain_opps"]:
+                _up_text += " • Oportunidades de Domínios"
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
             border:1px solid rgba(240,180,41,0.25);border-radius:10px;
             padding:0.7rem 1.1rem;margin-bottom:0.6rem;
             display:flex;align-items:center;justify-content:space-between">
                 <div>
-                    <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para Premium</span><br>
-                    <span style="font-size:0.81rem;opacity:0.7">300 keywords • até 5 domínios • histórico de posicionamento</span>
+                    <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para {_up['label']} — R${_up['price']}/mês</span><br>
+                    <span style="font-size:0.81rem;opacity:0.7">{_up_text}</span>
                 </div>
-                <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                <a href="{checkout_url(_up_plan, _ob_email)}" target="_blank"
                    style="background:#f0b429;color:#1a1a1a;padding:0.38rem 0.95rem;border-radius:6px;
                    text-decoration:none;font-weight:700;font-size:0.83rem;white-space:nowrap;margin-left:1rem">
-                    Assinar Premium →
+                    Fazer upgrade →
                 </a>
             </div>""", unsafe_allow_html=True)
 
@@ -1980,8 +1971,9 @@ else:
                 log_event(user_id, "ranking_viewed")
                 st.session_state._ranking_viewed_logged = True
 
-            # --- Domän-val: Premium = multi-domain, Pro = enskild domän ---
-            if _user_plan == "premium":
+            # --- Domän-val: planer med fler än 1 domän får projektlistan ---
+            _max_domains = get_plan(_user_plan)["max_domains"]
+            if _max_domains > 1:
                 _all_domains = get_user_domains(user_id)
                 _active_domains = [d for d in _all_domains if d["is_active"]]
                 _paused_domains = [d for d in _all_domains if not d["is_active"]]
@@ -1989,9 +1981,9 @@ else:
                 # Rubrik + knapp för att lägga till nytt projekt
                 _col_title, _col_add = st.columns([3, 1])
                 with _col_title:
-                    st.markdown(f"**Seus projetos** ({len(_active_domains)}/5 ativos)")
+                    st.markdown(f"**Seus projetos** ({len(_active_domains)}/{_max_domains} ativos)")
                 with _col_add:
-                    if len(_active_domains) < 5:
+                    if len(_active_domains) < _max_domains:
                         if st.button("➕ Novo projeto", key="premium_new_proj"):
                             st.session_state._premium_adding_domain = not st.session_state.get("_premium_adding_domain", False)
 
@@ -2005,7 +1997,7 @@ else:
                     with _col_nb:
                         if st.button("Salvar", key="premium_save_domain_btn"):
                             if _new_proj_domain.strip():
-                                _add_ok, _add_msg = add_user_domain(user_id, _new_proj_domain, user_email)
+                                _add_ok, _add_msg = add_user_domain(user_id, _new_proj_domain, user_email, _max_domains)
                                 if _add_ok:
                                     log_event(user_id, "domain_added")
                                     st.session_state._premium_adding_domain = False
@@ -2026,8 +2018,11 @@ else:
                                 st.markdown(f"`{_pd['domain']}`")
                             with _pc2:
                                 if st.button("Ativar", key=f"resume_dom_{_pd['domain']}"):
-                                    set_domain_active(user_id, _pd["domain"], True)
-                                    st.rerun()
+                                    if len(_active_domains) >= _max_domains:
+                                        st.error(f"Limite de {_max_domains} projetos ativos do seu plano atingido.")
+                                    else:
+                                        set_domain_active(user_id, _pd["domain"], True)
+                                        st.rerun()
                             with _pc3:
                                 if st.button("×", key=f"remove_paused_{_pd['domain']}", help="Remover projeto (histórico de ranking preservado)"):
                                     st.session_state[f"_confirm_remove_{_pd['domain']}"] = True
@@ -2326,8 +2321,8 @@ else:
                 st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
                 count = len(tracked_list)
-                _kw_limit = 300 if _user_plan == "premium" else 100
-                if _user_plan == "premium":
+                _kw_limit = get_plan(_user_plan)["max_keywords"]
+                if _max_domains > 1:
                     _total_kw = len(supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute().data or [])
                     st.caption(f"{count} palavra(s) neste projeto · {_total_kw}/{_kw_limit} no total — dados atualizados toda segunda-feira")
                 else:
@@ -2352,11 +2347,11 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # ── Historikgraf — 12 veckor för alla (Pro + Premium) ──
-                        _hist_weeks = 12
+                        # ── Historikgraf — antal veckor enligt planen ──
+                        _hist_weeks = get_plan(_user_plan)["history_weeks"]
                         _history = get_rank_history(user_id, kw, domain, weeks=_hist_weeks)
                         if _history:
-                            _hist_label = "📊 Ver histórico de posição (últimas 12 semanas)"
+                            _hist_label = f"📊 Ver histórico de posição (últimas {_hist_weeks} semanas)"
                             with st.expander(_hist_label, expanded=False):
                                 import pandas as pd
                                 _df = pd.DataFrame(_history)
@@ -2384,7 +2379,7 @@ else:
 
         # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────
         with tab3:
-            if _user_plan != "premium":
+            if not get_plan(_user_plan)["domain_opps"]:
                 st.markdown(f"""
                 <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
                 border:1px solid rgba(240,180,41,0.25);border-radius:12px;
@@ -2397,10 +2392,10 @@ else:
                         Encontre domínios .com.br expirados com autoridade — filtre por Trust Flow,
                         Referring Domains, idade e categoria.
                     </div>
-                    <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                    <a href="{checkout_url('premium', user_email)}" target="_blank"
                        style="background:#f0b429;color:#1a1a1a;padding:0.5rem 1.3rem;border-radius:7px;
                        text-decoration:none;font-weight:700;font-size:0.9rem">
-                        Assinar Premium — R$297/mês →
+                        Assinar Premium — R${PLANS['premium']['price']}/mês →
                     </a>
                 </div>""", unsafe_allow_html=True)
             else:
@@ -2413,7 +2408,7 @@ else:
 
             # Filtros (apenas Premium)
             _opps_search = False
-            if _user_plan == "premium":
+            if get_plan(_user_plan)["domain_opps"]:
               with st.expander("⚙️ Filtros de busca", expanded=True):
                 _fc1, _fc2, _fc3, _fc4 = st.columns(4)
                 with _fc1:
@@ -2487,11 +2482,11 @@ else:
                         st.session_state.opps_last_filters = _opps_filters
 
             # Exibição de resultados (apenas Premium)
-            if _user_plan == "premium" and st.session_state.opps_results is None:
+            if get_plan(_user_plan)["domain_opps"] and st.session_state.opps_results is None:
                 st.info("Configure os filtros acima e clique em **Buscar Domínios** para encontrar oportunidades.")
-            elif _user_plan == "premium" and len(st.session_state.opps_results) == 0:
+            elif get_plan(_user_plan)["domain_opps"] and len(st.session_state.opps_results) == 0:
                 st.info("Nenhum resultado para os filtros selecionados.")
-            elif _user_plan == "premium":
+            elif get_plan(_user_plan)["domain_opps"]:
                 _opps_res = st.session_state.opps_results
                 st.markdown(f"**{len(_opps_res)} domínio(s) encontrado(s)**")
 
@@ -2646,8 +2641,8 @@ else:
                     )
 
     else:
-        st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
-        st.markdown(f'<a href="{HOTMART_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
+        st.info(f"✨ Planos a partir de R${PLANS['basico']['price']}/mês — relatórios automáticos toda segunda-feira.")
+        st.markdown(f'<a href="{checkout_url("basico", st.session_state.user.email)}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Ver planos →</button></a>', unsafe_allow_html=True)
 
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: samuel@seobrasil.app")

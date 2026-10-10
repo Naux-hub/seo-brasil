@@ -23,7 +23,7 @@ import requests
 from datetime import datetime, timezone
 from supabase import create_client
 from market_config import get_market, market_from_env
-from plan_config import serp_depth
+from plan_config import serp_depth, effective_plan, get_plan
 
 # --- Supabase-anslutning ---
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -81,12 +81,12 @@ def get_active_user_domains():
     # Steg 1: Hämta user_id → email-mappning för aktuell marknad
     sub_res = (
         supabase.table("subscribers")
-        .select("email, user_id, plan")
+        .select("email, user_id, plan, subscription_status")
         .eq("market", MARKET)
         .execute()
     )
     user_map = {
-        r["user_id"]: {"email": r["email"], "plan": r.get("plan")}
+        r["user_id"]: {"email": r["email"], "plan": effective_plan(r.get("plan"), r.get("subscription_status"))}
         for r in (sub_res.data or [])
         if r.get("user_id") and r.get("email")
     }
@@ -97,22 +97,31 @@ def get_active_user_domains():
     # Steg 2: Hämta aktiva domäner för dessa användare
     domain_res = (
         supabase.table("user_domains")
-        .select("user_id, domain")
+        .select("user_id, domain, created_at")
         .eq("is_active", True)
         .in_("user_id", list(user_map.keys()))
+        .order("created_at", desc=False)
         .execute()
     )
 
-    return [
-        {
-            "email": user_map[r["user_id"]]["email"],
-            "plan": user_map[r["user_id"]]["plan"],
+    # Steg 3: Begränsa antal domäner per användare enligt planen (äldsta först)
+    rows = []
+    per_user = {}
+    for r in (domain_res.data or []):
+        uid = r.get("user_id")
+        if uid not in user_map:
+            continue
+        plan = user_map[uid]["plan"]
+        if per_user.get(uid, 0) >= get_plan(plan)["max_domains"]:
+            continue
+        per_user[uid] = per_user.get(uid, 0) + 1
+        rows.append({
+            "email": user_map[uid]["email"],
+            "plan": plan,
             "domain": r["domain"],
-            "user_id": r["user_id"],
-        }
-        for r in (domain_res.data or [])
-        if r.get("user_id") in user_map
-    ]
+            "user_id": uid,
+        })
+    return rows
 
 
 def get_existing_positions(user_id, domain, keywords):
@@ -273,6 +282,9 @@ def run():
     active_domains = get_active_user_domains()
     print(f"Hittade {len(active_domains)} aktiva domän-projekt")
 
+    # Sökordsgräns gäller per användare, över alla domäner
+    used_keywords = {}
+
     for row in active_domains:
         email = row["email"]
         domain = row["domain"]
@@ -283,6 +295,16 @@ def run():
         if not keywords:
             print(f"  Inga spårade sökord, hoppar över")
             continue
+
+        # Kapa till planens gräns (gäller t.ex. konton som gått ner till gratis)
+        max_kw = get_plan(row.get("plan"))["max_keywords"]
+        room = max(0, max_kw - used_keywords.get(user_id, 0))
+        if len(keywords) > room:
+            print(f"  Plan {row.get('plan')}: {len(keywords)} sökord, kontrollerar bara {room}")
+            keywords = keywords[:room]
+        if not keywords:
+            continue
+        used_keywords[user_id] = used_keywords.get(user_id, 0) + len(keywords)
 
         depth = serp_depth(row.get("plan"))
         print(f"  Spårar {len(keywords)} sökord för {domain} (top {depth})")

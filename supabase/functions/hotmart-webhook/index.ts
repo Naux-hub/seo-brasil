@@ -4,7 +4,7 @@
  * Supabase Edge Function — hanterar Hotmart-webhook-events för SEO Brasil.
  *
  * Hanterade events:
- *   PURCHASE_COMPLETE         → plan='pro|premium', subscription_status='active'
+ *   PURCHASE_COMPLETE         → plan='basico|pro|premium', subscription_status='active'
  *   PURCHASE_APPROVED         → (synonym) samma som ovan
  *   PURCHASE_REFUNDED         → subscription_status='refunded'
  *   PURCHASE_CHARGEBACK       → subscription_status='chargeback'
@@ -27,8 +27,11 @@
  *
  * Secrets (Supabase Dashboard → Edge Functions → Secrets):
  *   HOTMART_HOTTOK        — security key från Hotmart Produtor → Webhooks
- *   HOTMART_OFFER_PRO     — offer code för Pro-planen
- *   HOTMART_OFFER_PREMIUM — offer code för Premium-planen (bdwmhc7l)
+ *   HOTMART_OFFER_BASICO  — offer code för Básico-planen (R$39)
+ *   HOTMART_OFFER_PRO     — offer code för Pro-planen (R$97)
+ *   HOTMART_OFFER_PREMIUM — offer code för Premium-planen (R$197)
+ *
+ * Uppsägning/återbetalning ändrar bara status. Appen räknar allt utom 'active' som gratisplanen.
  *
  * Sätt webhook-URL i Hotmart:
  *   Produtor → Ferramentas → Webhooks → URL:
@@ -43,6 +46,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL    = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const HOTTOK          = Deno.env.get("HOTMART_HOTTOK") ?? "";
+const OFFER_BASICO    = Deno.env.get("HOTMART_OFFER_BASICO") ?? "";
 const OFFER_PRO       = Deno.env.get("HOTMART_OFFER_PRO") ?? "";
 const OFFER_PREMIUM   = Deno.env.get("HOTMART_OFFER_PREMIUM") ?? "";
 
@@ -159,6 +163,8 @@ Deno.serve(async (req: Request) => {
       dbUpdate.plan = "premium";
     } else if (offerCode === OFFER_PRO) {
       dbUpdate.plan = "pro";
+    } else if (OFFER_BASICO && offerCode === OFFER_BASICO) {
+      dbUpdate.plan = "basico";
     } else {
       // Okänd offer code — logga och ignorera utan att röra databasen
       console.warn(`Okänd offer code: "${offerCode}" — ignorerar`);

@@ -563,8 +563,7 @@ TIME_BASED = [
     (3,  email_day3,  lambda a, **_: a["has_any_rankings"]),
     (5,  email_day5,  lambda a, **_: a["has_keyword"]),
     (7,  email_day7,  lambda a, **_: a["has_keyword"]),
-    (13, email_day13, lambda a, status, **_: status != "active"),
-    (14, email_day14, lambda a, status, **_: status != "active"),
+    # Dag 13 och 14 (test slutar) är avstängda sedan gratisplanen infördes — inget konto går ut.
 ]
 
 
@@ -637,7 +636,8 @@ def run():
             continue
 
         # ── TIDSBASERADE EMAILS (trial + active) ───────────────────
-        if status == "active" or age <= TRIAL_DAYS:
+        # Sedan gratisplanen: alla får de tidsbaserade mejlen, ingen winback (inget konto går ut).
+        if True:
             for day, build_fn, condition in TIME_BASED:
                 if age < day:
                     continue
