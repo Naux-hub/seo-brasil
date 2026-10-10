@@ -1718,23 +1718,32 @@ else:
         _up_plan = next_plan(_user_plan)
         if _up_plan:
             _up = get_plan(_up_plan)
-            _up_text = f"{_up['max_keywords']} palavras-chave • até {_up['max_domains']} site(s) • top {_up['serp_depth']} do Google"
+            _sites = "1 site" if _up["max_domains"] == 1 else f"até {_up['max_domains']} sites"
+            _up_text = f"{_up['max_keywords']} palavras-chave • {_sites} • top {_up['serp_depth']} do Google"
             if _up["domain_opps"]:
                 _up_text += " • Oportunidades de Domínios"
+            # Knappar för alla högre planer — nästa plan markerad, övriga med kontur
+            _order = ["gratis", "basico", "pro", "premium"]
+            _higher = _order[_order.index(_up_plan):]
+            _btns = ""
+            for _p in _higher:
+                _pp = get_plan(_p)
+                _style = ("background:#f0b429;color:#1a1a1a;" if _p == _up_plan
+                          else "background:transparent;color:#f0b429;border:1px solid rgba(240,180,41,0.6);")
+                _btns += (f'<a href="{checkout_url(_p, _ob_email)}" target="_blank" '
+                          f'style="{_style}padding:0.38rem 0.85rem;border-radius:6px;text-decoration:none;'
+                          f'font-weight:700;font-size:0.82rem;white-space:nowrap">'
+                          f'{_pp["label"]} R${_pp["price"]} →</a>')
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
             border:1px solid rgba(240,180,41,0.25);border-radius:10px;
             padding:0.7rem 1.1rem;margin-bottom:0.6rem;
-            display:flex;align-items:center;justify-content:space-between">
+            display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.6rem">
                 <div>
                     <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para {_up['label']} — R${_up['price']}/mês</span><br>
                     <span style="font-size:0.81rem;opacity:0.7">{_up_text}</span>
                 </div>
-                <a href="{checkout_url(_up_plan, _ob_email)}" target="_blank"
-                   style="background:#f0b429;color:#1a1a1a;padding:0.38rem 0.95rem;border-radius:6px;
-                   text-decoration:none;font-weight:700;font-size:0.83rem;white-space:nowrap;margin-left:1rem">
-                    Fazer upgrade →
-                </a>
+                <div style="display:flex;gap:0.45rem;flex-wrap:wrap">{_btns}</div>
             </div>""", unsafe_allow_html=True)
 
         tab1, tab2, tab3 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento", "🔎 Oportunidades de Domínios"])
@@ -1856,7 +1865,7 @@ else:
                                 <span style="color:#6B7280;font-size:11px">Comp. Ads </span>{comp}
                             </span>
                             <span style="color:#9CA3AF;font-size:13px">
-                                <span style="color:#6B7280;font-size:11px">CPC </span>R${cpc_fmt}
+                                <span style="color:#6B7280;font-size:11px">CPC </span>{('R$' + cpc_fmt) if cpc_fmt != 'N/A' else '—'}
                             </span>
                         </div>
                         """, unsafe_allow_html=True)
@@ -1959,7 +1968,7 @@ else:
                                     <span style="color:{diff_color}">{diff_label}</span>
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
-                                    <span style="color:#6B7280;font-size:11px">CPC </span>R${icpc_fmt}
+                                    <span style="color:#6B7280;font-size:11px">CPC </span>{('R$' + icpc_fmt) if icpc_fmt != 'N/A' else '—'}
                                 </span>
                             </div>
                             """, unsafe_allow_html=True)
