@@ -88,6 +88,9 @@ async def nuvemshop_auth(request: Request) -> Response:
 _SKIP_HEADERS = {"host", "content-length", "transfer-encoding", "connection"}
 
 async def proxy_http(request: Request) -> Response:
+    # Starlette catch-all workaround: dispatcha explicit innan proxy
+    if request.url.path == "/auth/nuvemshop":
+        return await nuvemshop_auth(request)
     path  = request.url.path
     query = request.url.query
     url   = f"{STREAMLIT_BASE}{path}"
