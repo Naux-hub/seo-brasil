@@ -18,7 +18,7 @@ if _qp.get("code") and _qp.get("user_id"):
     _supa_key = os.environ.get("SUPABASE_KEY", "")
     try:
         _resp = httpx.post(
-            f"https://www.nuvemshop.com.br/apps/{_app_id}/authorize",
+            "https://www.tiendanube.com/apps/authorize/token",
             data={
                 "client_id":     _app_id,
                 "client_secret": _secret,
