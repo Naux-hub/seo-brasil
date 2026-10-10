@@ -28,32 +28,46 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("server")
 
+# ── Konfiguration ────────────────────────────────────
 STREAMLIT_PORT = 8501
 STREAMLIT_BASE = f"http://127.0.0.1:{STREAMLIT_PORT}"
 STREAMLIT_WS   = f"ws://127.0.0.1:{STREAMLIT_PORT}"
 
-APP_ID        = os.environ.get("NUVEMSHOP_APP_ID", "45429")
-CLIENT_SECRET = os.environ.get("NUVEMSHOP_CLIENT_SECRET", "")
-SUPABASE_URL  = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY  = os.environ.get("SUPABASE_KEY", "")
+APP_ID          = os.environ.get("NUVEMSHOP_APP_ID", "45429")
+CLIENT_SECRET   = os.environ.get("NUVEMSHOP_CLIENT_SECRET", "")
+SUPABASE_URL    = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY    = os.environ.get("SUPABASE_KEY", "")
 
+# ── LGPD-webhooks ────────────────────────────────────
 async def store_redact(request: Request) -> Response:
+    """Nuvemshop begär att vi raderar butiksdata."""
     log.info("LGPD store-redact anropad")
     return Response(status_code=200)
 
 async def customers_redact(request: Request) -> Response:
+    """Nuvemshop begär att vi raderar kunddata."""
     log.info("LGPD customers-redact anropad")
     return Response(status_code=200)
 
 async def customers_data_request(request: Request) -> Response:
+    """Nuvemshop begär kunddata-rapport."""
     log.info("LGPD customers-data-request anropad")
     return JSONResponse({"customer_data": []})
 
+# ── OAuth-callback ───────────────────────────────────────
 async def nuvemshop_auth(request: Request) -> Response:
+    """
+    Nuvemshop redirectar hit efter installation:
+      GET /auth/nuvemshop?code=XXX&user_id=STORE_ID
+    Vi byter koden mot en access token och sparar i Supabase.
+    """
     code     = request.query_params.get("code")
     store_id = request.query_params.get("user_id")
+
     if not code or not store_id:
         return Response("Saknar code eller user_id", status_code=400)
+
+    # Byt kod mot access token
     token_url = f"https://www.nuvemshop.com.br/apps/{APP_ID}/authorize"
     async with httpx.AsyncClient() as client:
         try:
@@ -68,9 +82,12 @@ async def nuvemshop_auth(request: Request) -> Response:
         except Exception as e:
             log.error(f"Token-exchange misslyckades: {e}")
             return Response(f"Auth misslyckades: {e}", status_code=500)
+
     access_token = data.get("access_token")
     if not access_token:
         return Response("Ingen access_token i svar", status_code=500)
+
+    # Spara token i Supabase
     if SUPABASE_URL and SUPABASE_KEY:
         try:
             from supabase import create_client
@@ -83,45 +100,67 @@ async def nuvemshop_auth(request: Request) -> Response:
             log.info(f"Token sparad för butik {store_id}")
         except Exception as e:
             log.warning(f"Kunde inte spara token: {e}")
+
+    # Redirecta användaren till appen
     return RedirectResponse(url="/", status_code=302)
 
+# ── HTTP-proxy → Streamlit ───────────────────────────────────────
 _SKIP_HEADERS = {"host", "content-length", "transfer-encoding", "connection"}
 
 async def proxy_http(request: Request) -> Response:
     # Starlette catch-all workaround: dispatcha explicit innan proxy
     if request.url.path == "/auth/nuvemshop":
         return await nuvemshop_auth(request)
+
     path  = request.url.path
     query = request.url.query
     url   = f"{STREAMLIT_BASE}{path}"
     if query:
         url += f"?{query}"
-    headers = {k: v for k, v in request.headers.items() if k.lower() not in _SKIP_HEADERS}
+
+    headers = {k: v for k, v in request.headers.items()
+               if k.lower() not in _SKIP_HEADERS}
+
     async with httpx.AsyncClient(timeout=30) as client:
         try:
             body = await request.body()
-            resp = await client.request(method=request.method, url=url, headers=headers, content=body, follow_redirects=False)
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                content=body,
+                follow_redirects=False,
+            )
         except httpx.ConnectError:
-            return Response("Streamlit startar, försök igen om ett ögonblick...", status_code=503)
-    resp_headers = {k: v for k, v in resp.headers.items() if k.lower() not in {"content-encoding", "transfer-encoding", "connection"}}
-    return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
+            return Response("Streamlit startar, försök igen om ett ögonblick...",
+                            status_code=503)
 
+    resp_headers = {k: v for k, v in resp.headers.items()
+                    if k.lower() not in {"content-encoding", "transfer-encoding", "connection"}}
+    return Response(content=resp.content,
+                    status_code=resp.status_code,
+                    headers=resp_headers)
+
+# ── WebSocket-proxy → Streamlit ──────────────────────────────────────────
 async def proxy_ws(ws_client: WebSocket) -> None:
     path  = ws_client.url.path
     query = ws_client.url.query
     url   = f"{STREAMLIT_WS}{path}"
     if query:
         url += f"?{query}"
+
     await ws_client.accept()
+
     try:
         async with websockets.connect(url) as ws_server:
-            async def c2s():
+            async def client_to_server():
                 try:
                     async for msg in ws_client.iter_bytes():
                         await ws_server.send(msg)
                 except WebSocketDisconnect:
                     pass
-            async def s2c():
+
+            async def server_to_client():
                 try:
                     async for msg in ws_server:
                         if isinstance(msg, bytes):
@@ -130,26 +169,35 @@ async def proxy_ws(ws_client: WebSocket) -> None:
                             await ws_client.send_text(msg)
                 except Exception:
                     pass
-            await asyncio.gather(c2s(), s2c())
+
+            await asyncio.gather(client_to_server(), server_to_client())
     except Exception as e:
         log.debug(f"WS proxy avslutad: {e}")
 
+
+# ── Routing ──────────────────────────────────────────────────
 routes = [
-    Route("/webhooks/store-redact",           store_redact,           methods=["POST"]),
-    Route("/webhooks/customers-redact",       customers_redact,       methods=["POST"]),
-    Route("/webhooks/customers-data-request", customers_data_request, methods=["POST"]),
-    Route("/auth/nuvemshop",                  nuvemshop_auth,         methods=["GET"]),
-    WebSocketRoute("/{path:path}",            proxy_ws),
-    Route("/{path:path}",                     proxy_http),
-    Route("/",                                proxy_http),
+    # LGPD-webhooks
+    Route("/webhooks/store-redact",          store_redact,           methods=["POST"]),
+    Route("/webhooks/customers-redact",      customers_redact,       methods=["POST"]),
+    Route("/webhooks/customers-data-request",customers_data_request, methods=["POST"]),
+    # OAuth
+    Route("/auth/nuvemshop",                 nuvemshop_auth,         methods=["GET"]),
+    # WebSocket-proxy (måste komma FÖRE HTTP-catch-all)
+    WebSocketRoute("/{path:path}",           proxy_ws),
+    # HTTP-proxy
+    Route("/{path:path}",                    proxy_http),
+    Route("/",                               proxy_http),
 ]
 
 app = Starlette(routes=routes)
 
+
+# ── Startpunkt ──────────────────────────────────────────────────
 def start_streamlit() -> subprocess.Popen:
-    # Använd "env -u PORT" för att ta bort Railway's PORT=8080 från Streamlit's miljö
+    # os.environ.pop("PORT") anropas i __main__ BEFORE hit,
+    # så subprocess ärver os.environ utan PORT.
     cmd = [
-        "env", "-u", "PORT",
         sys.executable, "-m", "streamlit", "run", "app.py",
         "--server.port",              str(STREAMLIT_PORT),
         "--server.headless",          "true",
@@ -158,7 +206,10 @@ def start_streamlit() -> subprocess.Popen:
     ]
     log.info(f"Startar Streamlit på port {STREAMLIT_PORT}…")
     return subprocess.Popen(cmd)
-def wait_for_streamlit(timeout=30):
+
+
+def wait_for_streamlit(timeout: int = 30) -> bool:
+    """Väntar tills Streamlit svarar på HTTP."""
     import socket
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -171,9 +222,16 @@ def wait_for_streamlit(timeout=30):
     log.warning("Streamlit svarade inte inom timeout.")
     return False
 
+
 if __name__ == "__main__":
+    # Plocka ut Railway's PORT ur den *riktiga* processmiljën (os.environ)
+    # BEFORE Streamlit-subprocess startar. Subprocess ärver os.environ utan PORT,
+    # så Streamlit tvingas lyssna på --server.port 8501 istället för 8080.
+    railway_port = int(os.environ.pop("PORT", 8000))
+    log.info(f"Railway PORT={railway_port}, Streamlit PORT={STREAMLIT_PORT}")
+
     _proc = start_streamlit()
     wait_for_streamlit()
-    port = int(os.environ.get("PORT", 8000))
-    log.info(f"Proxy lyssnar på port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+    log.info(f"Proxy lyssnar på port {railway_port}")
+    uvicorn.run(app, host="0.0.0.0", port=railway_port, log_level="info")
