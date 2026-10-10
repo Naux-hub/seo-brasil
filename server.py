@@ -148,7 +148,7 @@ app = Starlette(routes=routes)
 
 def start_streamlit():
     env = os.environ.copy()
-    env.pop("PORT", None)   # Hindrar Streamlit fran att arva Railwayss PORT och ta 8080
+    env["PORT"] = str(STREAMLIT_PORT)  # Sätt PORT=8501 för Streamlit subprocess
     cmd = [sys.executable, "-m", "streamlit", "run", "app.py",
            "--server.port", str(STREAMLIT_PORT), "--server.headless", "true",
            "--server.address", "127.0.0.1", "--browser.gatherUsageStats", "false"]
