@@ -5,6 +5,7 @@ import time
 import os
 from supabase import create_client
 from keyword_cache import get_keyword_data, get_keyword_ideas
+from plan_config import serp_depth
 from domain_opportunities import (
     fetch_catchdoms, enrich_with_dataforseo, merge_results,
     compact_num, tf_cf_ratio, registro_br_url, wayback_url, majestic_url,
@@ -551,13 +552,13 @@ def get_rank_history(user_id, keyword, domain, weeks=12):
     except Exception:
         return []
 
-def trend_label(row):
+def trend_label(row, depth=100):
     if not row:
         return "⏳ Aguardando dados"
     current = row.get("rank_position")
     prev = row.get("prev_rank_position")
     if current is None:
-        return "📉 Saiu do top 100" if prev else "🔍 Não encontrado no top 100"
+        return f"📉 Saiu do top {depth}" if prev else f"🔍 Não encontrado no top {depth}"
     if prev is None:
         return f"#{current} 🆕 Novo"
     diff = prev - current  # positivt = klättrade
@@ -636,12 +637,12 @@ def get_keywords_without_rankings(user_id, domain, access_token=None):
 
 # ── ON-DEMAND RANKING ─────────────────────────────────────────────────────────
 
-def _fetch_single_rank(keyword, domain, login, password):
+def _fetch_single_rank(keyword, domain, login, password, depth=100):
     """
     Busca posição de um keyword no Google via DataForSEO (live/advanced).
     Retorna (position, url) ou (None, None) em caso de erro.
     """
-    tasks = [{"keyword": keyword, "location_code": 2076, "language_code": "pt", "depth": 100}]
+    tasks = [{"keyword": keyword, "location_code": 2076, "language_code": "pt", "depth": depth}]
     try:
         r = requests.post(
             "https://api.dataforseo.com/v3/serp/google/organic/live/advanced",
@@ -683,7 +684,7 @@ def _fetch_single_rank(keyword, domain, login, password):
 
 
 def run_on_demand_ranking(user_id, domain, keywords, login, password,
-                          status_el, progress_bar, access_token=None):
+                          status_el, progress_bar, access_token=None, depth=100):
     """
     Verifica posição no Google para todos os keywords com feedback visual.
     Salva em keyword_rankings e retorna (results, save_ok).
@@ -703,7 +704,7 @@ def run_on_demand_ranking(user_id, domain, keywords, login, password,
             unsafe_allow_html=True,
         )
         progress_bar.progress(i / total)
-        position, url = _fetch_single_rank(kw, domain, login, password)
+        position, url = _fetch_single_rank(kw, domain, login, password, depth)
         results[kw] = {"position": position, "url": url}
 
     progress_bar.progress(1.0)
@@ -1740,6 +1741,7 @@ else:
                         DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD,
                         _status_el, _progress_bar,
                         access_token=st.session_state.access_token,
+                        depth=serp_depth(_user_plan),
                     )
                     log_event(user_id, "initial_ranking_completed",
                               {"results": {k: v["position"] for k, v in _ranking_results.items()},
@@ -2335,7 +2337,7 @@ else:
                 for item in tracked_list:
                     kw = item["keyword"]
                     rank_row = get_rank_data_for_keyword(user_id, kw, domain)
-                    trend = trend_label(rank_row)
+                    trend = trend_label(rank_row, serp_depth(_user_plan))
 
                     col_kw, col_del = st.columns([9, 1])
                     with col_kw:
@@ -2369,12 +2371,12 @@ else:
                                 _valid_count = _df_plot["Posição"].notna().sum()
                                 if _valid_count >= 2:
                                     st.line_chart(_df_plot, use_container_width=True, height=160)
-                                    st.caption("Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top 100.")
+                                    st.caption(f"Eixo vertical: posição mais alta = melhor ranqueamento. Gaps = fora do top {serp_depth(_user_plan)}.")
                                 elif _valid_count == 1:
                                     st.dataframe(_df[["Posição"]].dropna(), use_container_width=True)
                                     st.caption("Apenas 1 semana de dados disponível. O gráfico aparecerá quando houver mais histórico.")
                                 else:
-                                    st.caption("Nenhuma posição disponível ainda. Esta palavra-chave não apareceu no top 100 neste período.")
+                                    st.caption(f"Nenhuma posição disponível ainda. Esta palavra-chave não apareceu no top {serp_depth(_user_plan)} neste período.")
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
                             remove_tracking(kw, user_id, domain)

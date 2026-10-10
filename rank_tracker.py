@@ -23,6 +23,7 @@ import requests
 from datetime import datetime, timezone
 from supabase import create_client
 from market_config import get_market, market_from_env
+from plan_config import serp_depth
 
 # --- Supabase-anslutning ---
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -38,7 +39,7 @@ MARKET = market_from_env()
 _market_cfg = get_market(MARKET)
 LOCATION_CODE = _market_cfg["location_code"]   # 2076 (BR) eller 2484 (MX)
 LANGUAGE_CODE = _market_cfg["language_code"]   # "pt" (BR) eller "es" (MX)
-DEPTH = 100            # Top 100 räcker och är billigare än fler
+DEPTH = 100            # Standard. Per plan: se plan_config.py
 
 
 def get_active_subscribers():
@@ -80,12 +81,12 @@ def get_active_user_domains():
     # Steg 1: Hämta user_id → email-mappning för aktuell marknad
     sub_res = (
         supabase.table("subscribers")
-        .select("email, user_id")
+        .select("email, user_id, plan")
         .eq("market", MARKET)
         .execute()
     )
     user_map = {
-        r["user_id"]: r["email"]
+        r["user_id"]: {"email": r["email"], "plan": r.get("plan")}
         for r in (sub_res.data or [])
         if r.get("user_id") and r.get("email")
     }
@@ -104,7 +105,8 @@ def get_active_user_domains():
 
     return [
         {
-            "email": user_map[r["user_id"]],
+            "email": user_map[r["user_id"]]["email"],
+            "plan": user_map[r["user_id"]]["plan"],
             "domain": r["domain"],
             "user_id": r["user_id"],
         }
@@ -129,7 +131,7 @@ def get_existing_positions(user_id, domain, keywords):
     return {r["keyword"]: r["rank_position"] for r in (res.data or [])}
 
 
-def fetch_serp_positions(keywords, domain):
+def fetch_serp_positions(keywords, domain, depth=DEPTH):
     """
     Hämtar Google SERP-positioner för en lista sökord via DataForSEO Tasks API.
     Söker specifikt efter användarens domän i resultaten (top 100).
@@ -145,7 +147,7 @@ def fetch_serp_positions(keywords, domain):
             "keyword": kw,
             "location_code": LOCATION_CODE,
             "language_code": LANGUAGE_CODE,
-            "depth": DEPTH,
+            "depth": depth,
         }
         for kw in keywords
     ]
@@ -215,7 +217,7 @@ def fetch_serp_positions(keywords, domain):
                     break
 
             results[kw] = {"position": position, "url": url}
-            pos_str = f"#{position}" if position else "Ej i top 100"
+            pos_str = f"#{position}" if position else f"Ej i top {depth}"
             print(f"  {kw}: {pos_str}")
 
         except Exception as e:
@@ -282,10 +284,11 @@ def run():
             print(f"  Inga spårade sökord, hoppar över")
             continue
 
-        print(f"  Spårar {len(keywords)} sökord för {domain}")
+        depth = serp_depth(row.get("plan"))
+        print(f"  Spårar {len(keywords)} sökord för {domain} (top {depth})")
 
         existing = get_existing_positions(user_id, domain, keywords)
-        results = fetch_serp_positions(keywords, domain)
+        results = fetch_serp_positions(keywords, domain, depth)
         save_keyword_rankings(user_id, domain, results, existing)
         print(f"  ✓ Sparat {len(results)} rankingar")
 

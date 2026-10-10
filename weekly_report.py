@@ -8,6 +8,7 @@ import requests
 from datetime import datetime, timezone
 from urllib.parse import quote as url_quote
 from supabase import create_client
+from plan_config import serp_depth
 
 # --- Anslutningar ---
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -21,7 +22,7 @@ APP_URL = "https://seobrasil.app"
 
 def get_active_subscribers():
     """Returnerar prenumeranter med aktiv status ELLER trial inom 7 dagar."""
-    res = supabase.table("subscribers").select("email, domain, subscription_status, created_at").execute()
+    res = supabase.table("subscribers").select("email, domain, subscription_status, created_at, plan").execute()
     now = datetime.now(timezone.utc)
     active = []
     expired = []
@@ -120,10 +121,10 @@ def get_keyword_ranking(user_id, domain, keyword):
     return None, None
 
 
-def trend_html(current, previous):
+def trend_html(current, previous, depth=100):
     """Returnerar HTML-sträng med position och trend-pil."""
     if current is None:
-        pos_str = "— (fora do top 100)"
+        pos_str = f"— (fora do top {depth})"
         color = "#888"
         arrow = ""
     else:
@@ -146,7 +147,7 @@ def trend_html(current, previous):
     return f"<span style='font-weight:bold;color:{color}'>{pos_str}</span>{arrow}"
 
 
-def build_email_html(email, keyword_data):
+def build_email_html(email, keyword_data, depth=100):
     """Constrói o HTML do e-mail semanal com três seções: Atenção, Subindo e Foco."""
     today = datetime.now().strftime("%d/%m/%Y")
     email_enc = url_quote(email, safe="")
@@ -247,7 +248,7 @@ def build_email_html(email, keyword_data):
     # --- Tabela completa ---
     rows_html = ""
     for kw, current, previous in keyword_data:
-        trend = trend_html(current, previous)
+        trend = trend_html(current, previous, depth)
         rows_html += (
             f'<tr>'
             f'<td style="padding:10px 8px;border-bottom:1px solid #2a2a2a;color:#e0e0e0">{kw}</td>'
@@ -421,7 +422,7 @@ def run():
             print(f"  Ingen rankingdata ännu, hoppar över")
             continue
 
-        html = build_email_html(email, keyword_data)
+        html = build_email_html(email, keyword_data, serp_depth(row.get("plan")))
         today = datetime.now().strftime("%d/%m/%Y")
         subject = f"📈 Seu relatório SEO da semana — {today}"
 
