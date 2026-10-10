@@ -147,11 +147,13 @@ routes = [
 app = Starlette(routes=routes)
 
 def start_streamlit():
+    env = os.environ.copy()
+    env.pop("PORT", None)   # Hindrar Streamlit fran att arva Railwayss PORT och ta 8080
     cmd = [sys.executable, "-m", "streamlit", "run", "app.py",
            "--server.port", str(STREAMLIT_PORT), "--server.headless", "true",
            "--server.address", "127.0.0.1", "--browser.gatherUsageStats", "false"]
     log.info(f"Startar Streamlit på port {STREAMLIT_PORT}…")
-    return subprocess.Popen(cmd)
+    return subprocess.Popen(cmd, env=env)
 
 def wait_for_streamlit(timeout=30):
     import socket
