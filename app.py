@@ -938,13 +938,13 @@ def render_onboarding_progress(status):
     if is_s1_next:
         hint = "Próximo: Vá até <b>Meu Monitoramento</b> e adicione o endereço do seu site."
     elif is_s2_next:
-        hint = "Próximo: Pesquise uma palavra-chave acima e clique em <b>+ Rastrear</b>."
+        hint = "Próximo: Pesquise palavras-chave acima, marque as que quer e clique em <b>Rastrear selecionadas</b>."
     elif is_s3_running:
         hint = "Estamos verificando suas posições no Google..."
     elif s["ranking_completed_not_viewed"]:
         hint = "Próximo: Clique em <b>Meu Monitoramento</b> para ver seu ranking."
     elif is_s3_next:
-        hint = "Próximo: Pesquise uma palavra-chave e clique em <b>+ Rastrear</b> para verificar sua posição."
+        hint = "Próximo: Pesquise palavras-chave, marque as que quer e clique em <b>Rastrear selecionadas</b> para verificar sua posição."
     else:
         hint = ""
 
@@ -1512,7 +1512,7 @@ if st.session_state.user is None:
         <div class="step">
             <div class="num">2</div>
             <h4>Pesquise e rastreie palavras-chave</h4>
-            <p>Use a ferramenta de pesquisa para ver volume, CPC e competição de qualquer termo. Clique em + Rastrear nos que quer monitorar.</p>
+            <p>Use a ferramenta de pesquisa para ver volume, CPC e competição de qualquer termo. Marque os que quer monitorar e clique em Rastrear selecionadas.</p>
         </div>
         <div class="step">
             <div class="num">3</div>
@@ -1829,6 +1829,83 @@ else:
                 items = st.session_state.search_results
                 tracked_set = get_tracked_set(user_id)
 
+                # ── Flerval: kryssa i sökord och spara alla på en gång ──
+                _sel_map = {}
+                for _it in items:
+                    _k = _it.get("keyword", "")
+                    if _k and _k not in tracked_set:
+                        _sel_map[f"sel_{_k}"] = _k
+                for _idea in st.session_state.get("keyword_ideas", []):
+                    _k = _idea.get("keyword", "")
+                    if _k and _k not in tracked_set:
+                        _sel_map[f"sel_idea_{_k}"] = _k
+
+                def _bulk_select(keys, value):
+                    for _key in keys:
+                        st.session_state[_key] = value
+
+                def _bulk_track(sel_map, uid, dom, plan, token):
+                    chosen = []
+                    for _key, _kw in sel_map.items():
+                        if st.session_state.get(_key) and _kw not in chosen:
+                            chosen.append(_kw)
+                    if not chosen:
+                        st.session_state._track_msg = ("warning", "Selecione pelo menos uma palavra-chave.")
+                        return
+                    saved, stop_msg = [], None
+                    for _kw in chosen:
+                        ok, msg = add_tracking(_kw, uid, dom, plan)
+                        if ok:
+                            saved.append(_kw)
+                            log_event(uid, "keyword_saved", {"keyword": _kw})
+                        else:
+                            stop_msg = msg
+                            break
+                    if saved and not has_event(uid, "keyword_tracked"):
+                        log_event(uid, "keyword_tracked", {"keyword": saved[0]})
+                    for _key in sel_map:
+                        st.session_state[_key] = False
+                    if stop_msg and saved:
+                        st.session_state._track_msg = ("warning",
+                            f"{len(saved)} palavra(s) salva(s). {len(chosen) - len(saved)} não salva(s): {stop_msg}")
+                    elif stop_msg:
+                        st.session_state._track_msg = ("error", stop_msg)
+                    else:
+                        st.session_state._track_msg = ("success", f"✅ {len(saved)} palavra(s)-chave salva(s).")
+                    if saved and dom:
+                        _new_kws = get_keywords_without_rankings(uid, dom, token)
+                        if _new_kws:
+                            st.session_state._ranking_kws = _new_kws
+                            st.session_state.ranking_in_progress = True
+                            st.session_state.ranking_done = False
+
+                def _render_bulk_bar(pos):
+                    if not _sel_map:
+                        return
+                    _n = sum(1 for _key in _sel_map if st.session_state.get(_key))
+                    _c1, _c2, _c3 = st.columns([3, 2, 2])
+                    with _c1:
+                        st.button(
+                            f"💾 Rastrear selecionadas ({_n})", key=f"bulk_track_{pos}", type="primary",
+                            disabled=st.session_state.ranking_in_progress or _n == 0,
+                            on_click=_bulk_track,
+                            args=(_sel_map, user_id, _ob_domain, _user_plan, st.session_state.access_token),
+                            use_container_width=True,
+                        )
+                    with _c2:
+                        st.button("Selecionar todas", key=f"bulk_all_{pos}",
+                                  on_click=_bulk_select, args=(list(_sel_map.keys()), True),
+                                  use_container_width=True)
+                    with _c3:
+                        st.button("Limpar seleção", key=f"bulk_none_{pos}",
+                                  on_click=_bulk_select, args=(list(_sel_map.keys()), False),
+                                  use_container_width=True)
+
+                _tm = st.session_state.pop("_track_msg", None)
+                if _tm:
+                    getattr(st, _tm[0])(_tm[1])
+                _render_bulk_bar("top")
+
                 csv_rows = []
                 for item in items:
                     kw = item.get("keyword", "")
@@ -1871,29 +1948,10 @@ else:
                         """, unsafe_allow_html=True)
                     with col_btn:
                         if kw in tracked_set:
-                            st.markdown("<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅</div>", unsafe_allow_html=True)
+                            st.markdown("<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅ Rastreada</div>", unsafe_allow_html=True)
                         else:
-                            st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
-                            if st.button("+ Rastrear", key=f"track_{kw}",
-                                         disabled=st.session_state.ranking_in_progress):
-                                ok, msg = add_tracking(kw, user_id, _ob_domain, _user_plan)
-                                if ok:
-                                    log_event(user_id, "keyword_saved", {"keyword": kw})
-                                    if not has_event(user_id, "keyword_tracked"):
-                                        log_event(user_id, "keyword_tracked", {"keyword": kw})
-                                    _user_domain = _ob_domain
-                                    if _user_domain:
-                                        _new_kws = get_keywords_without_rankings(
-                                            user_id, _user_domain,
-                                            st.session_state.access_token)
-                                        if _new_kws:
-                                            st.session_state._ranking_kws = _new_kws
-                                            st.session_state.ranking_in_progress = True
-                                            st.session_state.ranking_done = False
-                                    st.rerun()
-                                else:
-                                    st.error(msg)
-                            st.markdown("</div>", unsafe_allow_html=True)
+                            st.checkbox("Selecionar", key=f"sel_{kw}",
+                                        disabled=st.session_state.ranking_in_progress)
 
                 st.divider()
                 df_csv = pd.DataFrame(csv_rows)
@@ -1975,31 +2033,15 @@ else:
                         with col_btn:
                             if ikw in tracked_set:
                                 st.markdown(
-                                    "<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅</div>",
+                                    "<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅ Rastreada</div>",
                                     unsafe_allow_html=True,
                                 )
                             else:
-                                st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
-                                if st.button("+ Rastrear", key=f"track_idea_{ikw}",
-                                             disabled=st.session_state.ranking_in_progress):
-                                    ok, msg = add_tracking(ikw, user_id, _ob_domain, _user_plan)
-                                    if ok:
-                                        log_event(user_id, "keyword_saved", {"keyword": ikw})
-                                        if not has_event(user_id, "keyword_tracked"):
-                                            log_event(user_id, "keyword_tracked", {"keyword": ikw})
-                                        _user_domain = _ob_domain
-                                        if _user_domain:
-                                            _new_kws = get_keywords_without_rankings(
-                                                user_id, _user_domain,
-                                                st.session_state.access_token)
-                                            if _new_kws:
-                                                st.session_state._ranking_kws = _new_kws
-                                                st.session_state.ranking_in_progress = True
-                                                st.session_state.ranking_done = False
-                                        st.rerun()
-                                    else:
-                                        st.error(msg)
-                                st.markdown("</div>", unsafe_allow_html=True)
+                                st.checkbox("Selecionar", key=f"sel_idea_{ikw}",
+                                            disabled=st.session_state.ranking_in_progress)
+
+                    st.divider()
+                    _render_bulk_bar("bottom")
 
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
@@ -2353,10 +2395,10 @@ else:
                     pass
 
             if domain:
-                st.caption("📌 Para receber seu relatório semanal, pesquise palavras-chave e clique em '+ Rastrear' nas que deseja monitorar.")
+                st.caption("📌 Para receber seu relatório semanal, pesquise palavras-chave, marque as que deseja monitorar e clique em 'Rastrear selecionadas'.")
 
             if not tracked_list:
-                st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
+                st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise, marque as palavras e clique em 'Rastrear selecionadas' para começar!")
             else:
                 count = len(tracked_list)
                 _kw_limit = get_plan(_user_plan)["max_keywords"]
