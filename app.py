@@ -35,6 +35,40 @@ def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
 
+
+def _service_insert_subscriber(email, user_id):
+    """
+    Skapar en rad i subscribers med servicenyckeln direkt via REST.
+    Går förbi den delade klientens inloggning (som kan tillhöra en annan användare
+    och då stoppas av RLS). Ny rad = gratisplanen.
+    Returnerar True om raden finns efteråt (skapad nu eller fanns redan).
+    """
+    try:
+        r = requests.post(
+            f"{os.environ['SUPABASE_URL']}/rest/v1/subscribers",
+            headers={
+                "apikey": os.environ["SUPABASE_KEY"],
+                "Authorization": f"Bearer {os.environ['SUPABASE_KEY']}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+            },
+            json={
+                "email": email,
+                "user_id": str(user_id),
+                "plan": FREE_PLAN,
+                # "trial" är ett känt giltigt statusvärde. Allt utom "active" räknas som gratis.
+                "subscription_status": "trial",
+            },
+            timeout=15,
+        )
+        if r.ok or r.status_code == 409:
+            return True
+        logging.error("[signup] subscribers insert misslyckades: %s %s", r.status_code, r.text[:300])
+        return False
+    except Exception:
+        logging.exception("[signup] subscribers insert exception")
+        return False
+
 def get_tracked_set(user_id):
     """Returnerar keywords som är aktivt sparat för ett aktivt projekt/domän.
     Kontrollerar att domänen är is_active=True i user_domains — så att keywords
@@ -297,17 +331,7 @@ def create_trial_account(email, senha):
             raise Exception(_adm_resp.json().get("msg", _adm_resp.text))
         _uid = _adm_resp.json()["id"]
 
-        try:
-            supabase.table("subscribers").insert({
-                "email": email,
-                "user_id": _uid,
-                "plan": FREE_PLAN,
-                # "trial" behålls som statusvärde (känt giltigt i databasen).
-                # Allt som inte är "active" räknas som gratisplanen.
-                "subscription_status": "trial",
-            }).execute()
-        except Exception:
-            pass
+        _service_insert_subscriber(email, _uid)
 
         _login = supabase.auth.sign_in_with_password({"email": email, "password": senha})
         st.session_state.user = _login.user
@@ -1572,6 +1596,11 @@ if st.session_state.user is None:
 # =====================================================
 else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
+    # Självläkning: inloggad men utan rad i subscribers (t.ex. misslyckad registrering)
+    # -> skapa en gratisrad så att kontot fungerar direkt.
+    if not prenumerant:
+        if _service_insert_subscriber(st.session_state.user.email, st.session_state.user.id):
+            prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
 
     # Log subscription_activated once when account is 'active' — catches webhook/manual activations

@@ -87,7 +87,7 @@ def fetch_catchdoms(
         return {"error": "unknown", "message": "Erro inesperado ao buscar domínios."}
 
     if r.status_code == 401 or r.status_code == 403:
-        return {"error": "auth", "message": "Acesso ao catálogo requer plano Authority+ ativo no CatchDoms."}
+        return {"error": "auth", "message": "Oportunidades de Domínios está temporariamente indisponível. Tente novamente mais tarde."}
     if r.status_code == 429:
         return {"error": "rate_limit", "message": "Limite de requisições atingido. Aguarde alguns segundos e tente novamente."}
     if not r.ok:
