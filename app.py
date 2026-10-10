@@ -4,6 +4,47 @@ import requests
 import time
 import os
 from supabase import create_client
+import httpx
+
+# ── Nuvemshop OAuth-callback ──────────────────────────────────────────
+# Nuvemshop redirectar hit: GET /?code=XXX&user_id=STORE_ID
+_qp = st.query_params
+if _qp.get("code") and _qp.get("user_id"):
+    _code    = _qp["code"]
+    _user_id = _qp["user_id"]
+    _app_id  = os.environ.get("NUVEMSHOP_APP_ID", "45429")
+    _secret  = os.environ.get("NUVEMSHOP_CLIENT_SECRET", "")
+    _supa_url = os.environ.get("SUPABASE_URL", "")
+    _supa_key = os.environ.get("SUPABASE_KEY", "")
+    try:
+        _resp = httpx.post(
+            f"https://www.nuvemshop.com.br/apps/{_app_id}/authorize",
+            data={
+                "client_id":     _app_id,
+                "client_secret": _secret,
+                "grant_type":    "authorization_code",
+                "code":          _code,
+            },
+            timeout=10,
+        )
+        _resp.raise_for_status()
+        _data = _resp.json()
+        _token = _data.get("access_token")
+        if _token and _supa_url:
+            from supabase import create_client as _sc
+            _sb = _sc(_supa_url, _supa_key)
+            _sb.table("nuvemshop_tokens").upsert({
+                "store_id":     str(_user_id),
+                "access_token": _token,
+                "scope":        _data.get("scope", ""),
+            }).execute()
+        st.query_params.clear()
+        st.rerun()
+    except Exception as _e:
+        st.error(f"OAuth misslyckades: {_e}")
+        st.stop()
+# ────────────────────────────────────────────────────────────────────
+
 from keyword_cache import get_keyword_data, get_keyword_ideas
 from plan_config import (
     serp_depth, effective_plan, get_plan, next_plan, checkout_url, PLANS, FREE_PLAN,
