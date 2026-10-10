@@ -146,15 +146,18 @@ routes = [
 
 app = Starlette(routes=routes)
 
-def start_streamlit():
-    env = os.environ.copy()
-    env["PORT"] = str(STREAMLIT_PORT)  # Sätt PORT=8501 för Streamlit subprocess
-    cmd = [sys.executable, "-m", "streamlit", "run", "app.py",
-           "--server.port", str(STREAMLIT_PORT), "--server.headless", "true",
-           "--server.address", "127.0.0.1", "--browser.gatherUsageStats", "false"]
+def start_streamlit() -> subprocess.Popen:
+    # Använd "env -u PORT" för att ta bort Railway's PORT=8080 från Streamlit's miljö
+    cmd = [
+        "env", "-u", "PORT",
+        sys.executable, "-m", "streamlit", "run", "app.py",
+        "--server.port",              str(STREAMLIT_PORT),
+        "--server.headless",          "true",
+        "--server.address",           "127.0.0.1",
+        "--browser.gatherUsageStats", "false",
+    ]
     log.info(f"Startar Streamlit på port {STREAMLIT_PORT}…")
-    return subprocess.Popen(cmd, env=env)
-
+    return subprocess.Popen(cmd)
 def wait_for_streamlit(timeout=30):
     import socket
     deadline = time.time() + timeout
