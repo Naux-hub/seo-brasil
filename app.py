@@ -7,17 +7,18 @@ import httpx
 from supabase import create_client
 
 # ── Nuvemshop OAuth-callback ─────────────────────────────────────────
-# Nuvemshop redirectar hit: GET /?code=XXX&user_id=STORE_ID
+# Nuvemshop redirectar hit: GET /?code=XXX[&user_id=STORE_ID]
+# user_id kan saknas i URL:en — hämtas då från token-svarets JSON
 # (callback URL i Partner Portal satt till https://app.seobrasil.app/)
 _qp = st.query_params
-if _qp.get("code") and _qp.get("user_id"):
+if _qp.get("code"):
     _code    = _qp["code"]
-    _user_id = _qp["user_id"]
+    _user_id = _qp.get("user_id", "")   # kan vara tomt, fylls i från token-svar
     _app_id  = os.environ.get("NUVEMSHOP_APP_ID", "45429")
     _secret  = os.environ.get("NUVEMSHOP_CLIENT_SECRET", "")
     _supa_url = os.environ.get("SUPABASE_URL", "")
     _supa_key = os.environ.get("SUPABASE_KEY", "")
-    print(f"[OAUTH] Callback mottagen: user_id={_user_id} code={_code[:8]}... app_id={_app_id} supa_url={'OK' if _supa_url else 'SAKNAS'}")
+    print(f"[OAUTH] Callback mottagen: user_id={_user_id or 'saknas-i-URL'} code={_code[:8]}... app_id={_app_id} supa_url={'OK' if _supa_url else 'SAKNAS'}")
     try:
         _resp = httpx.post(
             "https://www.tiendanube.com/apps/authorize/token",
@@ -37,6 +38,9 @@ if _qp.get("code") and _qp.get("user_id"):
             print(f"[OAUTH] FEL: access_token saknas i svaret. Fält: {list(_data.keys())}")
             st.error(f"OAuth fel: access_token saknas i svaret från Nuvemshop. Svar: {_data}")
             st.stop()
+        # user_id från URL eller från token-svarets JSON
+        if not _user_id:
+            _user_id = str(_data.get("user_id", ""))
         print(f"[OAUTH] Token mottagen! Sparar till Supabase för store_id={_user_id}")
         if _supa_url:
             from supabase import create_client as _sc
