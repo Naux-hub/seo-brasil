@@ -3,11 +3,61 @@ import pandas as pd
 import requests
 import time
 import os
+import httpx
 from supabase import create_client
+
+# ── Nuvemshop OAuth-callback ─────────────────────────────────────────
+# Nuvemshop redirectar hit: GET /?code=XXX&user_id=STORE_ID
+# (callback URL i Partner Portal satt till https://app.seobrasil.app/)
+_qp = st.query_params
+if _qp.get("code") and _qp.get("user_id"):
+    _code    = _qp["code"]
+    _user_id = _qp["user_id"]
+    _app_id  = os.environ.get("NUVEMSHOP_APP_ID", "45429")
+    _secret  = os.environ.get("NUVEMSHOP_CLIENT_SECRET", "")
+    _supa_url = os.environ.get("SUPABASE_URL", "")
+    _supa_key = os.environ.get("SUPABASE_KEY", "")
+    print(f"[OAUTH] Callback mottagen: user_id={_user_id} code={_code[:8]}... app_id={_app_id} supa_url={'OK' if _supa_url else 'SAKNAS'}")
+    try:
+        _resp = httpx.post(
+            "https://www.tiendanube.com/apps/authorize/token",
+            data={
+                "client_id":     _app_id,
+                "client_secret": _secret,
+                "grant_type":    "authorization_code",
+                "code":          _code,
+            },
+            timeout=10,
+        )
+        print(f"[OAUTH] Token exchange svar: status={_resp.status_code} body={_resp.text[:200]}")
+        _resp.raise_for_status()
+        _data = _resp.json()
+        _token = _data.get("access_token")
+        if not _token:
+            print(f"[OAUTH] FEL: access_token saknas i svaret. Fält: {list(_data.keys())}")
+            st.error(f"OAuth fel: access_token saknas i svaret från Nuvemshop. Svar: {_data}")
+            st.stop()
+        print(f"[OAUTH] Token mottagen! Sparar till Supabase för store_id={_user_id}")
+        if _supa_url:
+            from supabase import create_client as _sc
+            _sb = _sc(_supa_url, _supa_key)
+            _sb.table("nuvemshop_tokens").upsert({
+                "store_id":     str(_user_id),
+                "access_token": _token,
+                "scope":        _data.get("scope", ""),
+            }).execute()
+            print(f"[OAUTH] Supabase upsert klar för store_id={_user_id}")
+        else:
+            print("[OAUTH] FEL: SUPABASE_URL saknas — token sparades INTE")
+        st.query_params.clear()
+        st.rerun()
+    except Exception as _e:
+        print(f"[OAUTH] Exception: {_e}")
+        st.error(f"OAuth misslyckades: {_e}")
+        st.stop()
+# ─────────────────────────────────────────────────────────────────────
 from keyword_cache import get_keyword_data, get_keyword_ideas
-from plan_config import (
-    serp_depth, effective_plan, get_plan, next_plan, checkout_url, PLANS, FREE_PLAN,
-)
+from plan_config import serp_depth
 from domain_opportunities import (
     fetch_catchdoms, enrich_with_dataforseo, merge_results,
     compact_num, tf_cf_ratio, registro_br_url, wayback_url, majestic_url,
@@ -35,40 +85,6 @@ def ar_prenumerant(email):
     res = supabase.table("subscribers").select("email").eq("email", email).execute()
     return len(res.data) > 0
 
-
-def _service_insert_subscriber(email, user_id):
-    """
-    Skapar en rad i subscribers med servicenyckeln direkt via REST.
-    Går förbi den delade klientens inloggning (som kan tillhöra en annan användare
-    och då stoppas av RLS). Ny rad = gratisplanen.
-    Returnerar True om raden finns efteråt (skapad nu eller fanns redan).
-    """
-    try:
-        r = requests.post(
-            f"{os.environ['SUPABASE_URL']}/rest/v1/subscribers",
-            headers={
-                "apikey": os.environ["SUPABASE_KEY"],
-                "Authorization": f"Bearer {os.environ['SUPABASE_KEY']}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal",
-            },
-            json={
-                "email": email,
-                "user_id": str(user_id),
-                "plan": FREE_PLAN,
-                # "trial" är ett känt giltigt statusvärde. Allt utom "active" räknas som gratis.
-                "subscription_status": "trial",
-            },
-            timeout=15,
-        )
-        if r.ok or r.status_code == 409:
-            return True
-        logging.error("[signup] subscribers insert misslyckades: %s %s", r.status_code, r.text[:300])
-        return False
-    except Exception:
-        logging.exception("[signup] subscribers insert exception")
-        return False
-
 def get_tracked_set(user_id):
     """Returnerar keywords som är aktivt sparat för ett aktivt projekt/domän.
     Kontrollerar att domänen är is_active=True i user_domains — så att keywords
@@ -95,13 +111,13 @@ def get_tracked_set(user_id):
     except Exception:
         return set()
 
-def add_tracking(keyword, user_id, domain, plan=FREE_PLAN):
+def add_tracking(keyword, user_id, domain, plan='pro'):
     if not domain:
         return False, "Configure seu site antes de rastrear palavras-chave."
-    limit = get_plan(plan)["max_keywords"]
+    limit = 300 if plan == 'premium' else 100
     count_res = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute()
     if len(count_res.data) >= limit:
-        return False, f"Limite de {limit} palavras do plano {get_plan(plan)['label']} atingido. Faça upgrade para rastrear mais."
+        return False, f"Limite de {limit} palavras atingido."
     try:
         existing = supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("keyword", keyword).execute()
         if existing.data:
@@ -149,59 +165,14 @@ def get_user_domain(email, access_token=None):
     return None
 
 def get_user_plan(email):
-    """
-    Returnerar planen som faktiskt gäller: 'gratis', 'basico', 'pro' eller 'premium'.
-    Bara subscription_status='active' ger betald plan — allt annat blir 'gratis'.
-    None om användaren saknar rad i subscribers.
-    """
+    """Returnerar 'premium', 'pro' (default) eller None (ej prenumerant)."""
     try:
-        res = supabase.table("subscribers").select("plan, subscription_status").eq("email", email).execute()
+        res = supabase.table("subscribers").select("plan").eq("email", email).execute()
         if res.data:
-            row = res.data[0]
-            return effective_plan(row.get("plan"), row.get("subscription_status"))
+            return res.data[0].get("plan", "pro") or "pro"
         return None
     except Exception:
-        return FREE_PLAN
-
-
-_PLAN_FEATURES = {
-    "gratis": ["🌐 1 site", "📈 10 palavras-chave monitoradas", "🔎 Posições no top 30 do Google",
-               "📬 Relatório toda segunda-feira", "🔍 Pesquisa de palavras-chave"],
-    "basico": ["🌐 1 site", "📈 50 palavras-chave monitoradas", "🔎 Posições no top 30 do Google",
-               "📊 Histórico de 4 semanas", "📬 Relatório toda segunda-feira", "📊 Exportação CSV"],
-    "pro": ["🌐 Até 3 sites", "📈 200 palavras-chave monitoradas", "🔎 Posições no top 100 do Google",
-            "📊 Histórico de 12 semanas", "📬 Relatório toda segunda-feira", "📊 Exportação CSV"],
-    "premium": ["🌐 Até 5 sites", "📈 500 palavras-chave monitoradas", "🔎 Posições no top 100 do Google",
-                "📊 Histórico de 12 semanas", "🔍 Oportunidades de Domínios", "📈 Todos os recursos do Pro"],
-}
-
-
-def render_plans_html():
-    """HTML för prissektionen på startsidan — byggs från plan_config.PLANS."""
-    boxes = []
-    for key in ("gratis", "basico", "pro", "premium"):
-        p = PLANS[key]
-        gold = key == "premium"
-        items = "".join(f"<li>{f}</li>" for f in _PLAN_FEATURES[key])
-        if key == "gratis":
-            price, per = "R$0", "para sempre • sem cartão"
-            cta = '<a class="cta-btn" href="#comecar">Criar conta grátis →</a>'
-        else:
-            price, per = f"R${p['price']}", "por mês • sem fidelidade"
-            style = ' style="background:#f0b429;color:#1a1a2e;"' if gold else ""
-            cta = f'<a class="cta-btn" href="{checkout_url(key)}"{style}>Assinar {p["label"]} →</a>'
-        box_style = "flex:1;min-width:220px;max-width:300px;"
-        if gold:
-            box_style += "border-color:rgba(255,200,60,0.5);background:rgba(255,200,60,0.04);"
-        title_color = "#f0b429" if gold else "#4d9fff"
-        boxes.append(
-            f'<div class="price-box" style="{box_style}">'
-            f'<div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:{title_color}">SEO Brasil {p["label"]}</div>'
-            f'<div class="price">{price}</div><div class="per">{per}</div>'
-            f'<ul>{items}</ul>{cta}</div>'
-        )
-    return ('<div class="plans-row" style="display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;">'
-            + "".join(boxes) + "</div>")
+        return "pro"
 
 def get_user_domains(user_id):
     """Returnerar lista av {domain, is_active} från user_domains för en användare."""
@@ -216,7 +187,7 @@ def get_user_domains(user_id):
         return []
 
 
-def add_user_domain(user_id, domain, email=None, max_domains=1):
+def add_user_domain(user_id, domain, email=None):
     """
     Lägger till en domän i user_domains (eller reaktiverar om den tidigare pausats).
     Skriver också till subscribers.domain för att hålla dem synkroniserade.
@@ -235,14 +206,14 @@ def add_user_domain(user_id, domain, email=None, max_domains=1):
                     market = _sub.data[0].get("market") or "br"
             except Exception:
                 pass
-        # Kontrollera gräns: max aktiva domäner enligt planen
+        # Kontrollera gräns: max 5 aktiva domäner per Premium-användare
         active_res = supabase.table("user_domains") \
             .select("domain") \
             .eq("user_id", str(user_id)) \
             .eq("is_active", True) \
             .execute()
-        if len(active_res.data) >= max_domains:
-            return False, f"Limite de {max_domains} projetos ativos do seu plano atingido."
+        if len(active_res.data) >= 5:
+            return False, "Limite de 5 projetos ativos atingido."
         # Upsert: reaktiverar om domänen redan finns pausad
         supabase.table("user_domains").upsert({
             "user_id": str(user_id),
@@ -331,7 +302,14 @@ def create_trial_account(email, senha):
             raise Exception(_adm_resp.json().get("msg", _adm_resp.text))
         _uid = _adm_resp.json()["id"]
 
-        _service_insert_subscriber(email, _uid)
+        try:
+            supabase.table("subscribers").insert({
+                "email": email,
+                "user_id": _uid,
+                "subscription_status": "trial",
+            }).execute()
+        except Exception:
+            pass
 
         _login = supabase.auth.sign_in_with_password({"email": email, "password": senha})
         st.session_state.user = _login.user
@@ -938,13 +916,13 @@ def render_onboarding_progress(status):
     if is_s1_next:
         hint = "Próximo: Vá até <b>Meu Monitoramento</b> e adicione o endereço do seu site."
     elif is_s2_next:
-        hint = "Próximo: Pesquise palavras-chave acima, marque as que quer e clique em <b>Rastrear selecionadas</b>."
+        hint = "Próximo: Pesquise uma palavra-chave acima e clique em <b>+ Rastrear</b>."
     elif is_s3_running:
         hint = "Estamos verificando suas posições no Google..."
     elif s["ranking_completed_not_viewed"]:
         hint = "Próximo: Clique em <b>Meu Monitoramento</b> para ver seu ranking."
     elif is_s3_next:
-        hint = "Próximo: Pesquise palavras-chave, marque as que quer e clique em <b>Rastrear selecionadas</b> para verificar sua posição."
+        hint = "Próximo: Pesquise uma palavra-chave e clique em <b>+ Rastrear</b> para verificar sua posição."
     else:
         hint = ""
 
@@ -1314,6 +1292,32 @@ if _fb_type in ("up", "down"):
     st.stop()
 
 # =====================================================
+# TRIAL CHECK — körs om användaren är inloggad
+# =====================================================
+if st.session_state.user is not None:
+    _trial_email = st.session_state.user.email
+    _trial_status = get_trial_status(_trial_email)
+
+    if _trial_status == "TRIAL_EXPIRED":
+        if "trial_expired_event_logged" not in st.session_state:
+            log_event(st.session_state.user.id, "trial_expired_shown")
+            st.session_state.trial_expired_event_logged = True
+        st.markdown("<div style='font-size:1.3rem;font-weight:800;padding:1rem 0 1.5rem'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align:center;padding:2rem 1rem;'>
+            <div style='font-size:2.5rem;margin-bottom:1rem;'>🔒</div>
+            <h2 style='margin-bottom:0.5rem;'>Seu período de teste de 14 dias terminou!</h2>
+            <p style='color:#888;margin-bottom:2rem;max-width:480px;margin-left:auto;margin-right:auto;'>
+                Para continuar recebendo seus relatórios semanais e descobrindo
+                palavras-chave de alta conversão, assine o plano completo.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        hotmart_url_with_email = f"https://pay.hotmart.com/L106736067M?email={_trial_email}"
+        st.link_button("👉 Assinar por R$197/mês na Hotmart", hotmart_url_with_email, type="primary", use_container_width=True)
+        st.stop()
+
+# =====================================================
 # NÃO LOGADO — Landningssida
 # =====================================================
 if st.session_state.user is None:
@@ -1356,7 +1360,7 @@ if st.session_state.user is None:
             <div style='font-size:1.5rem;margin-bottom:0.5rem'>🎉</div>
             <h2 style='margin-bottom:0.4rem;font-size:1.6rem;'>Você foi convidado!</h2>
             <p style='opacity:0.7;max-width:420px;margin:0 auto;font-size:0.95rem;'>
-            Crie sua conta grátis — sem cartão de crédito.
+            Crie sua conta e comece seu teste gratuito de 14 dias — sem cartão de crédito.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -1434,8 +1438,8 @@ if st.session_state.user is None:
             <span>📈 Dados atualizados toda semana</span>
             <span>🇧🇷 Focado no mercado brasileiro</span>
         </div>
-        <a class="cta-btn" href="#comecar">Comece grátis →</a>
-        <div class="garantia">Sem cartão de crédito • Grátis para sempre até 10 palavras-chave</div>
+        <a class="cta-btn" href="#comecar">Comece grátis por 14 dias →</a>
+        <div class="garantia">Sem cartão de crédito • Cancele quando quiser</div>
         <div style="margin-top:1.2rem;font-size:0.9rem;opacity:0.65">
             Já tem uma conta?
             <a href="#login-section"
@@ -1448,8 +1452,8 @@ if st.session_state.user is None:
     st.markdown('<div id="comecar"></div>', unsafe_allow_html=True)
     _left, _mid, _right = st.columns([1, 2, 1])
     with _mid:
-        with st.expander("🎁 Crie sua conta grátis — sem cartão de crédito", expanded=True):
-            st.caption("Plano Grátis para sempre: 1 site e 10 palavras-chave monitoradas toda semana.")
+        with st.expander("🎁 Comece grátis por 14 dias — sem cartão de crédito", expanded=True):
+            st.caption("Crie sua conta agora e use o SEO Brasil por 14 dias, sem compromisso.")
             with st.form("public_trial_form"):
                 pt_email = st.text_input("E-mail", key="pt_email")
                 pt_senha = st.text_input("Senha (mín. 6 caracteres)", type="password", key="pt_senha")
@@ -1512,7 +1516,7 @@ if st.session_state.user is None:
         <div class="step">
             <div class="num">2</div>
             <h4>Pesquise e rastreie palavras-chave</h4>
-            <p>Use a ferramenta de pesquisa para ver volume, CPC e competição de qualquer termo. Marque os que quer monitorar e clique em Rastrear selecionadas.</p>
+            <p>Use a ferramenta de pesquisa para ver volume, CPC e competição de qualquer termo. Clique em + Rastrear nos que quer monitorar.</p>
         </div>
         <div class="step">
             <div class="num">3</div>
@@ -1531,7 +1535,45 @@ if st.session_state.user is None:
 
     # --- Preço ---
     st.markdown('<div class="section-title">Escolha seu plano</div>', unsafe_allow_html=True)
-    st.markdown(render_plans_html(), unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="plans-row" style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;">
+
+      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;">
+        <div class="trial-pill">14 dias grátis para testar</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#4d9fff">SEO Brasil Pro</div>
+        <div class="price">R$197</div>
+        <div class="per">por mês • sem fidelidade</div>
+        <ul>
+            <li>🔍 Pesquisa de palavras-chave — até 10 por busca</li>
+            <li>📈 Monitoramento de ranking — até 100 palavras-chave</li>
+            <li>📊 Histórico básico de posicionamento / evolução</li>
+            <li>📬 Relatório automático toda segunda-feira</li>
+            <li>🇧🇷 Dados focados no mercado brasileiro</li>
+            <li>📊 Exportação CSV dos resultados</li>
+            <li>✉️ Suporte por e-mail</li>
+        </ul>
+        <a class="cta-btn" href="{HOTMART_URL}">Começar grátis por 14 dias →</a>
+        <div class="no-cc">Sem cartão de crédito no período de teste</div>
+      </div>
+
+      <div class="price-box" style="flex:1;min-width:260px;max-width:380px;border-color:rgba(255,200,60,0.5);background:rgba(255,200,60,0.04);">
+        <div class="trial-pill" style="background:rgba(255,200,60,0.2);color:#f0b429;">✨ Premium</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;color:#f0b429">SEO Brasil Premium</div>
+        <div class="price">R$297</div>
+        <div class="per">por mês • sem fidelidade</div>
+        <ul>
+            <li>🌐 Até 5 projetos/domínios ativos</li>
+            <li>✅ Até 300 palavras-chave monitoradas no total</li>
+            <li>📊 Histórico avançado / comparações</li>
+            <li>🔍 Oportunidades de Domínios</li>
+            <li>📈 Todos os recursos do Pro</li>
+        </ul>
+        <a class="cta-btn" href="{HOTMART_PREMIUM_URL}" style="background:#f0b429;color:#1a1a2e;">Assinar Premium →</a>
+        <div class="no-cc">Pagamento mensal • Cancele quando quiser</div>
+      </div>
+
+    </div>
+    """, unsafe_allow_html=True)
 
     st.divider()
 
@@ -1572,7 +1614,7 @@ if st.session_state.user is None:
 
     st.markdown(f"""
     <div style="text-align:center;margin-top:1.2rem;font-size:0.92rem;opacity:0.75">
-    Ainda não tem uma conta? <a href="#comecar" style="color:#4d9fff;text-decoration:none;font-weight:600">Crie sua conta grátis →</a>
+    Ainda não tem uma conta? <a href="{HOTMART_URL}" style="color:#4d9fff;text-decoration:none;font-weight:600">Assine agora →</a>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1596,11 +1638,6 @@ if st.session_state.user is None:
 # =====================================================
 else:
     prenumerant = ar_prenumerant(st.session_state.user.email)
-    # Självläkning: inloggad men utan rad i subscribers (t.ex. misslyckad registrering)
-    # -> skapa en gratisrad så att kontot fungerar direkt.
-    if not prenumerant:
-        if _service_insert_subscriber(st.session_state.user.email, st.session_state.user.id):
-            prenumerant = ar_prenumerant(st.session_state.user.email)
     user_id = st.session_state.user.id
 
     # Log subscription_activated once when account is 'active' — catches webhook/manual activations
@@ -1627,7 +1664,7 @@ else:
         st.markdown("<div style='font-size:1.3rem;font-weight:800;padding-top:6px'>SEO Brasil 🌎</div>", unsafe_allow_html=True)
     with col_user:
         _header_plan = get_user_plan(st.session_state.user.email)
-        _plan_label = ("✨ " if _header_plan == "premium" else "") + f"Plano {get_plan(_header_plan)['label']}"
+        _plan_label = "✨ Plano Premium" if _header_plan == "premium" else "Plano Pro"
         _plan_color = "#f0b429" if _header_plan == "premium" else "rgba(255,255,255,0.4)"
         st.markdown(f"""
             <div style='text-align:right;padding-top:6px'>
@@ -1715,35 +1752,21 @@ else:
         )
         render_onboarding_progress(_ob_status)
 
-        _up_plan = next_plan(_user_plan)
-        if _up_plan:
-            _up = get_plan(_up_plan)
-            _sites = "1 site" if _up["max_domains"] == 1 else f"até {_up['max_domains']} sites"
-            _up_text = f"{_up['max_keywords']} palavras-chave • {_sites} • top {_up['serp_depth']} do Google"
-            if _up["domain_opps"]:
-                _up_text += " • Oportunidades de Domínios"
-            # Knappar för alla högre planer — nästa plan markerad, övriga med kontur
-            _order = ["gratis", "basico", "pro", "premium"]
-            _higher = _order[_order.index(_up_plan):]
-            _btns = ""
-            for _p in _higher:
-                _pp = get_plan(_p)
-                _style = ("background:#f0b429;color:#1a1a1a;" if _p == _up_plan
-                          else "background:transparent;color:#f0b429;border:1px solid rgba(240,180,41,0.6);")
-                _btns += (f'<a href="{checkout_url(_p, _ob_email)}" target="_blank" '
-                          f'style="{_style}padding:0.38rem 0.85rem;border-radius:6px;text-decoration:none;'
-                          f'font-weight:700;font-size:0.82rem;white-space:nowrap">'
-                          f'{_pp["label"]} R${_pp["price"]} →</a>')
+        if _user_plan == 'pro' and _sub_active:
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
             border:1px solid rgba(240,180,41,0.25);border-radius:10px;
             padding:0.7rem 1.1rem;margin-bottom:0.6rem;
-            display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.6rem">
+            display:flex;align-items:center;justify-content:space-between">
                 <div>
-                    <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para {_up['label']} — R${_up['price']}/mês</span><br>
-                    <span style="font-size:0.81rem;opacity:0.7">{_up_text}</span>
+                    <span style="color:#f0b429;font-weight:600;font-size:0.88rem">✨ Upgrade para Premium</span><br>
+                    <span style="font-size:0.81rem;opacity:0.7">300 keywords • até 5 domínios • histórico de posicionamento</span>
                 </div>
-                <div style="display:flex;gap:0.45rem;flex-wrap:wrap">{_btns}</div>
+                <a href="{HOTMART_PREMIUM_URL}" target="_blank"
+                   style="background:#f0b429;color:#1a1a1a;padding:0.38rem 0.95rem;border-radius:6px;
+                   text-decoration:none;font-weight:700;font-size:0.83rem;white-space:nowrap;margin-left:1rem">
+                    Assinar Premium →
+                </a>
             </div>""", unsafe_allow_html=True)
 
         tab1, tab2, tab3 = st.tabs(["🔍 Pesquisa de palavras-chave", "📈 Meu Monitoramento", "🔎 Oportunidades de Domínios"])
@@ -1829,83 +1852,6 @@ else:
                 items = st.session_state.search_results
                 tracked_set = get_tracked_set(user_id)
 
-                # ── Flerval: kryssa i sökord och spara alla på en gång ──
-                _sel_map = {}
-                for _it in items:
-                    _k = _it.get("keyword", "")
-                    if _k and _k not in tracked_set:
-                        _sel_map[f"sel_{_k}"] = _k
-                for _idea in st.session_state.get("keyword_ideas", []):
-                    _k = _idea.get("keyword", "")
-                    if _k and _k not in tracked_set:
-                        _sel_map[f"sel_idea_{_k}"] = _k
-
-                def _bulk_select(keys, value):
-                    for _key in keys:
-                        st.session_state[_key] = value
-
-                def _bulk_track(sel_map, uid, dom, plan, token):
-                    chosen = []
-                    for _key, _kw in sel_map.items():
-                        if st.session_state.get(_key) and _kw not in chosen:
-                            chosen.append(_kw)
-                    if not chosen:
-                        st.session_state._track_msg = ("warning", "Selecione pelo menos uma palavra-chave.")
-                        return
-                    saved, stop_msg = [], None
-                    for _kw in chosen:
-                        ok, msg = add_tracking(_kw, uid, dom, plan)
-                        if ok:
-                            saved.append(_kw)
-                            log_event(uid, "keyword_saved", {"keyword": _kw})
-                        else:
-                            stop_msg = msg
-                            break
-                    if saved and not has_event(uid, "keyword_tracked"):
-                        log_event(uid, "keyword_tracked", {"keyword": saved[0]})
-                    for _key in sel_map:
-                        st.session_state[_key] = False
-                    if stop_msg and saved:
-                        st.session_state._track_msg = ("warning",
-                            f"{len(saved)} palavra(s) salva(s). {len(chosen) - len(saved)} não salva(s): {stop_msg}")
-                    elif stop_msg:
-                        st.session_state._track_msg = ("error", stop_msg)
-                    else:
-                        st.session_state._track_msg = ("success", f"✅ {len(saved)} palavra(s)-chave salva(s).")
-                    if saved and dom:
-                        _new_kws = get_keywords_without_rankings(uid, dom, token)
-                        if _new_kws:
-                            st.session_state._ranking_kws = _new_kws
-                            st.session_state.ranking_in_progress = True
-                            st.session_state.ranking_done = False
-
-                def _render_bulk_bar(pos):
-                    if not _sel_map:
-                        return
-                    _n = sum(1 for _key in _sel_map if st.session_state.get(_key))
-                    _c1, _c2, _c3 = st.columns([3, 2, 2])
-                    with _c1:
-                        st.button(
-                            f"💾 Rastrear selecionadas ({_n})", key=f"bulk_track_{pos}", type="primary",
-                            disabled=st.session_state.ranking_in_progress or _n == 0,
-                            on_click=_bulk_track,
-                            args=(_sel_map, user_id, _ob_domain, _user_plan, st.session_state.access_token),
-                            use_container_width=True,
-                        )
-                    with _c2:
-                        st.button("Selecionar todas", key=f"bulk_all_{pos}",
-                                  on_click=_bulk_select, args=(list(_sel_map.keys()), True),
-                                  use_container_width=True)
-                    with _c3:
-                        st.button("Limpar seleção", key=f"bulk_none_{pos}",
-                                  on_click=_bulk_select, args=(list(_sel_map.keys()), False),
-                                  use_container_width=True)
-
-                _tm = st.session_state.pop("_track_msg", None)
-                if _tm:
-                    getattr(st, _tm[0])(_tm[1])
-                _render_bulk_bar("top")
-
                 csv_rows = []
                 for item in items:
                     kw = item.get("keyword", "")
@@ -1942,16 +1888,35 @@ else:
                                 <span style="color:#6B7280;font-size:11px">Comp. Ads </span>{comp}
                             </span>
                             <span style="color:#9CA3AF;font-size:13px">
-                                <span style="color:#6B7280;font-size:11px">CPC </span>{('R$' + cpc_fmt) if cpc_fmt != 'N/A' else '—'}
+                                <span style="color:#6B7280;font-size:11px">CPC </span>R${cpc_fmt}
                             </span>
                         </div>
                         """, unsafe_allow_html=True)
                     with col_btn:
                         if kw in tracked_set:
-                            st.markdown("<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅ Rastreada</div>", unsafe_allow_html=True)
+                            st.markdown("<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅</div>", unsafe_allow_html=True)
                         else:
-                            st.checkbox("Selecionar", key=f"sel_{kw}",
-                                        disabled=st.session_state.ranking_in_progress)
+                            st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
+                            if st.button("+ Rastrear", key=f"track_{kw}",
+                                         disabled=st.session_state.ranking_in_progress):
+                                ok, msg = add_tracking(kw, user_id, _ob_domain, _user_plan)
+                                if ok:
+                                    log_event(user_id, "keyword_saved", {"keyword": kw})
+                                    if not has_event(user_id, "keyword_tracked"):
+                                        log_event(user_id, "keyword_tracked", {"keyword": kw})
+                                    _user_domain = _ob_domain
+                                    if _user_domain:
+                                        _new_kws = get_keywords_without_rankings(
+                                            user_id, _user_domain,
+                                            st.session_state.access_token)
+                                        if _new_kws:
+                                            st.session_state._ranking_kws = _new_kws
+                                            st.session_state.ranking_in_progress = True
+                                            st.session_state.ranking_done = False
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+                            st.markdown("</div>", unsafe_allow_html=True)
 
                 st.divider()
                 df_csv = pd.DataFrame(csv_rows)
@@ -2026,22 +1991,38 @@ else:
                                     <span style="color:{diff_color}">{diff_label}</span>
                                 </span>
                                 <span style="color:#9CA3AF;font-size:13px">
-                                    <span style="color:#6B7280;font-size:11px">CPC </span>{('R$' + icpc_fmt) if icpc_fmt != 'N/A' else '—'}
+                                    <span style="color:#6B7280;font-size:11px">CPC </span>R${icpc_fmt}
                                 </span>
                             </div>
                             """, unsafe_allow_html=True)
                         with col_btn:
                             if ikw in tracked_set:
                                 st.markdown(
-                                    "<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅ Rastreada</div>",
+                                    "<div style='padding-top:10px;color:#4CAF50;font-size:13px'>✅</div>",
                                     unsafe_allow_html=True,
                                 )
                             else:
-                                st.checkbox("Selecionar", key=f"sel_idea_{ikw}",
-                                            disabled=st.session_state.ranking_in_progress)
-
-                    st.divider()
-                    _render_bulk_bar("bottom")
+                                st.markdown("<div style='padding-top:6px'>", unsafe_allow_html=True)
+                                if st.button("+ Rastrear", key=f"track_idea_{ikw}",
+                                             disabled=st.session_state.ranking_in_progress):
+                                    ok, msg = add_tracking(ikw, user_id, _ob_domain, _user_plan)
+                                    if ok:
+                                        log_event(user_id, "keyword_saved", {"keyword": ikw})
+                                        if not has_event(user_id, "keyword_tracked"):
+                                            log_event(user_id, "keyword_tracked", {"keyword": ikw})
+                                        _user_domain = _ob_domain
+                                        if _user_domain:
+                                            _new_kws = get_keywords_without_rankings(
+                                                user_id, _user_domain,
+                                                st.session_state.access_token)
+                                            if _new_kws:
+                                                st.session_state._ranking_kws = _new_kws
+                                                st.session_state.ranking_in_progress = True
+                                                st.session_state.ranking_done = False
+                                        st.rerun()
+                                    else:
+                                        st.error(msg)
+                                st.markdown("</div>", unsafe_allow_html=True)
 
         # ── TAB 2: MIN ÖVERVAKNING ───────────────────────
         with tab2:
@@ -2051,9 +2032,8 @@ else:
                 log_event(user_id, "ranking_viewed")
                 st.session_state._ranking_viewed_logged = True
 
-            # --- Domän-val: planer med fler än 1 domän får projektlistan ---
-            _max_domains = get_plan(_user_plan)["max_domains"]
-            if _max_domains > 1:
+            # --- Domän-val: Premium = multi-domain, Pro = enskild domän ---
+            if _user_plan == "premium":
                 _all_domains = get_user_domains(user_id)
                 _active_domains = [d for d in _all_domains if d["is_active"]]
                 _paused_domains = [d for d in _all_domains if not d["is_active"]]
@@ -2061,9 +2041,9 @@ else:
                 # Rubrik + knapp för att lägga till nytt projekt
                 _col_title, _col_add = st.columns([3, 1])
                 with _col_title:
-                    st.markdown(f"**Seus projetos** ({len(_active_domains)}/{_max_domains} ativos)")
+                    st.markdown(f"**Seus projetos** ({len(_active_domains)}/5 ativos)")
                 with _col_add:
-                    if len(_active_domains) < _max_domains:
+                    if len(_active_domains) < 5:
                         if st.button("➕ Novo projeto", key="premium_new_proj"):
                             st.session_state._premium_adding_domain = not st.session_state.get("_premium_adding_domain", False)
 
@@ -2077,7 +2057,7 @@ else:
                     with _col_nb:
                         if st.button("Salvar", key="premium_save_domain_btn"):
                             if _new_proj_domain.strip():
-                                _add_ok, _add_msg = add_user_domain(user_id, _new_proj_domain, user_email, _max_domains)
+                                _add_ok, _add_msg = add_user_domain(user_id, _new_proj_domain, user_email)
                                 if _add_ok:
                                     log_event(user_id, "domain_added")
                                     st.session_state._premium_adding_domain = False
@@ -2098,11 +2078,8 @@ else:
                                 st.markdown(f"`{_pd['domain']}`")
                             with _pc2:
                                 if st.button("Ativar", key=f"resume_dom_{_pd['domain']}"):
-                                    if len(_active_domains) >= _max_domains:
-                                        st.error(f"Limite de {_max_domains} projetos ativos do seu plano atingido.")
-                                    else:
-                                        set_domain_active(user_id, _pd["domain"], True)
-                                        st.rerun()
+                                    set_domain_active(user_id, _pd["domain"], True)
+                                    st.rerun()
                             with _pc3:
                                 if st.button("×", key=f"remove_paused_{_pd['domain']}", help="Remover projeto (histórico de ranking preservado)"):
                                     st.session_state[f"_confirm_remove_{_pd['domain']}"] = True
@@ -2395,14 +2372,14 @@ else:
                     pass
 
             if domain:
-                st.caption("📌 Para receber seu relatório semanal, pesquise palavras-chave, marque as que deseja monitorar e clique em 'Rastrear selecionadas'.")
+                st.caption("📌 Para receber seu relatório semanal, pesquise palavras-chave e clique em '+ Rastrear' nas que deseja monitorar.")
 
             if not tracked_list:
-                st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise, marque as palavras e clique em 'Rastrear selecionadas' para começar!")
+                st.info("Você ainda não rastreou nenhuma palavra-chave. Pesquise e clique em '+ Rastrear' para começar!")
             else:
                 count = len(tracked_list)
-                _kw_limit = get_plan(_user_plan)["max_keywords"]
-                if _max_domains > 1:
+                _kw_limit = 300 if _user_plan == "premium" else 100
+                if _user_plan == "premium":
                     _total_kw = len(supabase.table("tracked_keywords").select("id").eq("user_id", str(user_id)).eq("is_active", True).execute().data or [])
                     st.caption(f"{count} palavra(s) neste projeto · {_total_kw}/{_kw_limit} no total — dados atualizados toda segunda-feira")
                 else:
@@ -2427,11 +2404,11 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # ── Historikgraf — antal veckor enligt planen ──
-                        _hist_weeks = get_plan(_user_plan)["history_weeks"]
+                        # ── Historikgraf — 12 veckor för alla (Pro + Premium) ──
+                        _hist_weeks = 12
                         _history = get_rank_history(user_id, kw, domain, weeks=_hist_weeks)
                         if _history:
-                            _hist_label = f"📊 Ver histórico de posição (últimas {_hist_weeks} semanas)"
+                            _hist_label = "📊 Ver histórico de posição (últimas 12 semanas)"
                             with st.expander(_hist_label, expanded=False):
                                 import pandas as pd
                                 _df = pd.DataFrame(_history)
@@ -2452,6 +2429,7 @@ else:
                                     st.caption("Apenas 1 semana de dados disponível. O gráfico aparecerá quando houver mais histórico.")
                                 else:
                                     st.caption(f"Nenhuma posição disponível ainda. Esta palavra-chave não apareceu no top {serp_depth(_user_plan)} neste período.")
+
                     with col_del:
                         if st.button("✕", key=f"del_{kw}", help=f"Remover '{kw}'"):
                             remove_tracking(kw, user_id, domain)
@@ -2459,7 +2437,7 @@ else:
 
         # ── TAB 3: OPORTUNIDADES DE DOMÍNIOS ─────────────────
         with tab3:
-            if not get_plan(_user_plan)["domain_opps"]:
+            if _user_plan != "premium":
                 st.markdown(f"""
                 <div style="background:linear-gradient(135deg,rgba(240,180,41,0.08),rgba(240,180,41,0.03));
                 border:1px solid rgba(240,180,41,0.25);border-radius:12px;
@@ -2472,10 +2450,10 @@ else:
                         Encontre domínios .com.br expirados com autoridade — filtre por Trust Flow,
                         Referring Domains, idade e categoria.
                     </div>
-                    <a href="{checkout_url('premium', user_email)}" target="_blank"
+                    <a href="{HOTMART_PREMIUM_URL}" target="_blank"
                        style="background:#f0b429;color:#1a1a1a;padding:0.5rem 1.3rem;border-radius:7px;
                        text-decoration:none;font-weight:700;font-size:0.9rem">
-                        Assinar Premium — R${PLANS['premium']['price']}/mês →
+                        Assinar Premium — R$297/mês →
                     </a>
                 </div>""", unsafe_allow_html=True)
             else:
@@ -2488,7 +2466,7 @@ else:
 
             # Filtros (apenas Premium)
             _opps_search = False
-            if get_plan(_user_plan)["domain_opps"]:
+            if _user_plan == "premium":
               with st.expander("⚙️ Filtros de busca", expanded=True):
                 _fc1, _fc2, _fc3, _fc4 = st.columns(4)
                 with _fc1:
@@ -2562,11 +2540,11 @@ else:
                         st.session_state.opps_last_filters = _opps_filters
 
             # Exibição de resultados (apenas Premium)
-            if get_plan(_user_plan)["domain_opps"] and st.session_state.opps_results is None:
+            if _user_plan == "premium" and st.session_state.opps_results is None:
                 st.info("Configure os filtros acima e clique em **Buscar Domínios** para encontrar oportunidades.")
-            elif get_plan(_user_plan)["domain_opps"] and len(st.session_state.opps_results) == 0:
+            elif _user_plan == "premium" and len(st.session_state.opps_results) == 0:
                 st.info("Nenhum resultado para os filtros selecionados.")
-            elif get_plan(_user_plan)["domain_opps"]:
+            elif _user_plan == "premium":
                 _opps_res = st.session_state.opps_results
                 st.markdown(f"**{len(_opps_res)} domínio(s) encontrado(s)**")
 
@@ -2721,8 +2699,8 @@ else:
                     )
 
     else:
-        st.info(f"✨ Planos a partir de R${PLANS['basico']['price']}/mês — relatórios automáticos toda segunda-feira.")
-        st.markdown(f'<a href="{checkout_url("basico", st.session_state.user.email)}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Ver planos →</button></a>', unsafe_allow_html=True)
+        st.info("✨ Acesso completo por R$197/mês — relatórios automáticos toda segunda-feira.")
+        st.markdown(f'<a href="{HOTMART_URL}" target="_blank"><button style="background:#1a6de0;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:15px;">Assinar agora → R$197/mês</button></a>', unsafe_allow_html=True)
 
 st.divider()
 st.caption("SEO Brasil - Feito para o mercado brasileiro | Suporte: samuel@seobrasil.app")
